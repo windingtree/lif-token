@@ -1,4 +1,4 @@
-# Lif Token
+# Líf Token
 
 ### Install
 
