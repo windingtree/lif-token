@@ -1,0 +1,25 @@
+{
+  "name": "lif-token",
+  "version": "1.0.0",
+  "description": "Winding Tree Platform Token",
+  "main": "index.js",
+  "scripts": {
+    "test": "truffle test",
+    "testrpc": "testrpc --account=\"0xbcd7d45e953e3128339167a8d688cfa98afc3e81f15ed1c2e50a9f168dd7ad4c,10000000000000000000000000000000000000000000000000000000000000000000000000\" --account=\"0x244b05ae35b7cf6da304a979729fe5af7be648c0bce70eee44964256232c771b,10000000000000000000000000000000000000000000000000000000000000000000000000\" --account=\"0x4b642768239ff5286059a2a186976daa6f32779b2baf685380b1ff1e458f8c19,10000000000000000000000000000000000000000000000000000000000000000000000000\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/windingtree/LifToken"
+  },
+  "keywords": [
+    "lif-token",
+    "winding-tree",
+    "token",
+    "crowdsale"
+  ],
+  "author": "Augusto Lemble <me@augustolemble.com>",
+  "license": "ISC",
+  "dependencies": {
+    "zeppelin-solidity": "^1.0.0"
+  }
+}
