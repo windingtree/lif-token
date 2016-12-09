@@ -3,7 +3,7 @@
 ### Install
 
 ```sh
-npm install testrpc -g
+npm install ethereumjs-testrpc -g
 npm install truffle -g
 npm install
 ```
