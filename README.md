@@ -1,11 +1,11 @@
-# Lif Token
+# Líf Token
 
 Lif Token is based on the ERC20 token protocol, with the option to also send information beetwen users using edited versions of the transfer and transferFrom methods.
 
 ## Install
 
 ```sh
-npm install testrpc -g
+npm install ethereumjs-testrpc -g
 npm install truffle -g
 npm install
 ```
