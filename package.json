@@ -20,6 +20,7 @@
   "author": "Augusto Lemble <me@augustolemble.com>",
   "license": "ISC",
   "dependencies": {
+    "protobufjs": "^6.0.2",
     "zeppelin-solidity": "^1.0.0"
   }
 }

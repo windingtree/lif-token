@@ -15,7 +15,10 @@ contract LifToken is StandardToken {
   string public symbol = "LIF";
   uint public decimals = 18;
 
-  // 1 ether = 100 example tokens, price is in wei unit
+  event Transfer(address indexed from, address indexed to, uint value, string data);
+  event Approval(address indexed owner, address indexed spender, uint value);
+
+  // 1 ether = 100 lif tokens, price is in wei unit
   uint PRICE = 1000000000000000;
 
   // Maximun number of tokens
@@ -46,4 +49,22 @@ contract LifToken is StandardToken {
 
     return PRICE;
   }
+
+  function transfer(address _to, uint _value, string _data) returns (bool success) {
+    balances[msg.sender] = safeSub(balances[msg.sender], _value);
+    balances[_to] = safeAdd(balances[_to], _value);
+    Transfer(msg.sender, _to, _value, _data);
+    return true;
+  }
+
+  function transferFrom(address _from, address _to, uint _value, string _data) returns (bool success) {
+    var _allowance = allowed[_from][msg.sender];
+
+    balances[_to] = safeAdd(balances[_to], _value);
+    balances[_from] = safeSub(balances[_from], _value);
+    allowed[_from][msg.sender] = safeSub(_allowance, _value);
+    Transfer(_from, _to, _value, _data);
+    return true;
+  }
+
 }
