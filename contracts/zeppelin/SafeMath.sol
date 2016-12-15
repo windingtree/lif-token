@@ -22,6 +22,12 @@ contract SafeMath {
     return c;
   }
 
+  function safeDiv(uint a, uint b) internal returns (uint) {
+    uint c = a / b;
+    assert(b != 0 && (( a % b == 0 && c * b == a ) || ( a % b != 0 && c * (b + a % b) == a )));
+    return c;
+  }
+
   function assert(bool assertion) internal {
     if (!assertion) throw;
   }
