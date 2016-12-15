@@ -25,36 +25,44 @@ const MAX_ACCOUNTS = 3;
 const DEBUG_MODE = true;
 
 function parseBalance(balance){
-  return balance / Math.pow(10, TOKEN_DECIMALS);
+  return balance /Math.pow(10,TOKEN_DECIMALS);
 }
 function formatBalance(balance){
-  return balance * Math.pow(10, TOKEN_DECIMALS);
+  return balance *Math.pow(10,TOKEN_DECIMALS);
 }
 
 contract('LifToken', function(accounts) {
 
   var _token;
 
-  function checkValues(_totalSupply, _feesBalance, _accounts, done) {
+  function checkValues (_totalSupply, _feesBalance, _tokenPrice, _tokenFee, _accounts, done) {
     var accountPromises = [];
+    accountPromises.push( web3.eth.getBalance(_token.contract.address) );
     accountPromises.push( _token.totalSupply() );
     accountPromises.push( _token.feesBalance() );
+    accountPromises.push( _token.tokenPrice() );
+    accountPromises.push( _token.tokenFee() );
     for (var i = 0; i < _accounts.length; i++)
       accountPromises.push( _token.balanceOf(accounts[i]) );
 
     Promise.all(accountPromises).then(values => {
 
       if (DEBUG_MODE) {
-        console.log('Total Supply:', parseBalance(values[0]));
-        console.log('Fees Balance:', parseBalance(values[1]));
-        for (var i = 2; i < values.length; i++)
-          console.log('Address:', accounts[i-2], ", balance:", parseBalance(values[i]));
+        console.log('Contract Balance:', web3.fromWei(parseInt(values[0]), 'ether'), 'Ether;', parseInt(values[0], 'wei'), 'Wei');
+        console.log('Total Supply:', parseBalance(values[1]));
+        console.log('Fees Balance:', web3.fromWei(parseInt(values[2]), 'ether'), 'Ether;', parseInt(values[2], 'wei'), 'Wei');
+        console.log('Token Price:', parseInt(values[3]));
+        console.log('Token Fee:', parseInt(values[4]));
+        for (var i = 5; i < values.length; i++)
+          console.log('Account['+(i-5)+']', accounts[i-5], ", Balance:", parseBalance(values[i]));
       }
 
-      assert.equal(parseBalance(values[0]), _totalSupply); // totalSupply tokens
-      assert.equal(parseBalance(values[1]), _feesBalance); // fess gathered balance
-      for (var i = 2; i < values.length; i++)
-        assert.equal(parseBalance(values[i]), _accounts[i-2]); // accounts balance
+      assert.equal(parseBalance(values[1]), _totalSupply);
+      assert.equal(web3.fromWei(parseInt(values[2])), _feesBalance);
+      assert.equal(parseInt(values[3]), _tokenPrice);
+      assert.equal(parseInt(values[4]), _tokenFee);
+      for (var i = 5; i < values.length; i++)
+        assert.equal(parseBalance(values[i]), _accounts[i-5]);
 
       done();
     }).catch(err => {
@@ -62,14 +70,14 @@ contract('LifToken', function(accounts) {
     });
   }
 
-  it("should return the correct totalSupply after construction", function(done) {
+  it("should return the correct totalSupply after construction using createTokens", function(done) {
     return LifToken.new()
       .then(function(token) {
         _token = token;
         return _token.createTokens(accounts[0], {value: web3.toWei(1, 'ether')});
       })
       .then(function() {
-        checkValues(1000, 0, [1000, 0, 0], done);
+        checkValues(1000, 0, 1000000000000000, 100, [1000, 0, 0], done);
       })
   });
 
@@ -83,7 +91,7 @@ contract('LifToken', function(accounts) {
         return web3.eth.sendTransaction({from: accounts[0], to: _token.contract.address, value: web3.toWei(1, 'ether')});
       })
       .then(function() {
-        checkValues(100, 0, [100, 0, 0], done);
+        checkValues(100, 0, 10000000000000000, 100, [100, 0, 0], done);
       })
   });
 
@@ -97,7 +105,7 @@ contract('LifToken', function(accounts) {
         if (error.message.search('invalid JUMP') == -1) throw error
       })
       .then(function() {
-        checkValues(0, 0, [0, 0, 0], done);
+        checkValues(0, 0, 1000000000000000, 100, [0, 0, 0], done);
       })
   });
 
@@ -115,7 +123,7 @@ contract('LifToken', function(accounts) {
       })
       .then(function(allowance) {
         assert.equal(parseBalance(allowance), 100);
-        checkValues(1000, 0, [1000, 0, 0], done);
+        checkValues(1000, 0, 1000000000000000, 100, [1000, 0, 0], done);
       });
   });
 
@@ -129,7 +137,7 @@ contract('LifToken', function(accounts) {
         return _token.transfer(accounts[1], formatBalance(33), "");
       })
       .then(function() {
-        checkValues(99.67, 0.33, [67, 32.67, 0], done);
+        checkValues(99.67, 0.000000000000000003, 1000000000000000, 100, [67, 32.67, 0], done);
       });
   });
 
@@ -146,7 +154,7 @@ contract('LifToken', function(accounts) {
         return _token.transfer(accounts[1], formatBalance(33), "");
       })
       .then(function() {
-        checkValues(99.34, 0.66, [67, 32.34, 0], done);
+        checkValues(99.34, 0.000000000000000006, 1000000000000000, 50, [67, 32.34, 0], done);
       });
   });
 
@@ -163,7 +171,7 @@ contract('LifToken', function(accounts) {
         if (error.message.search('invalid JUMP') == -1) throw error
       })
       .then(function() {
-        checkValues(100, 0, [100, 0, 0], done);
+        checkValues(100, 0, 1000000000000000, 100, [100, 0, 0], done);
       });
   });
 
@@ -180,7 +188,7 @@ contract('LifToken', function(accounts) {
         return _token.transferFrom(accounts[0], accounts[2], formatBalance(100), "", {from: accounts[1]});
       })
       .then(function() {
-        checkValues(99, 1, [0, 0, 99], done);
+        checkValues(99, 0.000000000000000001, 1000000000000000, 100, [0, 0, 99], done);
       });
   });
 
@@ -200,7 +208,7 @@ contract('LifToken', function(accounts) {
         if (error.message.search('invalid JUMP') == -1) throw error
       })
       .then(function() {
-        checkValues(100, 0, [100, 0, 0], done);
+        checkValues(100, 0, 1000000000000000, 100, [100, 0, 0], done);
       });
   });
 
@@ -214,7 +222,7 @@ contract('LifToken', function(accounts) {
         if (error.message.search('invalid JUMP') == -1) throw error
       })
       .then(function() {
-        checkValues(0, 0, [0, 0, 0], done);
+        checkValues(0, 0, 1000000000000000, 100, [0, 0, 0], done);
       });
   });
 
@@ -239,7 +247,7 @@ contract('LifToken', function(accounts) {
         });
       })
       .then(function() {
-        checkValues(99, 1, [0, 99, 0], done);
+        checkValues(99, 0.000000000000000001, 1000000000000000, 100, [0, 99, 0], done);
       });
   });
 
@@ -270,7 +278,7 @@ contract('LifToken', function(accounts) {
         });
       })
       .then(function() {
-        checkValues(100, 0, [100, 0, 0], done);
+        checkValues(100, 0, 1000000000000000, 100, [100, 0, 0], done);
       });
   });
 

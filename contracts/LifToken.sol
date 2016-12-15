@@ -21,7 +21,7 @@ contract LifToken is StandardToken, Ownable {
   uint public decimals = 18;
   uint public baseDecimals = 1000000000000000000;
 
-  // Totala balance gathered with fees
+  // Total balance gathered with fees on wei
   uint public feesBalance = 0;
 
   // Edit of the ERC20 token events to support data argument
@@ -42,7 +42,7 @@ contract LifToken is StandardToken, Ownable {
   }
 
   function claimFees(address _to) onlyOwner {
-    if (_to.send(feesBalance*tokenPrice)){
+    if (_to.send(feesBalance)){
       feesBalance = 0;
     }
   }
@@ -50,7 +50,7 @@ contract LifToken is StandardToken, Ownable {
   function createTokens(address recipient) payable {
     if (msg.value == 0) throw;
 
-    //if (msg.value % tokenPrice != 0) throw;
+    if (msg.value % tokenPrice != 0) throw;
 
     uint tokens = safeMul( safeDiv(msg.value, tokenPrice), baseDecimals);
 
@@ -70,12 +70,13 @@ contract LifToken is StandardToken, Ownable {
 
   function transfer(address _to, uint _value, string _data) returns (bool success) {
     if (_value > 0) {
-      uint feeAmount = safeDiv(_value, tokenFee);
-      uint totalValue = safeSub(_value, feeAmount);
+      uint feeInToken = safeDiv(_value, tokenFee);
+      uint totalValue = safeSub(_value, feeInToken);
+      uint feeInWei = safeMul(feeInToken, tokenPrice);
       balances[msg.sender] = safeSub(balances[msg.sender], _value);
       balances[_to] = safeAdd(balances[_to], totalValue);
-      feesBalance = safeAdd(feesBalance, feeAmount);
-      totalSupply = safeSub(totalSupply, feeAmount);
+      feesBalance = safeAdd(feesBalance, feeInWei);
+      totalSupply = safeSub(totalSupply, feeInToken);
     }
 
     Transfer(msg.sender, _to, _value, _data);
@@ -86,14 +87,14 @@ contract LifToken is StandardToken, Ownable {
   function transferFrom(address _from, address _to, uint _value, string _data) returns (bool success) {
     if (_value > 0) {
       uint _allowance = allowed[_from][msg.sender];
-      uint feeAmount = safeDiv(_value, tokenFee);
-      uint totalValue = safeSub(_value, feeAmount);
-
+      uint feeInToken = safeDiv(_value, tokenFee);
+      uint totalValue = safeSub(_value, feeInToken);
+      uint feeInWei = safeMul(feeInToken, tokenPrice);
       balances[_from] = safeSub(balances[_from], _value);
       balances[_to] = safeAdd(balances[_to], totalValue);
       allowed[_from][msg.sender] = safeSub(_allowance, _value);
-      feesBalance = safeAdd(feesBalance, feeAmount);
-      totalSupply = safeSub(totalSupply, feeAmount);
+      feesBalance = safeAdd(feesBalance, feeInWei);
+      totalSupply = safeSub(totalSupply, feeInToken);
     }
 
     Transfer(msg.sender, _to, _value, _data);
