@@ -7,6 +7,7 @@ Lif Token is based on the ERC20 token protocol, with the option to also send inf
 ```sh
 npm install ethereumjs-testrpc -g
 npm install truffle -g
+npm install zeppelin-solidity@1.0.0
 npm install
 ```
 
