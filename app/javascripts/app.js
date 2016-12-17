@@ -4,7 +4,7 @@ var account;
 function setStatus(message) {
   var status = document.getElementById("status");
   status.innerHTML = message;
-};
+}
 
 function refreshBalance() {
   var meta = MetaCoin.deployed();
@@ -16,7 +16,7 @@ function refreshBalance() {
     console.log(e);
     setStatus("Error getting balance; see log.");
   });
-};
+}
 
 function sendCoin() {
   var meta = MetaCoin.deployed();
@@ -33,16 +33,16 @@ function sendCoin() {
     console.log(e);
     setStatus("Error sending coin; see log.");
   });
-};
+}
 
 window.onload = function() {
   web3.eth.getAccounts(function(err, accs) {
-    if (err != null) {
+    if (err !== null) {
       alert("There was an error fetching your accounts.");
       return;
     }
 
-    if (accs.length == 0) {
+    if (accs.length === 0) {
       alert("Couldn't get any accounts! Make sure your Ethereum client is configured correctly.");
       return;
     }
@@ -52,4 +52,4 @@ window.onload = function() {
 
     refreshBalance();
   });
-}
+};
