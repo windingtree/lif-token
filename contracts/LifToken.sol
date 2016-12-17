@@ -5,14 +5,16 @@ import "./zeppelin/token/StandardToken.sol";
 import "./zeppelin/Ownable.sol";
 
 /*
- * Lif Token
+ * Líf Token
  *
- * Lif is a corwdsale token for the winding tree platform.
+ * Líf is the cryptocurrency of the Winding Tree platform.
+ *
+ * Líf is an Old Norse feminine noun meaning "life, the life of the body".
  */
 contract LifToken is StandardToken, Ownable {
 
   // Token Name
-  string public name = "Lif";
+  string public name = "Líf";
 
   // Token Symbol
   string public symbol = "LIF";
@@ -28,7 +30,7 @@ contract LifToken is StandardToken, Ownable {
   event Transfer(address indexed from, address indexed to, uint value, string data);
   event Approval(address indexed owner, address indexed spender, uint value);
 
-  // Token price in wei unit: 1 ether = 100 lif
+  // Token price in wei unit: 1 ETH = 100 LIF
   uint public tokenPrice = 1000000000000000;
 
   // Token fee per tranfer: 100 = 1 % fee per transaction with value
