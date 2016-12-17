@@ -21,5 +21,8 @@
   "license": "ISC",
   "dependencies": {
     "protobufjs": "^6.0.2"
+  },
+  "jshintConfig": {
+    "esversion": 6
   }
 }
