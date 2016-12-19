@@ -9,6 +9,6 @@ before_install:
   - npm i -g truffle
   - npm i -g jshint
 script:
-  - testrpc&
+  - npm run testrpc&
   - jshint test/.js
   - npm test
