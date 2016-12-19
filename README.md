@@ -1,6 +1,8 @@
-# Líf Token
+# Líf
 
-Lif Token is based on the ERC20 token protocol, with the option to also send information beetwen users using edited versions of the transfer and transferFrom methods.
+Líf is the cryptocurrency of the Winding Tree platform.
+
+Líf is based on the ERC20 token protocol, with the option to also send information between users using edited versions of the transfer and transferFrom methods.
 
 ## Install
 
