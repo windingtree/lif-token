@@ -84,6 +84,7 @@ contract('LifToken', function(accounts) {
       })
       .then(function() {
         checkValues(1000, 0, 1000000000000000, 100, [1000, 0, 0], done);
+
       });
   });
 
