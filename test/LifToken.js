@@ -33,18 +33,36 @@ function formatBalance(balance){
 
 contract('LifToken', function(accounts) {
 
-  var _token;
+  var token;
+  var events;
 
-  function checkValues (_totalSupply, _feesBalance, _tokenPrice, _tokenFee, _accounts, done) {
+  beforeEach(function(done) {
+    return LifToken.new()
+      .then(function(_token) {
+        token = _token;
+        events = token.allEvents();
+        events.watch(function(error, log){
+          console.log('Event:', log.event, ':',log.args);
+        });
+        done();
+      });
+  });
+
+  afterEach(function(done) {
+    events.stopWatching();
+    done();
+  });
+
+  function checkValues (_totalSupply, _feesBalance, tokenPrice, tokenFee, _accounts, done) {
     var accountPromises = [];
-    accountPromises.push( web3.eth.getBalance(_token.contract.address) );
-    accountPromises.push( _token.totalSupply() );
-    accountPromises.push( _token.feesBalance() );
-    accountPromises.push( _token.tokenPrice() );
-    accountPromises.push( _token.tokenFee() );
+    accountPromises.push( web3.eth.getBalance(token.contract.address) );
+    accountPromises.push( token.totalSupply() );
+    accountPromises.push( token.feesBalance() );
+    accountPromises.push( token.tokenPrice() );
+    accountPromises.push( token.tokenFee() );
 
     for (var i = 0; i < _accounts.length; i++) {
-      accountPromises.push( _token.balanceOf(accounts[i]) );
+      accountPromises.push( token.balanceOf(accounts[i]) );
     }
 
     Promise.all(accountPromises).then(values => {
@@ -63,8 +81,8 @@ contract('LifToken', function(accounts) {
 
       assert.equal(parseBalance(values[1]), _totalSupply);
       assert.equal(web3.fromWei(parseInt(values[2])), _feesBalance);
-      assert.equal(parseInt(values[3]), _tokenPrice);
-      assert.equal(parseInt(values[4]), _tokenFee);
+      assert.equal(parseInt(values[3]), tokenPrice);
+      assert.equal(parseInt(values[4]), tokenFee);
 
       for (var x = 5; x < values.length; x++) {
         assert.equal(parseBalance(values[x]), _accounts[x-5]);
@@ -77,25 +95,9 @@ contract('LifToken', function(accounts) {
   }
 
   it("should return the correct totalSupply after construction using createTokens", function(done) {
-    return LifToken.new()
-      .then(function(token) {
-        _token = token;
-        return _token.createTokens(accounts[0], {value: web3.toWei(1, 'ether')});
-      })
+    return token.start()
       .then(function() {
-        checkValues(1000, 0, 1000000000000000, 100, [1000, 0, 0], done);
-
-      });
-  });
-
-  it("should return the correct totalSupply after construction and setPrice", function(done) {
-    return LifToken.new()
-      .then(function(token) {
-        _token = token;
-        return _token.setPrice(10000000000000000);
-      })
-      .then(function() {
-        return web3.eth.sendTransaction({from: accounts[0], to: _token.contract.address, value: web3.toWei(1, 'ether')});
+        return token.createTokens(accounts[0], { value: web3.toWei(1, 'ether') });
       })
       .then(function() {
         checkValues(100, 0, 10000000000000000, 100, [100, 0, 0], done);
@@ -103,168 +105,139 @@ contract('LifToken', function(accounts) {
   });
 
   it("shouldnt allow to buy sending an incorrect amount of ethers", function(done) {
-    return LifToken.new()
-      .then(function(token) {
-        _token = token;
-        return web3.eth.sendTransaction({from: accounts[0], to: _token.contract.address, value: web3.toWei(0.333333, 'ether')});
+    return token.start()
+      .then(function() {
+        return web3.eth.sendTransaction({from: accounts[0], to: token.contract.address, value: web3.toWei(0.333333, 'ether')});
       })
       .catch(function(error) {
         if (error.message.search('invalid JUMP') == -1) throw error;
       })
       .then(function() {
-        checkValues(0, 0, 1000000000000000, 100, [0, 0, 0], done);
+        checkValues(0, 0, 10000000000000000, 100, [0, 0, 0], done);
       });
   });
 
   it("should return the correct allowance amount after approval", function(done) {
-    return LifToken.new()
-      .then(function(token) {
-        _token = token;
-        return web3.eth.sendTransaction({from: accounts[0], to: _token.contract.address, value: web3.toWei(1, 'ether')});
+    return token.start()
+      .then(function() {
+        return web3.eth.sendTransaction({from: accounts[0], to: token.contract.address, value: web3.toWei(1, 'ether')});
       })
       .then(function() {
-        return _token.approve(accounts[1], formatBalance(100));
+        return token.approve(accounts[1], formatBalance(100));
       })
       .then(function() {
-        return _token.allowance(accounts[0], accounts[1]);
+        return token.allowance(accounts[0], accounts[1]);
       })
       .then(function(allowance) {
         assert.equal(parseBalance(allowance), 100);
-        checkValues(1000, 0, 1000000000000000, 100, [1000, 0, 0], done);
+        checkValues(100, 0, 10000000000000000, 100, [100, 0, 0], done);
       });
   });
 
   it("should return correct balances after transfer", function(done) {
-    return LifToken.new()
-      .then(function(token) {
-        _token = token;
-        return web3.eth.sendTransaction({from: accounts[0], to: _token.contract.address, value: web3.toWei(0.1, 'ether')});
+    return token.start()
+      .then(function() {
+        return web3.eth.sendTransaction({from: accounts[0], to: token.contract.address, value: web3.toWei(1, 'ether')});
       })
       .then(function() {
-        return _token.transfer(accounts[1], formatBalance(33), "");
+        return token.transfer(accounts[1], formatBalance(33), "");
       })
       .then(function() {
-        checkValues(99.67, 0.000000000000000003, 1000000000000000, 100, [67, 32.67, 0], done);
-      });
-  });
-
-  it("should return correct feesBalance after setFee and transfer", function(done) {
-    return LifToken.new()
-      .then(function(token) {
-        _token = token;
-        return _token.setFee(50);
-      })
-      .then(function() {
-        return web3.eth.sendTransaction({from: accounts[0], to: _token.contract.address, value: web3.toWei(0.1, 'ether')});
-      })
-      .then(function() {
-        return _token.transfer(accounts[1], formatBalance(33), "");
-      })
-      .then(function() {
-        checkValues(99.34, 0.000000000000000006, 1000000000000000, 50, [67, 32.34, 0], done);
+        checkValues(99.67, 0.000000000000000003, 10000000000000000, 100, [67, 32.67, 0], done);
       });
   });
 
   it("should throw an error when trying to transfer more than balance", function(done) {
-    return LifToken.new()
-      .then(function(token) {
-        _token = token;
-        return web3.eth.sendTransaction({from: accounts[0], to: _token.contract.address, value: web3.toWei(0.1, 'ether')});
+    return token.start()
+      .then(function() {
+        return web3.eth.sendTransaction({from: accounts[0], to: token.contract.address, value: web3.toWei(1, 'ether')});
       })
       .then(function() {
-        return _token.transfer(accounts[1], formatBalance(101), "");
+        return token.transfer(accounts[1], formatBalance(101), "");
       })
       .catch(function(error) {
         if (error.message.search('invalid JUMP') == -1) throw error;
       })
       .then(function() {
-        checkValues(100, 0, 1000000000000000, 100, [100, 0, 0], done);
+        checkValues(100, 0, 10000000000000000, 100, [100, 0, 0], done);
       });
   });
 
   it("should return correct balances after transfering from another account", function(done) {
-    return LifToken.new()
-      .then(function(token) {
-        _token = token;
-        return web3.eth.sendTransaction({from: accounts[0], to: _token.contract.address, value: web3.toWei(0.1, 'ether')});
+    return token.start()
+      .then(function() {
+        return web3.eth.sendTransaction({from: accounts[0], to: token.contract.address, value: web3.toWei(1, 'ether')});
       })
       .then(function() {
-        return _token.approve(accounts[1], formatBalance(100));
+        return token.approve(accounts[1], formatBalance(100));
       })
       .then(function() {
-        return _token.transferFrom(accounts[0], accounts[2], formatBalance(100), "", {from: accounts[1]});
+        return token.transferFrom(accounts[0], accounts[2], formatBalance(100), "", {from: accounts[1]});
       })
       .then(function() {
-        checkValues(99, 0.000000000000000001, 1000000000000000, 100, [0, 0, 99], done);
+        checkValues(99, 0.000000000000000001, 10000000000000000, 100, [0, 0, 99], done);
       });
   });
 
   it("should throw an error when trying to transfer more than allowed", function(done) {
-    return LifToken.new()
-      .then(function(token) {
-        _token = token;
-        return web3.eth.sendTransaction({from: accounts[0], to: _token.contract.address, value: web3.toWei(0.1, 'ether')});
+    return token.start()
+      .then(function() {
+        return web3.eth.sendTransaction({from: accounts[0], to: token.contract.address, value: web3.toWei(1, 'ether')});
       })
       .then(function() {
-        return _token.approve(accounts[1], formatBalance(99));
+        return token.approve(accounts[1], formatBalance(99));
       })
       .then(function() {
-        return _token.transferFrom(accounts[0], accounts[2], formatBalance(100), "", {from: accounts[1]});
+        return token.transferFrom(accounts[0], accounts[2], formatBalance(100), "", {from: accounts[1]});
       })
       .catch(function(error) {
         if (error.message.search('invalid JUMP') == -1) throw error;
       })
       .then(function() {
-        checkValues(100, 0, 1000000000000000, 100, [100, 0, 0], done);
+        checkValues(100, 0, 10000000000000000, 100, [100, 0, 0], done);
       });
   });
 
   it("should throw an error to avoid issue more tokens than the max supply ", function(done) {
-    return LifToken.new()
-      .then(function(token) {
-        _token = token;
-        return web3.eth.sendTransaction({from: accounts[0], to: _token.contract.address, value: web3.toWei(10001, 'ether')});
+    return token.start()
+      .then(function() {
+        return web3.eth.sendTransaction({from: accounts[0], to: token.contract.address, value: web3.toWei(100001, 'ether')});
       })
       .catch(function(error) {
         if (error.message.search('invalid JUMP') == -1) throw error;
       })
       .then(function() {
-        checkValues(0, 0, 1000000000000000, 100, [0, 0, 0], done);
+        checkValues(0, 0, 10000000000000000, 100, [0, 0, 0], done);
       });
   });
 
   it("should return correct balances after transfer and show the right JSON data transfered", function(done) {
     var _events;
-    return LifToken.new()
-      .then(function(token) {
-        _token = token;
-        events = _token.allEvents();
-        return web3.eth.sendTransaction({from: accounts[0], to: _token.contract.address, value: web3.toWei(0.1, 'ether')});
+    return token.start()
+      .then(function() {
+        _events = token.allEvents();
+        return web3.eth.sendTransaction({from: accounts[0], to: token.contract.address, value: web3.toWei(1, 'ether')});
       })
       .then(function() {
         var dataParsed = JSON.stringify({awesomeField:"AwesomeString"}).hexEncode();
-        return _token.transfer(accounts[1], formatBalance(100), dataParsed);
+        return token.transfer(accounts[1], formatBalance(100), dataParsed);
       })
       .then(function() {
-        events.get(function(error, log){
+        _events.get(function(error, log){
           assert.equal(error, null);
           var decodedObj = JSON.parse(log[0].args.data.toString().hexDecode());
           assert.equal("AwesomeString", decodedObj.awesomeField);
-          return;
+          checkValues(99, 0.000000000000000001, 10000000000000000, 100, [0, 99, 0], done);
         });
-      })
-      .then(function() {
-        checkValues(99, 0.000000000000000001, 1000000000000000, 100, [0, 99, 0], done);
       });
   });
 
   it("should return correct balances after transfer and show the right PROTOBUF data transfered", function(done) {
-    var _events, AwesomeMessage, message, encodedBuffer, encodedHex;
-    return LifToken.new()
-      .then(function(token) {
-        _token = token;
-        events = _token.allEvents();
-        return web3.eth.sendTransaction({from: accounts[0], to: _token.contract.address, value: web3.toWei(0.1, 'ether')});
+    var AwesomeMessage, message, encodedBuffer, encodedHex, _events;
+    return token.start()
+      .then(function() {
+        _events = token.allEvents();
+        return web3.eth.sendTransaction({from: accounts[0], to: token.contract.address, value: web3.toWei(0.1, 'ether')});
       })
       .then(function() {
         return protobuf.load("test/awesome.proto");
@@ -274,18 +247,15 @@ contract('LifToken', function(accounts) {
         message = AwesomeMessage.create({ awesomeField: "AwesomeString" });
         encodedBuffer = AwesomeMessage.encode(message).finish();
         encodedHex = encodedBuffer.toString().hexEncode();
-        return _token.transfer(accounts[1], 0, encodedHex);
+        return token.transfer(accounts[1], 0, encodedHex);
       })
       .then(function() {
-        events.get(function(error, log){
+        _events.get(function(error, log){
           assert.equal(error, null);
           var decodedBuffer = new Buffer(log[0].args.data.toString().hexDecode());
           assert.equal("AwesomeString", AwesomeMessage.decode(decodedBuffer).awesomeField);
-          return;
+          checkValues(10, 0, 10000000000000000, 100, [10, 0, 0], done);
         });
-      })
-      .then(function() {
-        checkValues(100, 0, 1000000000000000, 100, [100, 0, 0], done);
       });
   });
 
