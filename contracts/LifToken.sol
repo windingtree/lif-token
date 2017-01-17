@@ -92,8 +92,7 @@ contract LifToken is Ownable, StandardToken {
     event proposalExecuted(uint proposalId);
     event proposalRemoved(uint proposalId);
 
-    // Debug event
-    event Debug(uint number);
+    //Change token variables Message
     event Message(string message);
 
     // Allow only token holders
@@ -182,10 +181,8 @@ contract LifToken is Ownable, StandardToken {
 
         if (_amount > this.balance) throw;
 
-        if (_to.send(_amount)){
+        if (_to.send(_amount))
             feesBalance = safeSub(feesBalance, _amount);
-            Message('Fees Claimed');
-        }
 
     }
 
