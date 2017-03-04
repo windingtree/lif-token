@@ -211,16 +211,16 @@ contract('LifToken', function(accounts) {
   //                    Lif Token Tests                 //
   ////////////////////////////////////////////////////////
 
-  // it.only("should return the correct getPrice", function(done) {
-  //   token.startDAO()
-  //     .then(function() {
-  //       return token.getPrice(100);
-  //     })
-  //     .then(function(min, max) {
-  //       console.log(parseInt(min), parseInt(max));
-  //       done();
-  //     });
-  // });
+  it.only("should return the correct getPrice", function(done) {
+    token.startDAO()
+      .then(function() {
+        return token.getPrice(100);
+      })
+      .then(function(price) {
+        console.log(parseInt(price));
+        done();
+      });
+  });
 
   it("should return the correct totalSupply after construction using createTokens", function(done) {
     token.startCrowdSale(web3.toWei(0.1, 'ether'))

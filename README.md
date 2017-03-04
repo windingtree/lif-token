@@ -14,6 +14,26 @@ npm install zeppelin-solidity@1.0.0
 npm install
 ```
 
+## Contract lifecycle
+
+By lifecycle we mean how the status changes, under what conditions, who can do it and what you can do each status.
+
+1.- First the contract is deployed on status 0, where teh deployer specify the base proposal fee, max supply and proposal blocks wait.
+  ```
+  // LifToken constructor
+  function LifToken(uint _baseProposalFee, uint _maxSupply, uint _proposalBlocksWait) {
+      ...
+  }
+  ```
+2.- The crowdsale starts, this funciton can be called only by the owner of the contract. Here the owner need to specify the starting price and the tokens can start to be sold.
+  ```
+  function LifToken(uint _tokenPrice) { ... }
+  ```
+3.- Once the crowdsale ends the owner of teh contract can start the DAO, here the organization will take control of the contract.
+  ```
+  function startDAO() { ... }
+  ```
+
 ## Token Methods
 
 ### transfer
@@ -26,7 +46,7 @@ Returns: bool, Success of the operation.
 
 ### transferFrom
 
-Transfer tokens from one address to another with the allowance of tokens required between addresses.
+Transfer  an allowed amount of tokens from one address to another.
 ```
 transferFrom(address _from, address _to, uint _value, string _data) => (bool success)
 ```
@@ -42,15 +62,15 @@ Returns: uint, balance of the address.
 
 ### approve
 
-Approve the transfer of tokens to an address.
+Allow an address to spent a certain amount of tokens.
 ```
-allowance(address _spender, uint _value) => (bool success)
+approve(address _spender, uint _value) => (bool success)
 ```
 Returns: bool, Success of the operation.
 
 ### allowance
 
-Get the alolowance of tokens to be transfered between two addreses.
+Get the amounts of tokens allowed to be transfered between addresses.
 ```
 allowance(address _owner, address _spender) => (uint remaining)
 ```
@@ -63,33 +83,19 @@ In order for the DAO to work the deployer of the contract has to set the minimun
 Every DAO proposal will be an action type, depend on the action type the amounts of votes that will be required by the contract to execute the proposal. Every function on Ethereum has a signature, data,  value.
 The signature is what the contract need to know what function execute, the data is the data that will be sent to this function and the value are the ethers that would be transferred on the function call, each function call is a transaction on the blockhain.
 
-### Edit contract variables
+### Standard DAO functions
 
-This methods can be called only internally, in order to do that a token holder needs to create a proposal and reach the necessary votes to be executed.
-
-```
-setPrice(uint256)
-setFee(uint256)
-setBaseProposalFee(uint256)
-setProposalAmountFee(uint256)
-setMaxSupply(uint256)
-setProposalBlocksWait(uint256)
-```
-
-### Claim fees
-
-This method will send an amount of ethers gathered as fee to an address. It needs an approved DAO proposal to be executed.
+This functions can be called only internally, in order to do that a token holder needs to create a proposal and reach the necessary votes to be executed.
 
 ```
-claimFees(address, uint256) // 0 = Created, 1 = Stoped, 2 = Normal, 3 = Migrating.
-```
-
-### Set Status
-
-This method change the status of the contract. It needs an approved DAO proposal to be executed.
-
-```
-claimFees(address, uint256)
+setPrice(uint _tokenPrice)
+setBaseProposalFee(uint _baseProposalFee)
+setProposalBlocksWait(uint _proposalBlocksWait)
+sendEther(address _to, uint _amount)
+setStatus(uint _newStatus)
+changeDaoAction(address _target, uint _balanceNeeded, bytes4 _signature)
+removeDAOAction(address _target, bytes4 _signature)
+addDAOAction(address _target, uint _balanceNeeded, bytes4 _signature)
 ```
 
 ### New Proposal
@@ -104,32 +110,13 @@ Vote a proposal for yes or no using the proposal ID.
 ```
 vote( uint _proposalID, bool _vote )
 ```
-### CheckProposal
-
-It checks if the maxBlocksWait has been reached on the proposal, if so the proposal is removed. If the maxBlocksWait wanst reached yet and the proposal have the necessary votes it gets executed.
-```
-checkProposal( uint _proposalID )
-```
 ### Get Proposal Vote
 
 It returns the balance of the voter in the especified position on the proposal.
 ```
 getProposalVote(uint _proposalID, uint _position)
 ```
-### Build Min Votes
 
-This method needs to be called by the deployer of the contract to set the minimun and necessary votes to exeucte the DAO proposals.
-
-```
-buildMinVotes(address _target, uint _votesNeeded, bytes4 _signature)
-```
-### Start DAO
-
-This methos start the DAO and change his status.
-
-```
-start()
-```
 
 ## Test
 
