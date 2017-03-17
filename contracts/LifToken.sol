@@ -36,6 +36,22 @@ contract LifToken is Ownable, StandardToken {
     Proposal[] public proposals;
     uint public totalProposals;
 
+    // Minimun votes needed to create a proposal
+    uint public minProposalVotes;
+
+    // DAO Votes
+    uint public totalVotes;
+    mapping(address => uint) public sentTxVotes;
+    mapping(address => uint) public receivedTxVotes;
+
+    //Votes increment
+    uint public votesIncrementSent;
+    uint public votesIncrementReceived;
+
+    // Transactions
+    mapping(address => uint) public txsSent;
+    mapping(address => uint) public txsReceived;
+
     // Contract status
     // 0 = Stoped
     // 1 = Crowdsale
@@ -56,7 +72,7 @@ contract LifToken is Ownable, StandardToken {
     // Structure of the DAOActions
     struct DAOAction {
         address target;
-        uint balanceNeeded;
+        uint votesNeeded;
         bytes4 signature;
     }
 
@@ -69,11 +85,10 @@ contract LifToken is Ownable, StandardToken {
         uint status; // 0 = Declined, 1 = Accepted, 2 = Active
         uint creationBlock;
         uint maxBlock;
-        uint executionBlock;
-        uint approvalBalance;
+        uint agePerBlock;
+        uint votesNeeded;
         bytes actionData;
         uint totalVotes;
-        mapping (uint => address) voters;
         mapping (address => uint) votes; // 0 = Vote not done, 1 = Positive, 2 = Negative.
     }
 
@@ -113,11 +128,14 @@ contract LifToken is Ownable, StandardToken {
     }
 
     // LifToken constructor
-    function LifToken(uint _baseProposalFee, uint _maxSupply, uint _proposalBlocksWait) {
+    function LifToken(uint _baseProposalFee, uint _maxSupply, uint _proposalBlocksWait, uint _votesIncrementSent, uint _votesIncrementReceived, uint _minProposalVotes) {
 
         baseProposalFee = _baseProposalFee;
         maxSupply = _maxSupply;
         proposalBlocksWait = _proposalBlocksWait;
+        votesIncrementReceived = _votesIncrementReceived;
+        votesIncrementSent = _votesIncrementSent;
+        minProposalVotes = _minProposalVotes;
 
         totalProposals = 0;
         status = 0;
@@ -150,24 +168,29 @@ contract LifToken is Ownable, StandardToken {
 
     }
 
+    function setPrice(uint _tokenPrice) onlyOwner() returns (bool) {
+        tokenPrice = _tokenPrice;
+        Message('Price changed');
+        return true;
+    }
     function getPrice(uint _tokens) constant returns (uint) {
         return safeMul(_tokens, tokenPrice);
     }
 
     // Change contract variable functions
-    function setPrice(uint _tokenPrice) fromDAO() onStatus(2) returns (bool) {
-        tokenPrice = _tokenPrice;
-        Message('Price Changed');
-        return true;
-    }
     function setBaseProposalFee(uint _baseProposalFee) fromDAO() onStatus(2) returns (bool) {
         baseProposalFee = _baseProposalFee;
-        Message('Base Proposal Fee Changed');
+        Message('Base proposal fee changed');
+        return true;
+    }
+    function setMinProposalVotes(uint _minProposalVotes) fromDAO() onStatus(2) returns (bool) {
+        minProposalVotes = _minProposalVotes;
+        Message('Min proposal votes changed');
         return true;
     }
     function setProposalBlocksWait(uint _proposalBlocksWait) fromDAO() onStatus(2) returns (bool) {
         proposalBlocksWait = _proposalBlocksWait;
-        Message('Proposal Blocks Wait Changed');
+        Message('Proposal blocks wait changed');
         return true;
     }
 
@@ -192,6 +215,16 @@ contract LifToken is Ownable, StandardToken {
         if (_value > 0) {
             balances[msg.sender] = safeSub(balances[msg.sender], _value);
             balances[_to] = safeAdd(balances[_to], _value);
+            if ((txsSent[msg.sender] < (votesIncrementSent**sentTxVotes[msg.sender])) && (safeAdd(txsSent[msg.sender],1) >= (votesIncrementSent**sentTxVotes[msg.sender]))){
+              sentTxVotes[msg.sender] ++;
+              totalVotes ++;
+            }
+            if ((txsReceived[_to] < (votesIncrementReceived**receivedTxVotes[_to])) && (safeAdd(txsReceived[_to],1) >= (votesIncrementReceived**receivedTxVotes[_to]))){
+              receivedTxVotes[_to] ++;
+              totalVotes ++;
+            }
+            txsSent[msg.sender] ++;
+            txsReceived[_to] ++;
         }
 
         LifTransfer(msg.sender, _to, _value, _data);
@@ -207,6 +240,16 @@ contract LifToken is Ownable, StandardToken {
             balances[_from] = safeSub(balances[_from], _value);
             balances[_to] = safeAdd(balances[_to], _value);
             allowed[_from][msg.sender] = safeSub(_allowance, _value);
+            if ((txsSent[msg.sender] < (votesIncrementSent**sentTxVotes[msg.sender])) && (safeAdd(txsSent[msg.sender],1) >= (votesIncrementSent**sentTxVotes[msg.sender]))){
+              sentTxVotes[msg.sender] ++;
+              totalVotes ++;
+            }
+            if ((txsReceived[_to] < (votesIncrementReceived**receivedTxVotes[_to])) && (safeAdd(txsReceived[_to],1) >= (votesIncrementReceived**receivedTxVotes[_to]))){
+              receivedTxVotes[_to] ++;
+              totalVotes ++;
+            }
+            txsSent[msg.sender] ++;
+            txsReceived[_to] ++;
         }
 
         LifTransfer(msg.sender, _to, _value, _data);
@@ -216,26 +259,32 @@ contract LifToken is Ownable, StandardToken {
     }
 
     // Create a new proposal
-    function newProposal( address _target, uint _value, string _description, uint _executionBlock, bytes4 _signature, bytes _actionData ) payable onlyTokenHolder() returns (bool success) {
+    function newProposal( address _target, uint _value, string _description, uint _agePerBlock, bytes4 _signature, bytes _actionData ) payable onlyTokenHolder() returns (bool success) {
 
+        // Check sender necessary votes
+        if (getVotes(msg.sender) < minProposalVotes) throw;
+
+        // Check proposal fee
         if (msg.value < baseProposalFee) throw;
 
         totalProposals ++;
         uint _id = totalProposals;
 
         // Get the needed votes % for action approval
-        uint _approvalBalance = 0;
+        uint votesNeeded = 0;
 
         for (uint i = 1; i < DAOActions.length; i ++)
-            if ((DAOActions[i].target == _target) && (compareSignature(DAOActions[i].signature, _signature)))
-                _approvalBalance = DAOActions[i].balanceNeeded;
+            if ((DAOActions[i].target == _target) && (compareSignature(DAOActions[i].signature, _signature))){
+                uint votesPercentage = divide(totalVotes, 100, 1);
+                votesNeeded = divide( safeMul(votesPercentage, DAOActions[i].votesNeeded) , 100, 1);
+            }
 
-        // If DAOAction exists _approvalBalance will be more than cero, proposal is created.
-        if (_approvalBalance > 0) {
+        // If DAOAction exists votesNeeded will be more than cero, proposal is created.
+        if (votesNeeded > 0) {
             uint pos = proposals.length++;
             uint _blocksWait = safeAdd(block.number, proposalBlocksWait);
-            proposals[pos] = Proposal(_target, _id, _value, _description, 2, block.number, _blocksWait, _executionBlock, _approvalBalance, _actionData, 1);
-            proposals[pos].voters[ proposals[pos].totalVotes ] = msg.sender;
+            uint senderVotes = getVotes(msg.sender);
+            proposals[pos] = Proposal(_target, _id, _value, _description, 2, block.number, _blocksWait, _agePerBlock, votesNeeded, _actionData, senderVotes);
             proposals[pos].votes[msg.sender] = 1;
             proposalAdded(_id);
         }
@@ -257,12 +306,13 @@ contract LifToken is Ownable, StandardToken {
         if (p.status != 2) throw;
 
         // Add user vote
-        if (_vote)
+        if (_vote){
             p.votes[msg.sender] = 1;
-        else
+            uint senderVotes = getVotes(msg.sender);
+            p.totalVotes = safeAdd(p.totalVotes, senderVotes);
+        } else {
             p.votes[msg.sender] = 2;
-        p.totalVotes ++;
-        p.voters[p.totalVotes] = msg.sender;
+        }
 
         VoteAdded(_proposalID);
 
@@ -270,20 +320,8 @@ contract LifToken is Ownable, StandardToken {
 
     }
 
-    // Functions to get the amount f votes on a proposal
-    function getProposalVote(uint _proposalID, uint _position) constant returns (address voter, uint balance, uint vote) {
-
-        //Get the proposal using proposalsIndex
-        Proposal p = proposals[_proposalID];
-
-        if (_position > p.totalVotes) throw;
-
-        return (p.voters[_position], balances[ p.voters[_position] ], p.votes[ p.voters[_position] ]);
-
-    }
-
     // Execute a proporal, only the owner can make this call, the check of the votes is optional because it can ran out of gas.
-    function executeProposal(uint _proposalID, bool checkVotes) onlyOwner() onStatus(2) returns (bool success){
+    function executeProposal(uint _proposalID) onlyTokenHolder() onStatus(2) returns (bool success){
 
         // Get the proposal using proposalsIndex
         Proposal p = proposals[_proposalID];
@@ -291,40 +329,41 @@ contract LifToken is Ownable, StandardToken {
         // If proposal reach maxBlocksWait throw.
         if (p.maxBlock < block.number) throw;
 
-        // The votes have to be checked recursively, this would be option since it can rans out of gas.
-        if (checkVotes){
-            // Calculate the total votes
-            uint totalVotes = 0;
-            for (uint i = 1; i <= p.totalVotes; i ++){
-                if (p.votes[ p.voters[i] ] == 1){
-                    totalVotes = safeAdd(totalVotes, balances[p.voters[i]]);
-                }
-            }
+        // If proposal is not active throw.
+        if (p.status != 2) throw;
 
-            // See if proposal reached the needed votes
-            if (totalVotes <= p.approvalBalance){
-                return false;
-            }
-        }
+        // Calculate the needed votes
+        uint proposalAge = safeSub(block.number, p.creationBlock);
+        uint ageVotes = 0;
+        if (proposalAge > p.agePerBlock)
+            ageVotes = safeDiv(proposalAge, p.agePerBlock);
+        uint votesNeeded = safeAdd(p.votesNeeded, ageVotes);
 
-        // Change the status of the proposal to accepted
-        p.status = 1;
-
-        if (p.target.call(p.actionData))
-            return true;
-        else
+        // See if proposal reached the needed votes
+        if (p.totalVotes <= p.votesNeeded){
             return false;
+        } else {
+
+          // Change the status of the proposal to accepted
+          p.status = 1;
+
+          if (p.target.call(p.actionData))
+              return true;
+          else
+              return false;
+
+        }
 
     }
 
     // Execute a proporal, only the owner can make this call.
-    function removeProposal(uint _proposalID) onlyOwner() onStatus(2) returns (bool success){
-
-        // If proposal didnt reach maxBlocksWait throw.
-        if (p.maxBlock > block.number) throw;
+    function removeProposal(uint _proposalID) onlyTokenHolder() onStatus(2) returns (bool success){
 
         // Get the proposal using proposalsIndex
         Proposal p = proposals[_proposalID];
+
+        // If proposal didnt reach maxBlocksWait throw.
+        if (p.maxBlock > block.number) throw;
 
         // Change the status of the proposal to declined
         p.status = 0;
@@ -334,11 +373,11 @@ contract LifToken is Ownable, StandardToken {
     }
 
     // Functions to edit, add and remove DAOActions
-    function changeDaoAction(address _target, uint _balanceNeeded, bytes4 _signature) fromDAO() onStatus(2) returns (bool){
+    function changeDaoAction(address _target, uint _votesNeeded, bytes4 _signature) fromDAO() onStatus(2) returns (bool){
 
         for (uint i = 1; i < DAOActions.length; i ++)
             if ((DAOActions[i].target == _target) && (compareSignature(DAOActions[i].signature, _signature))){
-                DAOActions[i].balanceNeeded = _balanceNeeded;
+                DAOActions[i].votesNeeded = _votesNeeded;
                 return true;
             }
 
@@ -356,12 +395,12 @@ contract LifToken is Ownable, StandardToken {
         return false;
 
     }
-    function addDAOAction(address _target, uint _balanceNeeded, bytes4 _signature) fromDAO() returns (bool){
+    function addDAOAction(address _target, uint _votesNeeded, bytes4 _signature) fromDAO() returns (bool){
 
         if (((status == 0) && (msg.sender == owner)) || (status == 2)) throw;
 
         uint pos = DAOActions.length ++;
-        DAOActions[pos] = DAOAction(_target, _balanceNeeded, _signature);
+        DAOActions[pos] = DAOAction(_target, _votesNeeded, _signature);
 
         return true;
     }
@@ -378,9 +417,9 @@ contract LifToken is Ownable, StandardToken {
 
     // As soon after the contract is created the deployer can set the DAOActions using buildMinVotes
     // Once the min votes are all configured the deployer can start the DAO
-    function buildMinVotes(address _target, uint _balanceNeeded, bytes4 _signature) onlyOwner() external onStatus(1){
+    function buildMinVotes(address _target, uint _votesNeeded, bytes4 _signature) onlyOwner() external onStatus(1){
         uint pos = DAOActions.length ++;
-        DAOActions[pos] = DAOAction(_target, _balanceNeeded, _signature);
+        DAOActions[pos] = DAOAction(_target, _votesNeeded, _signature);
     }
     function startDAO() external onlyOwner() onStatus(1){
         status = 2;
@@ -394,6 +433,21 @@ contract LifToken is Ownable, StandardToken {
             if (_a[i] != _b[i])
                 return false;
         return true;
+    }
+
+    // Divide function to calculate needed votes
+    function divide(uint numerator, uint denominator, uint precision) internal returns (uint) {
+       // Check safe-to-multiply here
+      uint _numerator  = numerator * 10 ** (precision+1);
+      // Rounding of last digit
+      uint _quotient =  ((_numerator / denominator) + 5) / 10;
+      return ( _quotient);
+    }
+
+    // Function to get the total votes of an address
+    function getVotes(address voter) constant returns (uint){
+      uint senderVotes = safeAdd(sentTxVotes[voter], receivedTxVotes[voter]);
+      return senderVotes;
     }
 
 }

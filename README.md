@@ -10,7 +10,6 @@ Lif is also a DAO, the token holders can create proposals to change token variab
 ```sh
 npm install ethereumjs-testrpc -g
 npm install truffle -g
-npm install zeppelin-solidity@1.0.0
 npm install
 ```
 
@@ -18,18 +17,18 @@ npm install
 
 By lifecycle we mean how the status changes, under what conditions, who can do it and what you can do each status.
 
-1.- First the contract is deployed on status 0, where teh deployer specify the base proposal fee, max supply and proposal blocks wait.
+1.- First the contract is deployed on status 0, where teh deployer specify the base proposal fee, max supply, proposal blocks wait, exponential increment of votes rewards and minimun votes needed to create a proposal.
   ```
   // LifToken constructor
-  function LifToken(uint _baseProposalFee, uint _maxSupply, uint _proposalBlocksWait) {
+  function LifToken(uint _baseProposalFee, uint _maxSupply, uint _proposalBlocksWait, uint _votesIncrementSent, uint _votesIncrementReceived, uint _minProposalVotes) {
       ...
   }
   ```
-2.- The crowdsale starts, this funciton can be called only by the owner of the contract. Here the owner need to specify the starting price and the tokens can start to be sold.
+2.- This funciton can be called only by the owner of the contract. Here the owner need to specify the starting price and the tokens can start to be sold.
   ```
-  function LifToken(uint _tokenPrice) { ... }
+  function startCrowdSale(uint _tokenPrice) { ... }
   ```
-3.- Once the crowdsale ends the owner of teh contract can start the DAO, here the organization will take control of the contract.
+3.- Once the crowdsale ends the owner of the contract can start the DAO, here the organization will take control of the contract.
   ```
   function startDAO() { ... }
   ```
@@ -88,7 +87,6 @@ The signature is what the contract need to know what function execute, the data 
 This functions can be called only internally, in order to do that a token holder needs to create a proposal and reach the necessary votes to be executed.
 
 ```
-setPrice(uint _tokenPrice)
 setBaseProposalFee(uint _baseProposalFee)
 setProposalBlocksWait(uint _proposalBlocksWait)
 sendEther(address _to, uint _amount)
@@ -102,7 +100,7 @@ addDAOAction(address _target, uint _balanceNeeded, bytes4 _signature)
 
 Creates a new proposal on the token, the token holder that creates the proposal needs to have the more than the fee charged for the proposal creation.
 ```
-newProposal( address _target, uint _value, string _description, uint _executionBlock, bytes4 _signature, bytes _actionData )
+newProposal( address _target, uint _value, string _description, uint _agePerBlock, bytes4 _signature, bytes _actionData )
 ```
 ### Vote
 
@@ -110,16 +108,9 @@ Vote a proposal for yes or no using the proposal ID.
 ```
 vote( uint _proposalID, bool _vote )
 ```
-### Get Proposal Vote
-
-It returns the balance of the voter in the especified position on the proposal.
-```
-getProposalVote(uint _proposalID, uint _position)
-```
-
 
 ## Test
 
 To test the token first run `npm run testrpc` and this will create a testnet locally with three acocunts with a lot of balance.
 
-After testrpc starts run `truffle test`.
+After testrpc starts run `npm test` or `truffle test`.
