@@ -1,8 +1,8 @@
-pragma solidity ^0.4.4;
+pragma solidity ^0.4.8;
 
 
-import "./Multisig.sol";
-import "./Shareable.sol";
+import "./ownership/Multisig.sol";
+import "./ownership/Shareable.sol";
 import "./DayLimit.sol";
 
 
@@ -13,26 +13,16 @@ import "./DayLimit.sol";
  * Wallet(w).from(anotherOwner).confirm(h);
  */
 contract MultisigWallet is Multisig, Shareable, DayLimit {
-  // TYPES
 
-  // Transaction structure to remember details of transaction lest it need be saved for a later call.
   struct Transaction {
     address to;
     uint value;
     bytes data;
   }
 
-
-  // CONSTRUCTOR
-
-  // just pass on the owner array to the multiowned and
-  // the limit to daylimit
-  function MultisigWallet(address[] _owners, uint _required, uint _daylimit)
-    Shareable(_owners, _required)
+  function MultisigWallet(address[] _owners, uint _required, uint _daylimit)       
+    Shareable(_owners, _required)        
     DayLimit(_daylimit) { }
-
-
-  // METHODS
 
   // kills the contract sending everything to `_to`.
   function kill(address _to) onlymanyowners(sha3(msg.data)) external {
@@ -81,6 +71,14 @@ contract MultisigWallet is Multisig, Shareable, DayLimit {
       delete txs[_h];
       return true;
     }
+  }
+
+  function setDailyLimit(uint _newLimit) onlymanyowners(sha3(msg.data)) external {
+    _setDailyLimit(_newLimit);
+  }
+
+  function resetSpentToday() onlymanyowners(sha3(msg.data)) external {
+    _resetSpentToday();
   }
 
 
