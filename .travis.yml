@@ -7,6 +7,7 @@ node_js:
 before_install:
   - npm i -g jshint
 script:
+  - set -e
   - npm run testrpc&
   - jshint test/.js
   - npm test
