@@ -1,7 +1,7 @@
 pragma solidity ^0.4.8;
 
 import "./zeppelin/token/StandardToken.sol";
-import "./zeppelin/Ownable.sol";
+import "./zeppelin/ownership/Ownable.sol";
 
 /*
  * Líf Token

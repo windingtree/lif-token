@@ -5,10 +5,9 @@ language: node_js
 node_js:
   - "6"
 before_install:
-  - npm i -g ethereumjs-testrpc
-  - npm i -g truffle
   - npm i -g jshint
 script:
+  - set -e
   - npm run testrpc&
-  - jshint test/.js
+  - jshint --show-non-errors test/*.js
   - npm test
