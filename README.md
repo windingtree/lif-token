@@ -8,8 +8,6 @@ Lif is also a DAO, the token holders can create proposals to change token variab
 ## Install
 
 ```sh
-npm install ethereumjs-testrpc -g
-npm install truffle -g
 npm install
 ```
 
