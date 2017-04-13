@@ -25,6 +25,10 @@
     "solc": "^0.4.9",
     "zeppelin-solidity": "^1.0.1"
   },
+  "devDependencies": {
+    "ethereumjs-testrpc": "3.0.3",
+    "truffle": "3.2.1"
+  },
   "jshintConfig": {
     "esversion": 6
   }
