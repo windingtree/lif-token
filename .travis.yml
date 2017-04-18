@@ -8,6 +8,5 @@ before_install:
   - npm i -g jshint
 script:
   - set -e
-  - npm run testrpc&
   - jshint --show-non-errors test/*.js
   - npm test

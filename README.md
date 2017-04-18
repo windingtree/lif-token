@@ -111,6 +111,4 @@ vote( uint _proposalID, bool _vote )
 
 ## Test
 
-To test the token first run `npm run testrpc` and this will create a testnet locally with three acocunts with a lot of balance.
-
-After testrpc starts run `npm test` or `truffle test`.
+Run `npm test`
