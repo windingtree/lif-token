@@ -171,7 +171,7 @@ module.exports = {
 
   getStage: async function(token, number) {
     let stageData = await token.crowdsaleStages.call(number);
-    console.log('[Stage '+number+'] Blocks: '+parseInt(stageData[0])+' - '+parseInt(stageData[1]) +', Start Price: '+this.toEther(stageData[2])+', ChangePerBlock: '+parseInt(stageData[3])+'/'+this.toEther(stageData[4])+' ETH, MinCap: '+this.toEther(stageData[5])+' ETH, MaxCap: '+this.toEther(stageData[6])+' ETH, Total Tokens: '+parseInt(stageData[7])+', Presale Discount: '+parseInt(stageData[8])+', Presale ETH Raised: '+this.toEther(stageData[9])+', Crowdsale Raised: '+this.toEther(stageData[10])+'ETH, Tokens Sold: '+parseInt(stageData[11])+', Final Price: '+this.toEther(stageData[12])+'ETH, Status: '+parseInt(stageData[13]));
+    console.log('[Stage '+number+'] Blocks: '+parseInt(stageData[0])+' - '+parseInt(stageData[1]) +', Start Price: '+this.toEther(stageData[2])+', ChangePerBlock: '+parseInt(stageData[3])+'/'+this.toEther(stageData[4])+' ETH, MinCap: '+this.toEther(stageData[5])+' ETH, MaxCap: '+this.toEther(stageData[6])+' ETH, Total Tokens: '+parseInt(stageData[7])+', Presale Discount: '+parseInt(stageData[8])+', Presale ETH Raised: '+this.toEther(stageData[10])+', Crowdsale Raised: '+this.toEther(stageData[11])+'ETH, Tokens Sold: '+parseInt(stageData[12])+', Final Price: '+this.toEther(stageData[13])+'ETH');
     return stageData;
   },
 
@@ -179,7 +179,7 @@ module.exports = {
     var startBlock = web3.eth.blockNumber;
     var endBlock = web3.eth.blockNumber+5;
     var targetBalance = parseFloat(total*price);
-    await token.addCrowdsaleStage(startBlock, endBlock, price, 10, web3.toWei(0.1, 'ether'), 1, targetBalance, total, 40);
+    await token.addCrowdsaleStage(startBlock, endBlock, price, 10, web3.toWei(0.1, 'ether'), 1, targetBalance, total, 0, 0);
     if (balances[0] > 0)
       await token.submitBid(accounts[1], balances[0], { value: balances[0]*price, from: accounts[1] });
     if (balances[1] > 0)
@@ -192,12 +192,9 @@ module.exports = {
       await token.submitBid(accounts[5], balances[4], { value: balances[4]*price, from: accounts[5] });
     await this.waitToBlock(endBlock, accounts);
     await token.checkCrowdsaleStage(0);
-    let [auctionEnded, tokenStatus] = await Promise.all([
-      token.crowdsaleStages.call(0),
-      token.status()
-    ]);
+    let auctionEnded = await token.crowdsaleStages.call(0);
+    let tokenStatus = await token.status();
     assert.equal(parseInt(tokenStatus), 4);
-    assert.equal(parseFloat(auctionEnded[13]), 3);
     if (balances[0] > 0)
       await token.distributeTokens(0, accounts[1], false, { from: accounts[0] });
     if (balances[1] > 0)
