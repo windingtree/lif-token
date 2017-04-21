@@ -124,13 +124,6 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
       string name;
     }
 
-    // Structure of the Discount
-    struct Discount {
-      uint stage;
-      uint weiAmount;
-      uint discount;
-    }
-
     // Edit of the ERC20 token events to support data argument
     event TransferData(address indexed from, address indexed to, uint value, string data);
 
@@ -177,12 +170,6 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
     }
 
-    // As soon after the contract is created the deployer can set the actionsDAO using buildMinVotes
-    // Once the min votes are all configured the deployer can start the DAO
-    function buildMinVotes(address target, uint votesNeeded, bytes4 signature) external onlyOwner() onStatus(2,0) {
-      actionsDAO[target][signature] = votesNeeded;
-    }
-
     // Add a token payment that can be claimed after certain block from an address
     function addFuturePayment(address owner, uint afterBlock, uint tokens, string name) external onlyOwner() onStatus(2,0) {
       uint pos = futurePayments.length ++;
@@ -192,8 +179,13 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
     // Add an address that would be able to spend certain amounts of ethers with discount on a stage
     function addDiscount(address target, uint stage, uint amount) external onlyOwner() onStatus(2,0) {
+
+      if (crowdsaleStages[stage].presaleDiscount == 0)
+        throw;
+
       crowdsaleStages[stage].presalePayments[target] = amount;
       crowdsaleStages[stage].totalPresaleWei = safeAdd(crowdsaleStages[stage].totalPresaleWei, amount);
+
     }
 
     // Add a crowdsale stage
@@ -229,23 +221,25 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     // See if the status of a crowdsale stage and the token status can be changed
     function checkCrowdsaleStage(uint stage) external onlyOwner() {
 
-      if ((crowdsaleStages[stage].startBlock <= block.number) && (block.number <= crowdsaleStages[stage].endBlock) && (crowdsaleStages[stage].weiRaised < crowdsaleStages[stage].minCap)){
-        crowdsaleStages[stage].status = 1;
-      } else if ((crowdsaleStages[stage].startBlock <= block.number) && (block.number <= crowdsaleStages[stage].endBlock) && (crowdsaleStages[stage].weiRaised > crowdsaleStages[stage].minCap)) {
-        crowdsaleStages[stage].status = 2;
-      } else if ((crowdsaleStages[stage].weiRaised >= crowdsaleStages[stage].minCap) && (block.number > crowdsaleStages[stage].endBlock)) {
+      if (block.number <= crowdsaleStages[stage].endBlock)
+        throw;
+
+      if (crowdsaleStages[stage].weiRaised >= crowdsaleStages[stage].minCap) {
         crowdsaleStages[stage].status = 3;
-        maxSupply = safeSub(maxSupply, safeSub(crowdsaleStages[stage].totalTokens, crowdsaleStages[stage].tokensSold));
-      } else if ((crowdsaleStages[stage].weiRaised <= crowdsaleStages[stage].minCap) && (block.number > crowdsaleStages[stage].endBlock)) {
+        status = 4;
+        maxSupply = safeSub(maxSupply, crowdsaleStages[stage].totalTokens);
+        maxSupply = safeAdd(maxSupply, crowdsaleStages[stage].tokensSold);
+        if (crowdsaleStages[stage].presaleDiscount > 0) {
+          uint presaleTokens = safeDiv(crowdsaleStages[stage].lastPrice, 100);
+          presaleTokens = safeMul(presaleTokens, safeSub(100, crowdsaleStages[stage].presaleDiscount));
+          presaleTokens = safeDiv(crowdsaleStages[stage].totalPresaleWei, presaleTokens);
+          maxSupply = safeAdd(maxSupply, presaleTokens);
+        }
+      } else if (crowdsaleStages[stage].weiRaised < crowdsaleStages[stage].minCap) {
         crowdsaleStages[stage].status = 4;
+        status = 4;
         maxSupply = safeSub(maxSupply, crowdsaleStages[stage].totalTokens);
       }
-
-      status = 4;
-      //Also check if the token status is on crowdsale
-      for (uint i = 0; i < crowdsaleStages.length; i ++)
-        if ((crowdsaleStages[i].startBlock <= block.number) && (block.number <= crowdsaleStages[i].endBlock) && (status != 3))
-          status = 3;
 
     }
 
@@ -259,60 +253,44 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
     }
 
-    // Function that allows a buyer to claim the ether change of a bid at a certain stage
-    function claimTokensChange(uint stage) external onStatus(4,0) {
+    // Function that allows the owner to distribute the tokens after a crowdsale
+    function distributeTokens(uint stage, address buyer, bool discount) external onStatus(4,0) onlyOwner() {
 
-      if ((crowdsaleStages[stage].status != 1) || (crowdsaleStages[stage].tokens[msg.sender] == 0))
-        throw;
+      if (discount){
 
-      uint weiChange = safeMul(crowdsaleStages[stage].tokens[msg.sender], crowdsaleStages[stage].lastPrice);
-      weiChange = safeSub(crowdsaleStages[stage].weiPayed[msg.sender], weiChange);
+        if (crowdsaleStages[stage].presalePayments[buyer] == 0)
+          throw;
 
-      if (weiChange > 0){
-        safeSend(msg.sender, weiChange);
-        crowdsaleStages[stage].weiPayed[msg.sender] = safeSub(crowdsaleStages[stage].weiPayed[msg.sender], weiChange);
+        uint tokens = safeDiv(crowdsaleStages[stage].lastPrice, 100);
+        tokens = safeMul(tokens, safeSub(100, crowdsaleStages[stage].presaleDiscount));
+        tokens = safeDiv(crowdsaleStages[stage].presalePayments[buyer], tokens);
+
+        totalSupply = safeAdd(totalSupply, tokens);
+        crowdsaleStages[stage].tokensSold = safeAdd(crowdsaleStages[stage].tokensSold, tokens);
+
+        tokens = safeMul(tokens, LIF_DECIMALS);
+        balances[buyer] = safeAdd(balances[buyer], tokens);
+
+        crowdsaleStages[stage].totalPresaleWei = safeSub(crowdsaleStages[stage].totalPresaleWei, crowdsaleStages[stage].presalePayments[msg.sender]);
+        crowdsaleStages[stage].presalePayments[buyer] = 0;
+
+      } else {
+
+        if (crowdsaleStages[stage].tokens[buyer] == 0)
+          throw;
+
+        uint formatedBalance = safeMul(crowdsaleStages[stage].tokens[buyer], LIF_DECIMALS);
+        uint weiChange = safeMul(crowdsaleStages[stage].tokens[buyer], crowdsaleStages[stage].lastPrice);
+        weiChange = safeSub(crowdsaleStages[stage].weiPayed[buyer], weiChange);
+
+        totalSupply = safeAdd(totalSupply, crowdsaleStages[stage].tokens[buyer]);
+        balances[buyer] = safeAdd(balances[buyer], formatedBalance);
+
+        safeSend(buyer, weiChange);
+
+        crowdsaleStages[stage].weiPayed[buyer] = 0;
+        crowdsaleStages[stage].tokens[buyer] = 0;
       }
-
-    }
-
-    // Function that allows a buyer to claim the tokens he bought at a certain stage
-    function claimTokens(uint stage) external onStatus(4,0) {
-
-      if ((crowdsaleStages[stage].status != 3) || (crowdsaleStages[stage].tokens[msg.sender] == 0))
-        throw;
-
-      uint formatedBalance = safeMul(crowdsaleStages[stage].tokens[msg.sender], LIF_DECIMALS);
-      uint weiChange = safeMul(crowdsaleStages[stage].tokens[msg.sender], crowdsaleStages[stage].lastPrice);
-      weiChange = safeSub(crowdsaleStages[stage].weiPayed[msg.sender], weiChange);
-
-      totalSupply = safeAdd(totalSupply, crowdsaleStages[stage].tokens[msg.sender]);
-      balances[msg.sender] = safeAdd(balances[msg.sender], formatedBalance);
-
-      safeSend(msg.sender, weiChange);
-
-      crowdsaleStages[stage].weiPayed[msg.sender] = 0;
-      crowdsaleStages[stage].tokens[msg.sender] = 0;
-
-    }
-
-    // Function that allows a buyer to claim the tokens he bought at a certain stage
-    function claimTokensDiscount(uint stage) external onStatus(4,0) {
-
-      if ((crowdsaleStages[stage].status != 3) || (crowdsaleStages[stage].presalePayments[msg.sender] == 0))
-        throw;
-
-      uint tokens = safeDiv(crowdsaleStages[stage].lastPrice, 100);
-      tokens = safeMul(tokens, safeSub(100, crowdsaleStages[stage].presaleDiscount));
-      tokens = safeDiv(crowdsaleStages[stage].presalePayments[msg.sender], tokens);
-
-      totalSupply = safeAdd(totalSupply, tokens);
-      crowdsaleStages[stage].tokensSold = safeAdd(crowdsaleStages[stage].tokensSold, tokens);
-
-      tokens = safeMul(tokens, LIF_DECIMALS);
-      balances[msg.sender] = safeAdd(balances[msg.sender], tokens);
-
-      crowdsaleStages[stage].totalPresaleWei = safeSub(crowdsaleStages[stage].totalPresaleWei, crowdsaleStages[stage].presalePayments[msg.sender]);
-      crowdsaleStages[stage].presalePayments[msg.sender] = 0;
 
     }
 
@@ -347,13 +325,18 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
           if (weiCost == 0)
             break;
 
-          // Calculate how much presale tokens would be distributed at this price
-          uint presaleTokens = safeDiv(weiCost, 100);
-          presaleTokens = safeMul(presaleTokens, crowdsaleStages[i].presaleDiscount);
-          presaleTokens = safeDiv(crowdsaleStages[i].totalPresaleWei, presaleTokens);
+          uint presaleTokens = tokens;
 
-          // Add the bid tokens to presaleTokens to check not to pass the supply of the stage
-          presaleTokens = safeAdd(presaleTokens, tokens);
+          if (crowdsaleStages[i].presaleDiscount > 0){
+            // Calculate how much presale tokens would be distributed at this price
+
+            presaleTokens = safeDiv(getPrice(1), 100);
+            presaleTokens = safeMul(presaleTokens, safeSub(100, crowdsaleStages[i].presaleDiscount));
+            presaleTokens = safeDiv(crowdsaleStages[i].totalPresaleWei, presaleTokens);
+
+            // Add the bid tokens to presaleTokens to check not to pass the supply of the stage
+            presaleTokens = safeAdd(presaleTokens, tokens);
+          }
 
           if (safeAdd(crowdsaleStages[i].tokensSold, presaleTokens) > crowdsaleStages[i].totalTokens)
             break;
@@ -366,8 +349,6 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
               crowdsaleStages[i].status = 1;
               status = 3;
             } else if (((crowdsaleStages[i].status == 1) || (crowdsaleStages[i].status == 2)) && (safeAdd(crowdsaleStages[i].tokensSold, presaleTokens) == crowdsaleStages[i].totalTokens)){
-              maxSupply = safeSub(maxSupply, crowdsaleStages[i].totalTokens);
-              maxSupply = safeAdd(maxSupply, crowdsaleStages[i].tokensSold);
               crowdsaleStages[i].status = 3;
               status = 4;
             } else if ((crowdsaleStages[i].status == 1) && (safeAdd(crowdsaleStages[i].weiRaised, weiCost) >= crowdsaleStages[i].minCap)){
@@ -472,6 +453,8 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
       TransferData(msg.sender, to, value, data);
 
+      return true;
+
     }
 
     // ERC20 transferFrom method but with data parameter.
@@ -495,20 +478,14 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     // Create a new proposal
     function newProposal(address target, uint value, string description, uint agePerBlock, bytes4 signature, bytes actionData) payable {
 
-      // Need to check status inside function because arguments stack is to deep to add modifier
-      if ((status != 3) && (status != 4))
-        throw;
-
+      // Check status inside function because arguments stack is to deep to add modifier
       // Check that action is valid by target and signature
-      if (actionsDAO[target][signature] == 0)
-        throw;
-
       // Check sender necessary votes
-      if (getVotes(msg.sender) < minProposalVotes)
-        throw;
-
       // Check proposal fee
-      if (msg.value < baseProposalFee)
+      if (((status != 3) && (status != 4))
+        || (actionsDAO[target][signature] == 0)
+        || (getVotes(msg.sender) < minProposalVotes)
+        || (msg.value < baseProposalFee))
         throw;
 
       // Get the needed votes % for action approval
@@ -535,12 +512,8 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
       //Get the proposal by proposalID
       Proposal p = proposals[proposalID];
 
-      // If user already voted throw error
-      if (p.votes[msg.sender] > 0)
-        throw;
-
-      // If proposal is not active throw error
-      if (p.status != 2)
+      // Check sender vote and proposal status
+      if ((p.votes[msg.sender] > 0) || (p.status != 2))
         throw;
 
       // Add user vote
@@ -559,17 +532,13 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     }
 
     // Execute a proporal, only the owner can make this call, the check of the votes is optional because it can ran out of gas.
-    function executeProposal(uint proposalID) onlyTokenHolder() onStatus(4,0) returns (bool success) {
+    function executeProposal(uint proposalID) onlyTokenHolder() onStatus(4,0) {
 
       // Get the proposal using proposalsIndex
       Proposal p = proposals[proposalID];
 
-      // If proposal reach maxBlocksWait throw.
-      if (p.maxBlock < block.number)
-        throw;
-
-      // If proposal is not active throw.
-      if (p.status != 2)
+      // Check proposal age and status
+      if ((p.maxBlock < block.number) || (p.status != 2))
         throw;
 
       // Calculate the needed votes
@@ -580,24 +549,21 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
       uint votesNeeded = safeAdd(p.votesNeeded, ageVotes);
 
       // See if proposal reached the needed votes
-      if (p.totalVotes <= p.votesNeeded) {
-        return false;
-      } else {
+      if (p.totalVotes >= p.votesNeeded) {
 
         // Change the status of the proposal to accepted
         p.status = 1;
 
+        // Execute proposal call
         if (p.target.call(p.actionData))
-          return true;
-        else
-          return false;
+          proposalExecuted(proposalID);
 
       }
 
     }
 
     // Remove a proposal if it passed the maxBlock number.
-    function removeProposal(uint proposalID) onlyTokenHolder() onStatus(4,0) returns (bool success) {
+    function removeProposal(uint proposalID) onlyTokenHolder() onStatus(4,0) {
 
       // Get the proposal using proposalsIndex
       Proposal p = proposals[proposalID];
@@ -609,17 +575,16 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
       // Change the status of the proposal to declined
       p.status = 0;
 
-      return true;
+      proposalRemoved(proposalID);
 
     }
 
-    // Add a DAOAction ro override ar existing one
-    function addDAOAction(address target, uint votesNeeded, bytes4 signature) fromDAO() {
+    // Add a DAOAction or override ar existing one.
+    // Only can be called by the DAO by DAO status or by Owner on Created status
+    function addDAOAction(address target, uint votesNeeded, bytes4 signature) {
 
-      if (((status == 2) && (msg.sender == owner)) || (status == 4))
-        throw;
-
-      actionsDAO[target][signature] = votesNeeded;
+      if (((status == 2) && (msg.sender == owner)) || ((status == 4) && (msg.sender == address(this))))
+        actionsDAO[target][signature] = votesNeeded;
 
     }
 
