@@ -7,6 +7,10 @@ Lif is also a DAO, the token holders can create proposals to change token variab
 
 [![Build Status](https://travis-ci.org/windingtree/LifToken.svg?branch=master)](https://travis-ci.org/windingtree/LifToken)
 
+## Requirements
+
+Node v7.6 or higher (versions before 7.6 do not support async/await)
+
 ## Install
 
 ```sh
