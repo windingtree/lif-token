@@ -47,17 +47,12 @@ contract('LifToken DAO', function(accounts) {
     signature = token.contract.setStatus.getData(0x0).toString('hex').substring(0,10);
     console.log('Action setStatus(uint) signature', signature);
     await token.addDAOAction(token.contract.address, 90, signature, {from: accounts[0]});
+    assert.equal(parseInt(await token.getActionDAO(token.contract.address, token.contract.setBaseProposalFee.getData(0x0).toString('hex').substring(0,10))), 86);
+    assert.equal(parseInt(await token.getActionDAO(token.contract.address, token.contract.setProposalBlocksWait.getData(0x0).toString('hex').substring(0,10))), 87);
+    assert.equal(parseInt(await token.getActionDAO(token.contract.address, token.contract.addDAOAction.getData(0x0).toString('hex').substring(0,10))), 88);
+    assert.equal(parseInt(await token.getActionDAO(token.contract.address, token.contract.sendEther.getData(0x0).toString('hex').substring(0,10))), 89);
+    assert.equal(parseInt(await token.getActionDAO(token.contract.address, token.contract.setStatus.getData(0x0).toString('hex').substring(0,10))), 90);
 
-    await token.getActionDAO(token.contract.address, token.contract.setBaseProposalFee.getData(0x0).toString('hex').substring(0,10));
-    await token.getActionDAO(token.contract.address, token.contract.setProposalBlocksWait.getData(0x0).toString('hex').substring(0,10));
-    await token.getActionDAO(token.contract.address, token.contract.addDAOAction.getData(0x0).toString('hex').substring(0,10));
-    await token.getActionDAO(token.contract.address, token.contract.sendEther.getData(0x0).toString('hex').substring(0,10));
-    await token.getActionDAO(token.contract.address, token.contract.setStatus.getData(0x0).toString('hex').substring(0,10));
-    assert.equal(parseInt(actions[0]), 86);
-    assert.equal(parseInt(actions[1]), 87);
-    assert.equal(parseInt(actions[2]), 88);
-    assert.equal(parseInt(actions[3]), 89);
-    assert.equal(parseInt(actions[4]), 90);
   });
 
   it("Should add a setMinProposalVotes proposal, be voted by another user, check it and get executed.", async function() {
