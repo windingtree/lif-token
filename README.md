@@ -43,7 +43,7 @@ npm install
 
 ## New Token Methods
 
-Líf token is ERC20 compatible but it also has two more methods to allow the transference of data and execution of calls between users/contracts.
+Líf token is ERC20 compatible but it also has two more methods to allow the transfer of data and execution of calls between users/contracts.
 
 ### transferData
 
