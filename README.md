@@ -43,13 +43,13 @@ npm install
 
 ## New Token Methods
 
-Líf token is ERC20 compatible but it also has two more methods to allow the transference of data between users/contracts.
+Líf token is ERC20 compatible but it also has two more methods to allow the transference of data and execution of calls between users/contracts.
 
 ### transferData
 
 Transfer tokens from one address to another.
 ```
-transferData(address _to, uint _value, string _data) => (bool success)
+transferData(address to, uint value, bytes data, bool doCall) => (bool success)
 ```
 Returns: bool, Success of the operation.
 
@@ -57,7 +57,7 @@ Returns: bool, Success of the operation.
 
 Transfer  an allowed amount of tokens from one address to another.
 ```
-transferDataFrom(address _from, address _to, uint _value, string _data) => (bool success)
+transferDataFrom(address from, address to, uint value, bytes data, bool doCall) => (bool success)
 ```
 Returns: bool, Success of the operation.
 
@@ -75,22 +75,22 @@ This functions can be called only internally, in order to do that a token holder
 ```
 setBaseProposalFee(uint _baseProposalFee)
 setProposalBlocksWait(uint _proposalBlocksWait)
-sendEther(address _to, uint _amount)
-setStatus(uint _newStatus)
-addDAOAction(address _target, uint _balanceNeeded, bytes4 _signature)
+sendEther(address to, uint amount)
+setStatus(uint newStatus)
+addDAOAction(address target, uint balanceNeeded, bytes4 signature)
 ```
 
 ### New Proposal
 
 Creates a new proposal on the token, the token holder that creates the proposal needs to have the more than the fee charged for the proposal creation.
 ```
-newProposal(address _target, uint _value, string _description, uint _agePerBlock, bytes4 _signature, bytes _actionData)
+newProposal(address target, uint value, string description, uint agePerBlock, bytes4 signature, bytes actionData)
 ```
 ### Vote
 
 Vote a proposal for yes or no using the proposal ID.
 ```
-vote(uint _proposalID, bool _vote)
+vote(uint proposalID, bool vote)
 ```
 
 ## Test

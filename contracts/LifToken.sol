@@ -124,7 +124,7 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     }
 
     // Edit of the ERC20 token events to support data argument
-    event TransferData(address indexed from, address indexed to, uint value, string data);
+    event TransferData(address indexed from, address indexed to, uint value, bytes data);
 
     // Proposal events
     event proposalAdded(uint proposalId);
@@ -414,6 +414,9 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     //ERC20 token transfer method
     function transfer(address to, uint value) returns (bool success) {
 
+      if (to == address(this))
+        throw;
+
       balances[msg.sender] = safeSub(balances[msg.sender], value);
       balances[to] = safeAdd(balances[to], value);
       giveVotes(msg.sender, to);
@@ -425,6 +428,9 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
     //ERC20 token transfer method
     function transferFrom(address from, address to, uint value) returns (bool success) {
+
+      if (to == address(this))
+        throw;
 
       uint allowance = allowed[from][msg.sender];
       balances[to] = safeAdd(balances[to], value);
@@ -440,6 +446,9 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     //ERC20 token approve method
     function approve(address spender, uint value) returns (bool success) {
 
+      if (spender == address(this))
+        throw;
+
       allowed[msg.sender][spender] = value;
       Approval(msg.sender, spender, value);
 
@@ -448,7 +457,10 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     }
 
     // ERC20 transfer method but with data parameter.
-    function transferData(address to, uint value, string data) onlyTokenHolder() onStatus(3,4) returns (bool success) {
+    function transferData(address to, uint value, bytes data, bool doCall) onlyTokenHolder() onStatus(3,4) returns (bool success) {
+
+      if (to == address(this))
+        throw;
 
       // If transfer have value process it
       if (value > 0) {
@@ -457,14 +469,20 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
         giveVotes(msg.sender, to);
       }
 
-      TransferData(msg.sender, to, value, data);
+      if (doCall && to.call(data))
+        TransferData(msg.sender, to, value, data);
+      else if (!doCall)
+        TransferData(msg.sender, to, value, data);
 
       return true;
 
     }
 
     // ERC20 transferFrom method but with data parameter.
-    function transferDataFrom(address from, address to, uint value, string data) onStatus(3,4) returns (bool success) {
+    function transferDataFrom(address from, address to, uint value, bytes data, bool doCall) onStatus(3,4) returns (bool success) {
+
+      if (to == address(this))
+        throw;
 
       // If transfer have value process it
       if (value > 0) {
@@ -475,8 +493,10 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
         giveVotes(msg.sender, to);
       }
 
-      TransferData(msg.sender, to, value, data);
-
+      if (doCall && to.call(data))
+        TransferData(msg.sender, to, value, data);
+      else if (!doCall)
+        TransferData(msg.sender, to, value, data);
       return true;
 
     }
