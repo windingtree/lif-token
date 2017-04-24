@@ -6,10 +6,17 @@ contract Message {
 
     function showMessage(bytes32 _message, uint256 _number, string _text) constant returns (bool) {
 
-        Show(_message, _number, _text);
+      Show(_message, _number, _text);
 
+      return true;
+
+    }
+
+    function call(address to, bytes data) returns (bool) {
+      if (to.call(data))
         return true;
-
+      else
+        return false;
     }
 
 }
