@@ -76,7 +76,7 @@ contract('LifToken DAO', function(accounts) {
     await token.vote(1, true, {from: accounts[2]});
     let result = await token.vote(1, true, {from: accounts[3]});
 
-    await token.executeProposal(1, {from: accounts[1]});
+    await token.executeProposal(1, {from: accounts[0]});
         data = token.contract.setMinProposalVotes.getData( web3.toHex(20) ).toString('hex');
     try {
         await token.newProposal(token.contract.address, 0, 'Set minProposalVotes to 20', 100, signature, data, {from: accounts[1], value: web3.toWei(10, 'ether')});
@@ -109,7 +109,7 @@ contract('LifToken DAO', function(accounts) {
     await token.newProposal(token.contract.address, 0, 'Set baseProposalFee to 60 ETH', 100, signature, data, {from: accounts[1], value: web3.toWei(10, 'ether')});
     await token.vote(1, true, {from: accounts[2]});
     await token.vote(1, true, {from: accounts[3]});
-    await token.executeProposal(1, {from: accounts[1]});
+    await token.executeProposal(1, {from: accounts[0]});
 
     let baseProposalFee = await token.baseProposalFee();
     assert.equal(parseInt(baseProposalFee), web3.toWei(60, 'ether'));
@@ -125,7 +125,7 @@ contract('LifToken DAO', function(accounts) {
     await token.newProposal(token.contract.address, 0, 'Set baseProposalFee to 100 ETH', 100, signature, data, {from: accounts[1], value: web3.toWei(60, 'ether')});
     await token.vote(2, true, {from: accounts[2]});
     await token.vote(2, true, {from: accounts[3]});
-    await token.executeProposal(2, {from: accounts[1]});
+    await token.executeProposal(2, {from: accounts[0]});
 
     baseProposalFee = await token.baseProposalFee();
     console.log('New baseProposalFee on token:', parseInt(baseProposalFee));
@@ -153,7 +153,7 @@ contract('LifToken DAO', function(accounts) {
     var data = token.contract.setProposalBlocksWait.getData( web3.toHex(10) ).toString('hex');
     token.newProposal(token.contract.address, 0, 'Set setProposalBlocksWait to 10 blocks', 100, signature, data, {from: accounts[1], value: web3.toWei(10, 'ether')});
     await token.vote(1, true, {from: accounts[2]});
-    await token.executeProposal(1, {from: accounts[1]});
+    await token.executeProposal(1, {from: accounts[0]});
     let proposalBlocksWait = await token.proposalBlocksWait();
     console.log('New proposal blocks wait:', parseInt(proposalBlocksWait));
     assert.equal(parseInt(proposalBlocksWait), 10);
@@ -165,7 +165,7 @@ contract('LifToken DAO', function(accounts) {
     await help.waitBlocks(11, accounts);
 
     try {
-      await token.executeProposal(2, {from: accounts[1]});
+      await token.executeProposal(2, {from: accounts[0]});
     } catch (error) {
       if (error.message.indexOf('invalid JUMP') < 0) throw error;
     }
@@ -190,7 +190,7 @@ contract('LifToken DAO', function(accounts) {
     var data = token.contract.sendEther.getData(accounts[3], web3.toWei(6, 'ether')).toString('hex');
     await token.newProposal(token.contract.address, 0, 'Call sendEther(address,uint256)', 100, signature, data, {from: accounts[1], value: web3.toWei(10, 'ether')});
     await token.vote(1, true, {from: accounts[2]});
-    await token.executeProposal(1, {from: accounts[3]});
+    await token.executeProposal(1, {from: accounts[0]});
 
     await help.checkValues(token, accounts, 1000004, 10000000, 0, [4001440,2998500,2000060,1000000,0], [6, 4, 2, 0, 0], [6, 15, 0, 0, 0], [15, 0, 6, 0, 0]);
   });
@@ -214,7 +214,7 @@ contract('LifToken DAO', function(accounts) {
     var data = message.contract.showMessage.getData( web3.toHex('Test Bytes32'), web3.toHex(666), 'Test String' ).toString('hex');
     await token.newProposal(message.contract.address, 0, 'Call showMessage(bytes32,uint256,string)', 100, signature, data, {from: accounts[1], value: web3.toWei(10, 'ether')});
     await token.vote(1, true, {from: accounts[2]});
-    await token.executeProposal(1, {from: accounts[3]});
+    await token.executeProposal(1, {from: accounts[0]});
     await new Promise(function(resolve, reject){
       message.allEvents().get(function(error, log){
         if (error)
