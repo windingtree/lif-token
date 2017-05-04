@@ -69,6 +69,9 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     // 4 = DAO
     uint public status;
 
+    // when stopped, save the previous status here to be able to resume on the same status later
+    uint public statusBeforeStop;
+
     // The amount of blocks that a proposal has to be approved
     uint public proposalBlocksWait;
 
@@ -167,6 +170,18 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
       proposals.length ++;
 
+    }
+
+    // Put a stop on token transactions, preventing any new transactions to be processed until resumed
+    function stop() external onlyOwner() {
+        if (status != 1) {
+            statusBeforeStop = status;
+            status = 1;
+        }
+    }
+
+    function resume() external onlyOwner() onStatus(1,0) {
+        status = statusBeforeStop;
     }
 
     // Add a token payment that can be claimed after certain block from an address
@@ -324,7 +339,7 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     }
 
     // Create tokens for the recipient
-    function submitBid(address recipient, uint tokens) external payable {
+    function submitBid(address recipient, uint tokens) external payable onStatus(2,3) {
 
       if (tokens == 0)
         throw;
@@ -382,7 +397,6 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
       if ( !done && (msg.value > 0))
         safeSend(msg.sender, msg.value);
-
     }
 
     // Change contract variable functions

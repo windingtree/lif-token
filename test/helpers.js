@@ -175,11 +175,18 @@ module.exports = {
     return stageData;
   },
 
-  simulateCrowdsale: async function(token, total, price, balances, accounts){
+  addCrowdsaleStage: function(token, total, price) {
     var startBlock = web3.eth.blockNumber;
     var endBlock = web3.eth.blockNumber+5;
     var targetBalance = parseFloat(total*price);
-    await token.addCrowdsaleStage(startBlock, endBlock, price, 10, web3.toWei(0.1, 'ether'), 1, targetBalance, total, 0, 0);
+    return [
+      endBlock,
+      token.addCrowdsaleStage(startBlock, endBlock, price, 10, web3.toWei(0.1, 'ether'), 1, targetBalance, total, 0, 0)
+    ];
+  },
+
+  simulateCrowdsale: async function(token, total, price, balances, accounts){
+    let [endBlock, stagePromise] = await this.addCrowdsaleStage(token, total, price);
     if (balances[0] > 0)
       await token.submitBid(accounts[1], balances[0], { value: balances[0]*price, from: accounts[1] });
     if (balances[1] > 0)
