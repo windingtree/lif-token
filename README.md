@@ -19,7 +19,7 @@ npm install
 
 ## Contract Lifecycle
 
-1.- First the contract is deployed on status 0, where the deployer specify the base proposal fee, max supply, proposal blocks wait, exponential increment of votes rewards and minimun votes needed to create a proposal.
+1.- First the contract is deployed on status 2, where the deployer specify the base proposal fee, max supply, proposal blocks wait, exponential increment of votes rewards and minimun votes needed to create a proposal.
   ```
   // LífToken constructor
   LífToken(uint _baseProposalFee, uint _maxSupply, uint _proposalBlocksWait, uint _votesIncrementSent, uint _votesIncrementReceived, uint _minProposalVotes) {...}
