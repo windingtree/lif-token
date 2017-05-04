@@ -19,7 +19,7 @@ npm install
 
 ## Contract Lifecycle
 
-1.- First the contract is deployed on status 0, where teh deployer specify the base proposal fee, max supply, proposal blocks wait, exponential increment of votes rewards and minimun votes needed to create a proposal.
+1.- First the contract is deployed on status 2, where the deployer specify the base proposal fee, max supply, proposal blocks wait, exponential increment of votes rewards and minimun votes needed to create a proposal.
   ```
   // LífToken constructor
   LífToken(uint _baseProposalFee, uint _maxSupply, uint _proposalBlocksWait, uint _votesIncrementSent, uint _votesIncrementReceived, uint _minProposalVotes) {...}
@@ -44,6 +44,38 @@ npm install
 ## New Token Methods
 
 Líf token is ERC20 compatible but it also has two more methods to allow the transfer of data and execution of calls between users/contracts.
+
+## Important Variables
+
+- OWNER_SUPPLY: How much tokens the owners has the right to issue, after that only the DAO can decide on issue more tokens.
+
+- maxSupply: The maximun number of tokens that can be on circulation.
+
+- status = Status of the contract, represented by an integer. (1 = Stoped, 2 = Created, 3 = Crowdsale, 4 = DAO)
+
+- baseProposalFee: The amount of ethers that has to eb payed to submit a proposal.
+
+- totalProposals: The total amount of proposals.
+
+- proposals: All the proposals done and to be done.
+
+- minProposalVotes: The minimun votes needed to submit a proposal.
+
+- totalVotes: The total amount of votes.
+
+- sentTxVotes and receivedTxVotes: The amounts of votes for each address, on received and sent transactions.
+
+- votesIncrementSent and votesIncrementReceived: This is how much the transactions requested to receive a new vote will be growing exponentially, if votesIncrementSent equals 2 the sender will receive a vote each 2,4,8,16,32... transactions sent.
+
+- txsSent and txsReceived: This represents how many transactions sents and receive have each address.
+
+- crowdsaleStages: All the auctions done to sell a maximun number of tokens, it aims to raise an amount of ethers between a minimun and maximun capital, starting at a high price and going lower each certain amount of blocks, till the auction ends or the maximun capital or all tokens are sold.
+
+- futurePayments: The tokens payments that can be claimed.
+
+- proposalBlocksWait = The amount of blocks that a proposal has to be approved
+
+- actionsDAO: The amount of votes in % from 0-100 needed to excute calls with the DAO approval. Every action is indexed by the address and function signature, they can internal or external actions. To add or edit this actions it will need a DAO approval.
 
 ### transferData
 
@@ -86,6 +118,7 @@ Creates a new proposal on the token, the token holder that creates the proposal 
 ```
 newProposal(address target, uint value, string description, uint agePerBlock, bytes4 signature, bytes actionData)
 ```
+
 ### Vote
 
 Vote a proposal for yes or no using the proposal ID.
