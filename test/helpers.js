@@ -177,7 +177,7 @@ module.exports = {
 
   addCrowdsaleStage: function(token, total, price) {
     var startBlock = web3.eth.blockNumber;
-    var endBlock = web3.eth.blockNumber+5;
+    var endBlock = web3.eth.blockNumber+6;
     var targetBalance = parseFloat(total*price);
     return [
       endBlock,
@@ -188,16 +188,16 @@ module.exports = {
   simulateCrowdsale: async function(token, total, price, balances, accounts){
     let [endBlock, stagePromise] = await this.addCrowdsaleStage(token, total, price);
     if (balances[0] > 0)
-      await token.submitBid(accounts[1], balances[0], { value: balances[0]*price, from: accounts[1] });
+      await token.submitBid({ value: balances[0]*price, from: accounts[1] });
     if (balances[1] > 0)
-      await token.submitBid(accounts[2], balances[1], { value: balances[1]*price, from: accounts[2] });
+      await token.submitBid({ value: balances[1]*price, from: accounts[2] });
     if (balances[2] > 0)
-      await token.submitBid(accounts[3], balances[2], { value: balances[2]*price, from: accounts[3] });
+      await token.submitBid({ value: balances[2]*price, from: accounts[3] });
     if (balances[3] > 0)
-      await token.submitBid(accounts[4], balances[3], { value: balances[3]*price, from: accounts[4] });
+      await token.submitBid({ value: balances[3]*price, from: accounts[4] });
     if (balances[4] > 0)
-      await token.submitBid(accounts[5], balances[4], { value: balances[4]*price, from: accounts[5] });
-    await this.waitToBlock(endBlock, accounts);
+      await token.submitBid({ value: balances[4]*price, from: accounts[5] });
+    await this.waitToBlock(endBlock+1, accounts);
     await token.checkCrowdsaleStage(0);
     let auctionEnded = await token.crowdsaleStages.call(0);
     let tokenStatus = await token.status();

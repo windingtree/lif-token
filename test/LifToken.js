@@ -6,7 +6,7 @@ var help = require("./helpers");
 var LifToken = artifacts.require("./LifToken.sol");
 var Message = artifacts.require("./Message.sol");
 
-const LOG_EVENTS = false;
+const LOG_EVENTS = true;
 
 contract('LifToken', function(accounts) {
 
