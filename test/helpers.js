@@ -76,9 +76,9 @@ module.exports = {
     });
   },
 
-  checkValues: async function(token, accounts, etherBalance, totalSupply, tokenPrice, balances, votes, txsSent, txsReceived) {
+  checkValues: async function(token, crowdsale, accounts, etherBalance, totalSupply, tokenPrice, balances, votes, txsSent, txsReceived) {
     let [
-      tokenEtherBalance,
+      crowdsaleEtherBalance,
       tokenTotalSupply,
       crowdsalePrice,
       tokenTotalVotes,
@@ -89,9 +89,9 @@ module.exports = {
       tokenAccountTxSent,
       tokenAccountTxReceived
     ] = await Promise.all([
-      web3.eth.getBalance(token.contract.address),
+      web3.eth.getBalance(crowdsale.contract.address),
       token.totalSupply(),
-      token.getPrice(1),
+      crowdsale.getPrice(),
       token.totalVotes(),
       token.votesIncrementSent(),
       token.votesIncrementReceived(),
@@ -126,7 +126,7 @@ module.exports = {
     ]);
 
     if (DEBUG_MODE) {
-      console.log('Contract Balance:', this.toEther(tokenEtherBalance), 'Ether;', this.toWei(tokenEtherBalance), 'Wei');
+      console.log('Contract Balance:', this.toEther(crowdsaleEtherBalance), 'Ether;', this.toWei(crowdsaleEtherBalance), 'Wei');
       console.log('Total Supply:', parseInt(tokenTotalSupply));
       console.log('Token Price:', parseInt(crowdsalePrice));
       console.log('Dao Total Votes:', parseInt(tokenTotalVotes), 'Dao Votes Increment Exponent sent/received:', parseInt(tokenIncrementSent),'/',parseInt(tokenIncrementReceived));
@@ -141,7 +141,7 @@ module.exports = {
     }
 
     if (etherBalance)
-      assert.equal(this.toEther(tokenEtherBalance), etherBalance);
+      assert.equal(this.toEther(crowdsaleEtherBalance), etherBalance, "Crowdsale should have the expected ether balance");
     if (totalSupply)
       assert.equal(parseInt(tokenTotalSupply), totalSupply);
     if (tokenPrice)
@@ -192,12 +192,6 @@ module.exports = {
       totalVotes: parseInt(proposal[10])
     };
     console.log('['+parsedProposal.id+'] To: '+parsedProposal.target+', Value: '+parsedProposal.value +', MaxBlock: '+parsedProposal.maxBlock+', Desc: '+parsedProposal.description+', Status: '+parsedProposal.status, ', Votes: ',parsedProposal.totalVotes);
-  },
-
-  getStage: async function(token, number) {
-    let stageData = await token.crowdsaleStages.call(number);
-    console.log('[Stage '+number+'] Blocks: '+parseInt(stageData[0])+' - '+parseInt(stageData[1]) +', Start Price: '+this.toEther(stageData[2])+', ChangePerBlock: '+parseInt(stageData[3])+'/'+this.toEther(stageData[4])+' ETH, MinCap: '+this.toEther(stageData[5])+' ETH, MaxCap: '+this.toEther(stageData[6])+' ETH, Total Tokens: '+parseInt(stageData[7])+', Presale Discount: '+parseInt(stageData[8])+', Presale ETH Raised: '+this.toEther(stageData[10])+', Crowdsale Raised: '+this.toEther(stageData[11])+'ETH, Tokens Sold: '+parseInt(stageData[12])+', Final Price: '+this.toEther(stageData[13])+'ETH');
-    return stageData;
   },
 
   simulateCrowdsale: async function(token, total, price, balances, accounts){
