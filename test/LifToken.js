@@ -79,9 +79,10 @@ contract('LifToken', function(accounts) {
 
     var dataEncoded = help.hexEncode(JSON.stringify({awesomeField:"AwesomeString"}));
     let transaction = await token.transferData(accounts[2], help.formatBalance(1000), dataEncoded, false, {from: accounts[1]});
+    let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-    assert.equal(dataEncoded, web3.toAscii(transaction.logs[0].args.data));
-    var decodedObj = JSON.parse(help.hexDecode( web3.toAscii(transaction.logs[0].args.data) ));
+    assert.equal(dataEncoded, web3.toAscii(decodedEvents[0].events[3].value));
+    var decodedObj = JSON.parse(help.hexDecode( web3.toAscii(decodedEvents[0].events[3].value) ));
     assert.equal("AwesomeString", decodedObj.awesomeField);
 
     await help.checkValues(token, accounts,1000000, 10000000, 0, [3999000,3001000,2000000,1000000,0]);
@@ -94,9 +95,10 @@ contract('LifToken', function(accounts) {
 
     var dataEncoded = help.hexEncode(JSON.stringify({awesomeField:"AwesomeString"}));
     let transaction = await token.transferDataFrom(accounts[1], accounts[3], help.formatBalance(1000), dataEncoded, false, {from: accounts[3]});
+    let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-    assert.equal(dataEncoded, web3.toAscii(transaction.logs[0].args.data));
-    var decodedObj = JSON.parse(help.hexDecode( web3.toAscii(transaction.logs[0].args.data) ));
+    assert.equal(dataEncoded, web3.toAscii(decodedEvents[0].events[3].value));
+    var decodedObj = JSON.parse(help.hexDecode( web3.toAscii(decodedEvents[0].events[3].value) ));
     assert.equal("AwesomeString", decodedObj.awesomeField);
 
     await help.checkValues(token, accounts,1000000, 10000000, 0, [3999000,3000000,2001000,1000000,0]);
@@ -113,10 +115,11 @@ contract('LifToken', function(accounts) {
     encodedHex = help.hexEncode(encodedBuffer.toString());
 
     let transaction = await token.transferData(accounts[2], 0, encodedHex, false, {from: accounts[1]});
+    let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-    assert.equal(encodedHex, web3.toAscii(transaction.logs[0].args.data));
+    assert.equal(encodedHex, web3.toAscii(decodedEvents[0].events[3].value));
 
-    var decodedBuffer = new Buffer(help.hexDecode( web3.toAscii(transaction.logs[0].args.data) ));
+    var decodedBuffer = new Buffer(help.hexDecode( web3.toAscii(decodedEvents[0].events[3].value) ));
     assert.equal("AwesomeString", AwesomeMessage.decode(decodedBuffer).awesomeField);
 
     await help.checkValues(token, accounts,1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
@@ -125,13 +128,15 @@ contract('LifToken', function(accounts) {
   it("should return correct balances after transferData and show the event on receiver contract", async function() {
     await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
     let message = await Message.new();
+    help.abiDecoder.addABI(Message._json.abi);
+
     let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
 
     let transaction = await token.transferData(message.contract.address, help.formatBalance(1000), data, true, {from: accounts[1]});
+    let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-    assert.equal(2, transaction.receipt.logs.length);
-    assert.equal(data, '0x'+transaction.receipt.logs[1].data.substring(194, data.length+192));
-    assert.equal(data, transaction.logs[0].args.data);
+    assert.equal(2, decodedEvents.length);
+    assert.equal(data, decodedEvents[1].events[3].value);
 
     assert.equal(help.formatBalance(1000), await token.balanceOf(message.contract.address));
 
@@ -149,7 +154,7 @@ contract('LifToken', function(accounts) {
 
     let transaction = await token.transferDataFrom(accounts[1], message.contract.address, help.formatBalance(1000), data, true, {from: accounts[2]});
     let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
-    
+
     assert.equal(2, decodedEvents.length);
     assert.equal(data, decodedEvents[1].events[3].value);
     assert.equal('0x1e24000000000000000000000000000000000000000000000000000000000000', decodedEvents[0].events[0].value);
@@ -163,13 +168,15 @@ contract('LifToken', function(accounts) {
   it("should return correct balances after approve and show the event on receiver contract", async function() {
     await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
     let message = await Message.new();
+    help.abiDecoder.addABI(Message._json.abi);
+
     let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
 
     let transaction = await token.approveData(message.contract.address, help.formatBalance(1000), data, true, {from: accounts[1]});
+    let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-    assert.equal(2, transaction.receipt.logs.length);
-    assert.equal(data, '0x'+transaction.receipt.logs[1].data.substring(194, data.length+192));
-    assert.equal(data, transaction.logs[0].args.data);
+    assert.equal(2, decodedEvents.length);
+    assert.equal(data, decodedEvents[1].events[3].value);
 
     assert.equal(help.formatBalance(1000), await token.allowance(accounts[1], message.contract.address));
 
