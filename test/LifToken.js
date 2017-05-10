@@ -141,24 +141,39 @@ contract('LifToken', function(accounts) {
   it("should return correct balances after transferDataFrom and show the event on receiver contract", async function() {
     await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
     let message = await Message.new();
-    let messageReceiver = await Message.new();
+    help.abiDecoder.addABI(Message._json.abi);
 
-    let data = messageReceiver.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
+    let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
 
-    await token.approve(message.contract.address, help.formatBalance(1000), {from: accounts[1]});
+    await token.approve(accounts[2], help.formatBalance(1000), {from: accounts[1]});
 
-    let dataTransfer = token.contract.transferDataFrom.getData(accounts[1], messageReceiver.contract.address, help.formatBalance(1000), data, true);
+    let transaction = await token.transferDataFrom(accounts[1], message.contract.address, help.formatBalance(1000), data, true, {from: accounts[2]});
+    let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
+    
+    assert.equal(2, decodedEvents.length);
+    assert.equal(data, decodedEvents[1].events[3].value);
+    assert.equal('0x1e24000000000000000000000000000000000000000000000000000000000000', decodedEvents[0].events[0].value);
+    assert.equal(666, decodedEvents[0].events[1].value);
+    assert.equal('Transfer Done', decodedEvents[0].events[2].value);
+    assert.equal(help.formatBalance(1000), await token.balanceOf(message.contract.address));
 
-    let transaction = await message.call(token.contract.address, dataTransfer);
+    await help.checkValues(token, accounts,1000000, 10000000, 0, [3999000,3000000,2000000,1000000,0]);
+  });
+
+  it("should return correct balances after approve and show the event on receiver contract", async function() {
+    await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
+    let message = await Message.new();
+    let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
+
+    let transaction = await token.approveData(message.contract.address, help.formatBalance(1000), data, true, {from: accounts[1]});
 
     assert.equal(2, transaction.receipt.logs.length);
     assert.equal(data, '0x'+transaction.receipt.logs[1].data.substring(194, data.length+192));
-    assert.equal('0x1e24000000000000000000000000000000000000000000000000000000000000', transaction.logs[0].args.b32);
-    assert.equal(666, transaction.logs[0].args.number);
-    assert.equal('Transfer Done', transaction.logs[0].args.text);
-    assert.equal(help.formatBalance(1000), await token.balanceOf(messageReceiver.contract.address));
+    assert.equal(data, transaction.logs[0].args.data);
 
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [3999000,3000000,2000000,1000000,0]);
+    assert.equal(help.formatBalance(1000), await token.allowance(accounts[1], message.contract.address));
+
+    await help.checkValues(token, accounts,1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
   });
 
   it("should fail transferData when using LifToken contract address as receiver", async function() {

@@ -128,6 +128,7 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
     // Edit of the ERC20 token events to support data argument
     event TransferData(address indexed from, address indexed to, uint value, bytes data);
+    event ApprovalData(address indexed from, address indexed spender, uint value, bytes data);
 
     // Proposal events
     event proposalAdded(uint proposalId);
@@ -455,7 +456,24 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
     }
 
-    // ERC20 transfer method but with data parameter.
+    //ERC20 token approve method with data call/log option.
+    function approveData(address spender, uint value, bytes data, bool doCall) onStatus(3,4) returns (bool success) {
+
+      if (spender == address(this))
+        throw;
+
+      allowed[tx.origin][spender] = value;
+
+      if (doCall && spender.call(data))
+        ApprovalData(tx.origin, spender, value, data);
+      else if (!doCall)
+        ApprovalData(tx.origin, spender, value, data);
+
+      return true;
+
+    }
+
+    // ERC20 transfer method with data call/log option.
     function transferData(address to, uint value, bytes data, bool doCall) external onStatus(3,4) returns (bool success) {
 
       if (to == address(this))
@@ -463,21 +481,21 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
       // If transfer have value process it
       if (value > 0) {
-        balances[msg.sender] = safeSub(balances[msg.sender], value);
+        balances[tx.origin] = safeSub(balances[tx.origin], value);
         balances[to] = safeAdd(balances[to], value);
-        giveVotes(msg.sender, to);
+        giveVotes(tx.origin, to);
       }
 
       if (doCall && to.call(data))
-        TransferData(msg.sender, to, value, data);
+        TransferData(tx.origin, to, value, data);
       else if (!doCall)
-        TransferData(msg.sender, to, value, data);
+        TransferData(tx.origin, to, value, data);
 
       return true;
 
     }
 
-    // ERC20 transferFrom method but with data parameter.
+    // ERC20 transferFrom method with data call/log option.
     function transferDataFrom(address from, address to, uint value, bytes data, bool doCall) external onStatus(3,4) returns (bool success) {
 
       if (to == address(this))
@@ -485,17 +503,17 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
       // If transfer have value process it
       if (value > 0) {
-        uint allowance = allowed[from][msg.sender];
+        uint allowance = allowed[from][tx.origin];
         balances[from] = safeSub(balances[from], value);
         balances[to] = safeAdd(balances[to], value);
-        allowed[from][msg.sender] = safeSub(allowance, value);
-        giveVotes(msg.sender, to);
+        allowed[from][tx.origin] = safeSub(allowance, value);
+        giveVotes(tx.origin, to);
       }
 
       if (doCall && to.call(data))
-        TransferData(msg.sender, to, value, data);
+        TransferData(tx.origin, to, value, data);
       else if (!doCall)
-        TransferData(msg.sender, to, value, data);
+        TransferData(tx.origin, to, value, data);
       return true;
 
     }

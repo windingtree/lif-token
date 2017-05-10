@@ -1,11 +1,14 @@
 
 var LifToken = artifacts.require("./LifToken.sol");
-var Message = artifacts.require("./Message.sol");
+var abiDecoder = require('abi-decoder');
+abiDecoder.addABI(LifToken._json.abi);
 
 const TOKEN_DECIMALS = 8;
 const DEBUG_MODE = false;
 
 module.exports = {
+
+  abiDecoder: abiDecoder,
 
   hexEncode: function(str){
     var hex, i;
