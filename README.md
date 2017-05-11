@@ -51,6 +51,8 @@ Líf token is ERC20 compatible but it also has two more methods to allow the tra
 
 - maxSupply: The maximun number of tokens that can be on circulation.
 
+- totalSupply: The amount of tokens on circulation.
+
 - status = Status of the contract, represented by an integer. (1 = Stoped, 2 = Created, 3 = Crowdsale, 4 = DAO)
 
 - baseProposalFee: The amount of ethers that has to eb payed to submit a proposal.
