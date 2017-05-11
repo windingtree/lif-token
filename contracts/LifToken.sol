@@ -26,14 +26,17 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     uint constant DECIMALS = 8;
     uint constant LONG_DECIMALS = 10**DECIMALS;
 
-    // The amount of tokens that the owner can issue.
+    // Maximum amount of tokens that the owner can issue.
     uint constant OWNER_SUPPLY = 10000000;
 
     // Proposal fees in wei unit
     uint public baseProposalFee;
 
-    // Maximun number of tokens
+    // Maximun amount of tokens that can be issued
     uint public maxSupply;
+
+    // Current amount of tokens in circulation
+    unit public totalSupply;
 
     // DAO Proposals to be done
     Proposal[] public proposals;
