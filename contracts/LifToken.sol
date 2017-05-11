@@ -1,9 +1,8 @@
 pragma solidity ^0.4.8;
 
-import "./zeppelin/token/ERC20.sol";
 import "./zeppelin/ownership/Ownable.sol";
 import "./zeppelin/payment/PullPayment.sol";
-import "./zeppelin/SafeMath.sol";
+import './zeppelin/SafeMath.sol';
 
 /*
  * Líf Token
@@ -14,7 +13,8 @@ import "./zeppelin/SafeMath.sol";
  */
 
 
-contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
+contract LifToken is Ownable, PullPayment {
+    using SafeMath for uint;
 
     // Token Name
     string constant NAME = "Líf";
@@ -34,6 +34,9 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
     // Maximun number of tokens
     uint public maxSupply;
+
+    // Total supply of tokens
+    uint public totalSupply;
 
     // DAO Proposals to be done
     Proposal[] public proposals;
@@ -126,6 +129,10 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
       uint tokens;
     }
 
+    // ERC20 Events
+    event Transfer(address indexed from, address indexed to, uint value);
+    event Approval(address indexed owner, address indexed spender, uint value);
+
     // Edit of the ERC20 token events to support data argument
     event TransferData(address indexed from, address indexed to, uint value, bytes data);
     event ApprovalData(address indexed from, address indexed spender, uint value, bytes data);
@@ -170,7 +177,7 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     // Add a token payment that can be claimed after certain block from an address
     function addFuturePayment(address owner, uint afterBlock, uint tokens) external onlyOwner() onStatus(2,0) {
       futurePayments[futurePayments.length ++] = FuturePayment(owner, afterBlock, tokens);
-      maxSupply = safeAdd(maxSupply, tokens);
+      maxSupply = maxSupply.add(tokens);
     }
 
     // Add an address that would be able to spend certain amounts of ethers with discount on a stage
@@ -180,7 +187,7 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
         throw;
 
       crowdsaleStages[stage].presalePayments[target] = amount;
-      crowdsaleStages[stage].totalPresaleWei = safeAdd(crowdsaleStages[stage].totalPresaleWei, amount);
+      crowdsaleStages[stage].totalPresaleWei = crowdsaleStages[stage].totalPresaleWei.add(amount);
 
     }
 
@@ -191,11 +198,11 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
       if (((msg.sender == address(this)) && (status == 4)) || ((msg.sender == owner) && ((status == 2) || (status == 4)))) {
 
-        if ((msg.sender == owner) && (OWNER_SUPPLY < safeAdd(maxSupply, totalTokens)))
+        if ((msg.sender == owner) && (OWNER_SUPPLY < maxSupply.add(totalTokens)))
           throw;
 
         crowdsaleStages.push(CrowdsaleStage(startBlock, endBlock, startPrice, changePerBlock, changePrice, minCap, maxCap, totalTokens, presaleDiscount, ownerPercentage, 0, 0, 0, 0));
-        maxSupply = safeAdd(maxSupply, totalTokens);
+        maxSupply = maxSupply.add(totalTokens);
       }
 
     }
@@ -218,8 +225,8 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
         crowdsaleStages[stage].minCap = _minCap;
         crowdsaleStages[stage].maxCap = _maxCap;
         crowdsaleStages[stage].ownerPercentage = _ownerPercentage;
-        maxSupply = safeSub(maxSupply, crowdsaleStages[stage].totalTokens);
-        maxSupply = safeAdd(maxSupply, _totalTokens);
+        maxSupply = maxSupply.sub(crowdsaleStages[stage].totalTokens);
+        maxSupply = maxSupply.add(_totalTokens);
         crowdsaleStages[stage].totalTokens = _totalTokens;
 
       }
@@ -235,32 +242,32 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
       uint foundingTeamTokens = 0;
       status = 4;
       if (crowdsaleStages[stage].weiRaised >= crowdsaleStages[stage].minCap) {
-        maxSupply = safeSub(maxSupply, crowdsaleStages[stage].totalTokens);
-        maxSupply = safeAdd(maxSupply, crowdsaleStages[stage].tokensSold);
+        maxSupply = maxSupply.sub(crowdsaleStages[stage].totalTokens);
+        maxSupply = maxSupply.add(crowdsaleStages[stage].tokensSold);
         uint presaleTokens = 0;
         if (crowdsaleStages[stage].presaleDiscount > 0) {
-          presaleTokens = safeDiv(crowdsaleStages[stage].lastPrice, 100);
-          presaleTokens = safeMul(presaleTokens, safeSub(100, crowdsaleStages[stage].presaleDiscount));
-          presaleTokens = safeDiv(crowdsaleStages[stage].totalPresaleWei, presaleTokens);
-          maxSupply = safeAdd(maxSupply, presaleTokens);
+          presaleTokens = crowdsaleStages[stage].lastPrice.div(100);
+          presaleTokens = presaleTokens.mul( uint(100).sub(crowdsaleStages[stage].presaleDiscount) );
+          presaleTokens = crowdsaleStages[stage].totalPresaleWei.div(presaleTokens);
+          maxSupply = maxSupply.add(presaleTokens);
         }
         if (crowdsaleStages[stage].ownerPercentage > 0) {
-          foundingTeamTokens = safeAdd(presaleTokens, crowdsaleStages[stage].tokensSold);
-          foundingTeamTokens = safeDiv(foundingTeamTokens, 1000);
-          foundingTeamTokens = safeMul(foundingTeamTokens, crowdsaleStages[stage].ownerPercentage);
+          foundingTeamTokens = presaleTokens.add(crowdsaleStages[stage].tokensSold);
+          foundingTeamTokens = foundingTeamTokens.div(1000);
+          foundingTeamTokens = foundingTeamTokens.mul(crowdsaleStages[stage].ownerPercentage);
 
-          for (uint i = safeAdd(block.number, 10); i <= safeAdd(block.number, 80); i = safeAdd(i, 10))
-            futurePayments[futurePayments.length ++] = FuturePayment(owner, i, safeDiv(foundingTeamTokens, 8));
+          for (uint i = block.number.add(10); i <= block.number.add(80); i = i.add(10))
+            futurePayments[futurePayments.length ++] = FuturePayment(owner, i, foundingTeamTokens.div(8));
           /*
           this values would be use on the final version, making payments every 6 months for 4 years, starting 1 year after token deployment.
-          for (uint i = safeAdd(block.number, 2102400); i <= safeAdd(block.number, 6307200); i = safeAdd(i, 525600))
-            futurePayments[futurePayments.length ++] = FuturePayment(owner, i, safeDiv(foundingTeamTokens, 8));
+          for (uint i = block.number.add(2102400); i <= block.number.add(6307200); i = i.add(525600))
+            futurePayments[futurePayments.length ++] = FuturePayment(owner, i, foundingTeamTokens.div(8));
           */
-          maxSupply = safeAdd(maxSupply, foundingTeamTokens);
+          maxSupply = maxSupply.add(foundingTeamTokens);
           crowdsaleStages[stage].ownerPercentage = 0;
         }
       } else if (crowdsaleStages[stage].weiRaised < crowdsaleStages[stage].minCap) {
-        maxSupply = safeSub(maxSupply, crowdsaleStages[stage].totalTokens);
+        maxSupply = maxSupply.sub(crowdsaleStages[stage].totalTokens);
       }
 
     }
@@ -282,10 +289,10 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
         ((futurePayments[pos].afterBlock > 0) && (futurePayments[pos].afterBlock > block.number)))
         throw;
 
-      uint formatedBalance = safeMul(futurePayments[pos].tokens, LONG_DECIMALS);
+      uint formatedBalance = futurePayments[pos].tokens.mul(LONG_DECIMALS);
 
-      totalSupply = safeAdd(totalSupply, futurePayments[pos].tokens);
-      balances[msg.sender] = safeAdd(balances[msg.sender], formatedBalance);
+      totalSupply = totalSupply.add(futurePayments[pos].tokens);
+      balances[msg.sender] = balances[msg.sender].add(formatedBalance);
       futurePayments[pos].tokens = 0;
 
     }
@@ -298,17 +305,17 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
         if (crowdsaleStages[stage].presalePayments[buyer] == 0)
           throw;
 
-        uint tokens = safeDiv(crowdsaleStages[stage].lastPrice, 100);
-        tokens = safeMul(tokens, safeSub(100, crowdsaleStages[stage].presaleDiscount));
-        tokens = safeDiv(crowdsaleStages[stage].presalePayments[buyer], tokens);
+        uint tokens = crowdsaleStages[stage].lastPrice.div(100);
+        tokens = tokens.mul( uint(100).sub(crowdsaleStages[stage].presaleDiscount) );
+        tokens = crowdsaleStages[stage].presalePayments[buyer].div(tokens);
 
-        totalSupply = safeAdd(totalSupply, tokens);
-        crowdsaleStages[stage].tokensSold = safeAdd(crowdsaleStages[stage].tokensSold, tokens);
+        totalSupply = totalSupply.add(tokens);
+        crowdsaleStages[stage].tokensSold = crowdsaleStages[stage].tokensSold.add(tokens);
 
-        tokens = safeMul(tokens, LONG_DECIMALS);
-        balances[buyer] = safeAdd(balances[buyer], tokens);
+        tokens = tokens.mul(LONG_DECIMALS);
+        balances[buyer] = balances[buyer].add(tokens);
 
-        crowdsaleStages[stage].totalPresaleWei = safeSub(crowdsaleStages[stage].totalPresaleWei, crowdsaleStages[stage].presalePayments[buyer]);
+        crowdsaleStages[stage].totalPresaleWei = crowdsaleStages[stage].totalPresaleWei.sub(crowdsaleStages[stage].presalePayments[buyer]);
         crowdsaleStages[stage].presalePayments[buyer] = 0;
 
       } else {
@@ -316,16 +323,16 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
         if (crowdsaleStages[stage].tokens[buyer] == 0)
           throw;
 
-        uint formatedBalance = safeMul(crowdsaleStages[stage].tokens[buyer], LONG_DECIMALS);
-        uint weiChange = safeMul(crowdsaleStages[stage].tokens[buyer], crowdsaleStages[stage].lastPrice);
+        uint formatedBalance = crowdsaleStages[stage].tokens[buyer].mul(LONG_DECIMALS);
+        uint weiChange = crowdsaleStages[stage].tokens[buyer].mul(crowdsaleStages[stage].lastPrice);
 
         if (crowdsaleStages[stage].weiPayed[buyer] > weiChange){
-          weiChange = safeSub(crowdsaleStages[stage].weiPayed[buyer], weiChange);
+          weiChange = crowdsaleStages[stage].weiPayed[buyer].sub(weiChange);
           safeSend(buyer, weiChange);
         }
 
-        totalSupply = safeAdd(totalSupply, crowdsaleStages[stage].tokens[buyer]);
-        balances[buyer] = safeAdd(balances[buyer], formatedBalance);
+        totalSupply = totalSupply.add(crowdsaleStages[stage].tokens[buyer]);
+        balances[buyer] = balances[buyer].add(formatedBalance);
 
         crowdsaleStages[stage].weiPayed[buyer] = 0;
         crowdsaleStages[stage].tokens[buyer] = 0;
@@ -347,27 +354,27 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
         status = 3;
 
       // Calculate the total cost in wei of buying the tokens.
-      uint tokens = safeDiv(msg.value, tokenPrice);
-      uint weiCost = safeMul(tokens, tokenPrice);
-      uint weiChange = safeSub(msg.value, weiCost);
+      uint tokens = msg.value.div(tokenPrice);
+      uint weiCost = tokens.mul(tokenPrice);
+      uint weiChange = msg.value.sub(weiCost);
 
       uint presaleTokens = tokens;
 
       if (crowdsaleStages[stage].presaleDiscount > 0){
 
         // Calculate how much presale tokens would be distributed at this price
-        presaleTokens = safeDiv(tokenPrice, 100);
-        presaleTokens = safeMul(presaleTokens, safeSub(100, crowdsaleStages[stage].presaleDiscount));
-        presaleTokens = safeDiv(crowdsaleStages[stage].totalPresaleWei, presaleTokens);
+        presaleTokens = tokenPrice.div(100);
+        presaleTokens = presaleTokens.mul( uint(100).sub(crowdsaleStages[stage].presaleDiscount) );
+        presaleTokens = crowdsaleStages[stage].totalPresaleWei.div(presaleTokens);
 
         // Add the bid tokens to presaleTokens to check not to pass the supply of the stage
-        presaleTokens = safeAdd(presaleTokens, tokens);
+        presaleTokens = presaleTokens.add(tokens);
       }
 
-      if (safeAdd(crowdsaleStages[stage].tokensSold, presaleTokens) > crowdsaleStages[stage].totalTokens)
+      if (crowdsaleStages[stage].tokensSold.add(presaleTokens) > crowdsaleStages[stage].totalTokens)
         throw;
 
-      if (safeAdd(crowdsaleStages[stage].weiRaised, weiCost) <= crowdsaleStages[stage].maxCap) {
+      if (crowdsaleStages[stage].weiRaised.add(weiCost) <= crowdsaleStages[stage].maxCap) {
 
         if (weiChange > 0)
           safeSend(msg.sender, weiChange);
@@ -375,8 +382,8 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
         crowdsaleStages[stage].lastPrice = tokenPrice;
         crowdsaleStages[stage].weiPayed[msg.sender] = weiCost;
         crowdsaleStages[stage].tokens[msg.sender] = tokens;
-        crowdsaleStages[stage].weiRaised = safeAdd(crowdsaleStages[stage].weiRaised, weiCost);
-        crowdsaleStages[stage].tokensSold = safeAdd(crowdsaleStages[stage].tokensSold, tokens);
+        crowdsaleStages[stage].weiRaised = crowdsaleStages[stage].weiRaised.add(weiCost);
+        crowdsaleStages[stage].tokensSold = crowdsaleStages[stage].tokensSold.add(tokens);
 
       } else {
         safeSend(msg.sender, msg.value);
@@ -417,8 +424,8 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
       if (to == address(this))
         throw;
 
-      balances[msg.sender] = safeSub(balances[msg.sender], value);
-      balances[to] = safeAdd(balances[to], value);
+      balances[msg.sender] = balances[msg.sender].sub(value);
+      balances[to] = balances[to].add(value);
       giveVotes(msg.sender, to);
       Transfer(msg.sender, to, value);
 
@@ -433,9 +440,9 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
         throw;
 
       uint allowance = allowed[from][msg.sender];
-      balances[to] = safeAdd(balances[to], value);
-      balances[from] = safeSub(balances[from], value);
-      allowed[from][msg.sender] = safeSub(allowance, value);
+      balances[to] = balances[to].add(value);
+      balances[from] = balances[from].sub(value);
+      allowed[from][msg.sender] = allowance.sub(value);
       giveVotes(msg.sender, to);
       Transfer(from, to, value);
 
@@ -481,8 +488,8 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
       // If transfer have value process it
       if (value > 0) {
-        balances[tx.origin] = safeSub(balances[tx.origin], value);
-        balances[to] = safeAdd(balances[to], value);
+        balances[tx.origin] = balances[tx.origin].sub(value);
+        balances[to] = balances[to].add(value);
         giveVotes(tx.origin, to);
       }
 
@@ -504,9 +511,9 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
       // If transfer have value process it
       if (value > 0) {
         uint allowance = allowed[from][tx.origin];
-        balances[from] = safeSub(balances[from], value);
-        balances[to] = safeAdd(balances[to], value);
-        allowed[from][tx.origin] = safeSub(allowance, value);
+        balances[from] = balances[from].sub(value);
+        balances[to] = balances[to].add(value);
+        allowed[from][tx.origin] = allowance.sub(value);
         giveVotes(tx.origin, to);
       }
 
@@ -531,14 +538,14 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
       // Get the needed votes % for action approval
       uint votesNeeded = divide(totalVotes, 100, 1);
-      votesNeeded = safeMul(votesNeeded, actionsDAO[target][signature]);
+      votesNeeded = votesNeeded.mul(actionsDAO[target][signature]);
       votesNeeded = divide(votesNeeded, 100, 1);
 
       // If DAOAction exists votesNeeded will be more than cero, proposal is created.
       if (votesNeeded > 0) {
         totalProposals ++;
         uint pos = proposals.length++;
-        uint blocksWait = safeAdd(block.number, proposalBlocksWait);
+        uint blocksWait = block.number.add(proposalBlocksWait);
         uint senderVotes = getVotes(msg.sender);
         proposals[pos] = Proposal(target, totalProposals, value, description, 2, block.number, blocksWait, agePerBlock, votesNeeded, actionData, senderVotes);
         proposals[pos].votes[msg.sender] = 1;
@@ -561,7 +568,7 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
       if (vote) {
         p.votes[msg.sender] = 1;
         uint senderVotes = getVotes(msg.sender);
-        p.totalVotes = safeAdd(p.totalVotes, senderVotes);
+        p.totalVotes = p.totalVotes.add(senderVotes);
       } else {
         p.votes[msg.sender] = 2;
       }
@@ -583,11 +590,11 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
         throw;
 
       // Calculate the needed votes
-      uint proposalAge = safeSub(block.number, p.creationBlock);
+      uint proposalAge = block.number.sub(p.creationBlock);
       uint ageVotes = 0;
       if (proposalAge > p.agePerBlock)
-        ageVotes = safeDiv(proposalAge, p.agePerBlock);
-      uint votesNeeded = safeAdd(p.votesNeeded, ageVotes);
+        ageVotes = proposalAge.div(p.agePerBlock);
+      uint votesNeeded = p.votesNeeded.add(ageVotes);
 
       // See if proposal reached the needed votes
       if (p.totalVotes >= p.votesNeeded) {
@@ -637,10 +644,10 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
       for (stage = 0; stage < crowdsaleStages.length; stage ++) {
         if ((crowdsaleStages[stage].startBlock < block.number) && (block.number < crowdsaleStages[stage].endBlock)) {
-          price = safeSub(block.number, crowdsaleStages[stage].startBlock);
-          price = safeDiv(price, crowdsaleStages[stage].changePerBlock);
-          price = safeMul(price, crowdsaleStages[stage].changePrice);
-          price = safeSub(crowdsaleStages[stage].startPrice, price);
+          price = block.number.sub(crowdsaleStages[stage].startBlock);
+          price = price.div(crowdsaleStages[stage].changePerBlock);
+          price = price.mul(crowdsaleStages[stage].changePrice);
+          price = crowdsaleStages[stage].startPrice.sub(price);
           break;
         }
       }
@@ -671,7 +678,7 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
     // Function to get the total votes of an address
     function getVotes(address voter) public constant returns (uint) {
-      uint senderVotes = safeAdd(sentTxVotes[voter], receivedTxVotes[voter]);
+      uint senderVotes = sentTxVotes[voter].add(receivedTxVotes[voter]);
       return senderVotes;
     }
 
@@ -692,11 +699,11 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     // Internal contract function that add votes if necessary sent/receive txs amount is reached
     function giveVotes(address sender, address receiver) internal {
 
-      if ((txsSent[sender] < (votesIncrementSent**sentTxVotes[sender])) && (safeAdd(txsSent[sender],1) >= (votesIncrementSent**sentTxVotes[sender]))) {
+      if ((txsSent[sender] < (votesIncrementSent**sentTxVotes[sender])) && (txsSent[sender].add(1) >= (votesIncrementSent**sentTxVotes[sender]))) {
         sentTxVotes[sender] ++;
         totalVotes ++;
       }
-      if ((txsReceived[receiver] < (votesIncrementReceived**receivedTxVotes[receiver])) && (safeAdd(txsReceived[receiver],1) >= (votesIncrementReceived**receivedTxVotes[receiver]))) {
+      if ((txsReceived[receiver] < (votesIncrementReceived**receivedTxVotes[receiver])) && (txsReceived[receiver].add(1) >= (votesIncrementReceived**receivedTxVotes[receiver]))) {
         receivedTxVotes[receiver] ++;
         totalVotes ++;
       }
