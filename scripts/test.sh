@@ -8,7 +8,7 @@ if [ ! $trpc_running ]; then
   trpc_pid=$!
 fi
 
-./node_modules/truffle/cli.js test
+./node_modules/truffle/cli.js test $1
 test_result=$?
 
 if [ ! $trpc_running ]; then
