@@ -77,80 +77,102 @@ module.exports = {
   },
 
   checkValues: async function(token, accounts, etherBalance, totalSupply, tokenPrice, balances, votes, txsSent, txsReceived) {
-    var values = await Promise.all([
+    let [
+      tokenEtherBalance,
+      tokenTotalSupply,
+      crowdsalePrice,
+      tokenTotalVotes,
+      tokenIncrementSent,
+      tokenIncrementReceived,
+      tokenAccountBalances,
+      tokenAccountVotes,
+      tokenAccountTxSent,
+      tokenAccountTxReceived
+    ] = await Promise.all([
       web3.eth.getBalance(token.contract.address),
       token.totalSupply(),
       token.getPrice(1),
       token.totalVotes(),
       token.votesIncrementSent(),
       token.votesIncrementReceived(),
-      token.balanceOf(accounts[1]),
-      token.balanceOf(accounts[2]),
-      token.balanceOf(accounts[3]),
-      token.balanceOf(accounts[4]),
-      token.balanceOf(accounts[5]),
-      token.getVotes(accounts[1]),
-      token.getVotes(accounts[2]),
-      token.getVotes(accounts[3]),
-      token.getVotes(accounts[4]),
-      token.getVotes(accounts[5]),
-      token.txsSent(accounts[1]),
-      token.txsSent(accounts[2]),
-      token.txsSent(accounts[3]),
-      token.txsSent(accounts[4]),
-      token.txsSent(accounts[5]),
-      token.txsReceived(accounts[1]),
-      token.txsReceived(accounts[2]),
-      token.txsReceived(accounts[3]),
-      token.txsReceived(accounts[4]),
-      token.txsReceived(accounts[5]),
+      Promise.all([
+        token.balanceOf(accounts[1]),
+        token.balanceOf(accounts[2]),
+        token.balanceOf(accounts[3]),
+        token.balanceOf(accounts[4]),
+        token.balanceOf(accounts[5])
+      ]),
+      Promise.all([
+        token.getVotes(accounts[1]),
+        token.getVotes(accounts[2]),
+        token.getVotes(accounts[3]),
+        token.getVotes(accounts[4]),
+        token.getVotes(accounts[5])
+      ]),
+      Promise.all([
+        token.txsSent(accounts[1]),
+        token.txsSent(accounts[2]),
+        token.txsSent(accounts[3]),
+        token.txsSent(accounts[4]),
+        token.txsSent(accounts[5])
+      ]),
+      Promise.all([
+        token.txsReceived(accounts[1]),
+        token.txsReceived(accounts[2]),
+        token.txsReceived(accounts[3]),
+        token.txsReceived(accounts[4]),
+        token.txsReceived(accounts[5])
+      ]),
     ]);
 
     if (DEBUG_MODE) {
-      console.log('Contract Balance:', this.toEther(values[0]), 'Ether;', this.toWei(values[0]), 'Wei');
-      console.log('Total Supply:', parseInt(values[1]));
-      console.log('Token Price:', parseInt(values[2]));
-      console.log('Dao Total Votes:', parseInt(values[3]), 'Dao Votes Increment Exponent sent/received:', parseInt(values[4]),'/',parseInt(values[5]));
-      console.log('Account[1]', accounts[1], ", Balance:", this.parseBalance(values[6]), ", Votes:", parseInt(values[11]), ", txsSent / txsReceived:", parseInt(values[16]), parseInt(values[21]));
-      console.log('Account[2]', accounts[2], ", Balance:", this.parseBalance(values[7]), ", Votes:", parseInt(values[12]), ", txsSent / txsReceived:", parseInt(values[17]), parseInt(values[22]));
-      console.log('Account[3]', accounts[3], ", Balance:", this.parseBalance(values[8]), ", Votes:", parseInt(values[13]), ", txsSent / txsReceived:", parseInt(values[18]), parseInt(values[23]));
-      console.log('Account[4]', accounts[4], ", Balance:", this.parseBalance(values[9]), ", Votes:", parseInt(values[14]), ", txsSent / txsReceived:", parseInt(values[19]), parseInt(values[24]));
-      console.log('Account[5]', accounts[5], ", Balance:", this.parseBalance(values[10]), ", Votes:", parseInt(values[15]), ", txsSent / txsReceived:", parseInt(values[20]), parseInt(values[25]));
+      console.log('Contract Balance:', this.toEther(tokenEtherBalance), 'Ether;', this.toWei(tokenEtherBalance), 'Wei');
+      console.log('Total Supply:', parseInt(tokenTotalSupply));
+      console.log('Token Price:', parseInt(crowdsalePrice));
+      console.log('Dao Total Votes:', parseInt(tokenTotalVotes), 'Dao Votes Increment Exponent sent/received:', parseInt(tokenIncrementSent),'/',parseInt(tokenIncrementReceived));
+      for(i = 0; i < 5; i++) {
+        console.log(
+          'Account[' + (i + 1) + ']',
+          accounts[i + 1],
+          ", Balance:", this.parseBalance(tokenAccountBalances[i]),
+          ", Votes:", parseInt(tokenAccountBalances[i]),
+          ", txsSent / txsReceived:", parseInt(tokenAccountTxSent[i]), parseInt(tokenAccountTxReceived[i]));
+      }
     }
 
     if (etherBalance)
-      assert.equal(this.toEther(values[0]), etherBalance);
+      assert.equal(this.toEther(tokenEtherBalance), etherBalance);
     if (totalSupply)
-      assert.equal(parseInt(values[1]), totalSupply);
+      assert.equal(parseInt(tokenTotalSupply), totalSupply);
     if (tokenPrice)
-      assert.equal(this.toWei(values[2]), tokenPrice);
+      assert.equal(this.toWei(crowdsalePrice), tokenPrice);
     if (balances){
-      assert.equal(this.parseBalance(values[6]), balances[0]);
-      assert.equal(this.parseBalance(values[7]), balances[1]);
-      assert.equal(this.parseBalance(values[8]), balances[2]);
-      assert.equal(this.parseBalance(values[9]), balances[3]);
-      assert.equal(this.parseBalance(values[10]), balances[4]);
+      assert.equal(this.parseBalance(tokenAccountBalances[0]), balances[0]);
+      assert.equal(this.parseBalance(tokenAccountBalances[1]), balances[1]);
+      assert.equal(this.parseBalance(tokenAccountBalances[2]), balances[2]);
+      assert.equal(this.parseBalance(tokenAccountBalances[3]), balances[3]);
+      assert.equal(this.parseBalance(tokenAccountBalances[4]), balances[4]);
     }
     if (votes){
-      assert.equal(parseInt(values[11]), votes[0]);
-      assert.equal(parseInt(values[12]), votes[1]);
-      assert.equal(parseInt(values[13]), votes[2]);
-      assert.equal(parseInt(values[14]), votes[3]);
-      assert.equal(parseInt(values[15]), votes[4]);
+      assert.equal(parseInt(tokenAccountVotes[0]), votes[0]);
+      assert.equal(parseInt(tokenAccountVotes[1]), votes[1]);
+      assert.equal(parseInt(tokenAccountVotes[2]), votes[2]);
+      assert.equal(parseInt(tokenAccountVotes[3]), votes[3]);
+      assert.equal(parseInt(tokenAccountVotes[4]), votes[4]);
     }
     if (txsSent){
-      assert.equal(parseInt(values[16]), txsSent[0]);
-      assert.equal(parseInt(values[17]), txsSent[1]);
-      assert.equal(parseInt(values[18]), txsSent[2]);
-      assert.equal(parseInt(values[19]), txsSent[3]);
-      assert.equal(parseInt(values[20]), txsSent[4]);
+      assert.equal(parseInt(tokenAccountTxSent[0]), txsSent[0]);
+      assert.equal(parseInt(tokenAccountTxSent[1]), txsSent[1]);
+      assert.equal(parseInt(tokenAccountTxSent[2]), txsSent[2]);
+      assert.equal(parseInt(tokenAccountTxSent[3]), txsSent[3]);
+      assert.equal(parseInt(tokenAccountTxSent[4]), txsSent[4]);
     }
     if (txsReceived){
-      assert.equal(parseInt(values[21]), txsReceived[0]);
-      assert.equal(parseInt(values[22]), txsReceived[1]);
-      assert.equal(parseInt(values[23]), txsReceived[2]);
-      assert.equal(parseInt(values[24]), txsReceived[3]);
-      assert.equal(parseInt(values[25]), txsReceived[4]);
+      assert.equal(parseInt(tokenAccountTxReceived[0]), txsReceived[0]);
+      assert.equal(parseInt(tokenAccountTxReceived[1]), txsReceived[1]);
+      assert.equal(parseInt(tokenAccountTxReceived[2]), txsReceived[2]);
+      assert.equal(parseInt(tokenAccountTxReceived[3]), txsReceived[3]);
+      assert.equal(parseInt(tokenAccountTxReceived[4]), txsReceived[4]);
     }
   },
 
