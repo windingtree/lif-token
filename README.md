@@ -130,4 +130,6 @@ vote(uint proposalID, bool vote)
 
 ## Test
 
-Run `npm test`
+* To run all tests: `npm test`
+
+* To run a specific test: `npm test -- test/Crowdsale.js`
