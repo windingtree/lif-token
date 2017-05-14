@@ -4,7 +4,7 @@ var abiDecoder = require('abi-decoder');
 abiDecoder.addABI(LifToken._json.abi);
 
 const TOKEN_DECIMALS = 8;
-const DEBUG_MODE = false;
+const DEBUG_MODE = (process.env.WT_DEBUG == "true") || false;
 
 module.exports = {
 
