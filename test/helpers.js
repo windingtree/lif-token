@@ -221,14 +221,14 @@ module.exports = {
     let tokenStatus = await token.status();
     assert.equal(parseInt(tokenStatus), 4);
     if (balances[0] > 0)
-      await token.distributeTokens(0, accounts[1], false, { from: accounts[0] });
+      await token.distributeTokens(0, accounts[1], false);
     if (balances[1] > 0)
-      await token.distributeTokens(0, accounts[2], false, { from: accounts[0] });
+      await token.distributeTokens(0, accounts[2], false);
     if (balances[2] > 0)
-      await token.distributeTokens(0, accounts[3], false, { from: accounts[0] });
+      await token.distributeTokens(0, accounts[3], false);
     if (balances[3] > 0)
-      await token.distributeTokens(0, accounts[4], false, { from: accounts[0] });
+      await token.distributeTokens(0, accounts[4], false);
     if (balances[4] > 0)
-      await token.distributeTokens(0, accounts[5], false, { from: accounts[0] });
+      await token.distributeTokens(0, accounts[5], false);
   }
 };
