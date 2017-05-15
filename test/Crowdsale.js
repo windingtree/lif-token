@@ -152,15 +152,15 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(auctionEnded[13]), lastPrice);
 
     // Distribute the tokens and check values
-    await token.distributeTokens(0, accounts[1], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[2], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[3], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[4], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[5], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[6], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[7], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[8], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[10], true, {from: accounts[0]});
+    await token.distributeTokens(0, accounts[1], false);
+    await token.distributeTokens(0, accounts[2], false);
+    await token.distributeTokens(0, accounts[3], false);
+    await token.distributeTokens(0, accounts[4], false);
+    await token.distributeTokens(0, accounts[5], false);
+    await token.distributeTokens(0, accounts[6], false);
+    await token.distributeTokens(0, accounts[7], false);
+    await token.distributeTokens(0, accounts[8], false);
+    await token.distributeTokens(0, accounts[10], true);
     await help.checkValues(token, accounts, 0, 7000000, 0, [500000, 1000000, 500000, 1000000, 2000000]);
     // Shouldnt allow to a claim a payment before the requested block
     try {
@@ -299,15 +299,15 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(auctionEnded[12]), totalTokensBought);
     assert.equal(parseFloat(auctionEnded[13]), lastPrice);
     // Distribute the sold tokens and check the values
-    await token.distributeTokens(0, accounts[1], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[2], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[3], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[4], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[5], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[6], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[7], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[8], false, {from: accounts[0]});
-    await token.distributeTokens(0, accounts[10], true, {from: accounts[0]});
+    await token.distributeTokens(0, accounts[1], false);
+    await token.distributeTokens(0, accounts[2], false);
+    await token.distributeTokens(0, accounts[3], false);
+    await token.distributeTokens(0, accounts[4], false);
+    await token.distributeTokens(0, accounts[5], false);
+    await token.distributeTokens(0, accounts[6], false);
+    await token.distributeTokens(0, accounts[7], false);
+    await token.distributeTokens(0, accounts[8], false);
+    await token.distributeTokens(0, accounts[10], true);
     await help.checkValues(token, accounts, 0, 4125000, 0, [700000, 400000, 200000, 200000, 500000]);
 
     // Start another stage to try to sell the remaining tokens
@@ -403,11 +403,11 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(auctionEnded[13]), lastPrice);
 
     // Distribute the tokens sold and check values
-    await token.distributeTokens(1, accounts[3], false, {from: accounts[0]});
-    await token.distributeTokens(1, accounts[4], false, {from: accounts[0]});
-    await token.distributeTokens(1, accounts[6], false, {from: accounts[0]});
-    await token.distributeTokens(1, accounts[7], false, {from: accounts[0]});
-    await token.distributeTokens(1, accounts[8], false, {from: accounts[0]});
+    await token.distributeTokens(1, accounts[3], false);
+    await token.distributeTokens(1, accounts[4], false);
+    await token.distributeTokens(1, accounts[6], false);
+    await token.distributeTokens(1, accounts[7], false);
+    await token.distributeTokens(1, accounts[8], false);
     await help.checkValues(token, accounts, 0, 6125000, 0, [700000, 400000, 300000, 500000, 500000]);
 
     // Start another stage to try to sell the remaining tokens
@@ -476,10 +476,10 @@ contract('LifToken Crowdsale', function(accounts) {
 
     // Distribute the remaining tokens and check values
     await help.waitToBlock(endBlock, accounts);
-    await token.distributeTokens(2, accounts[1], false, {from: accounts[0]});
-    await token.distributeTokens(2, accounts[2], false, {from: accounts[0]});
-    await token.distributeTokens(2, accounts[3], false, {from: accounts[0]});
-    await token.distributeTokens(2, accounts[4], false, {from: accounts[0]});
+    await token.distributeTokens(2, accounts[1], false);
+    await token.distributeTokens(2, accounts[2], false);
+    await token.distributeTokens(2, accounts[3], false);
+    await token.distributeTokens(2, accounts[4], false);
     await help.checkValues(token, accounts, 0, 7000000, 0, [875000, 700000, 500000, 700000, 500000]);
 
     // Should be able to claim all the payments
