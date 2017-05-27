@@ -123,7 +123,7 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(auctionSuccess[8]), 40);
     assert.equal(parseInt(auctionSuccess[9]), 385);
     assert.equal(help.toEther(auctionSuccess[10]), 250000);
-    assert.equal(help.parseBalance(auctionSuccess[11]), help.parseBalance(totalWeiSent));
+    assert.equal(help.lifWei2Lif(auctionSuccess[11]), help.lifWei2Lif(totalWeiSent));
     assert.equal(parseFloat(auctionSuccess[12]), totalTokensBought);
     assert.equal(parseFloat(auctionSuccess[13]), lastPrice);
     presaleTokens = help.toWei(250000)/(lastPrice*0.6);
@@ -147,7 +147,7 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(auctionEnded[8]), 40);
     assert.equal(parseInt(auctionEnded[9]), 0);
     assert.equal(help.toEther(auctionEnded[10]), 250000);
-    assert.equal(help.parseBalance(auctionEnded[11]), help.parseBalance(totalWeiSent));
+    assert.equal(help.lifWei2Lif(auctionEnded[11]), help.lifWei2Lif(totalWeiSent));
     assert.equal(parseFloat(auctionEnded[12]), totalTokensBought);
     assert.equal(parseFloat(auctionEnded[13]), lastPrice);
 
@@ -180,7 +180,7 @@ contract('LifToken Crowdsale', function(accounts) {
     await token.claimTokensPayment(7, {from: accounts[0]});
     await token.claimTokensPayment(8, {from: accounts[0]});
     let ownerBalance = await token.balanceOf(accounts[0]);
-    assert.equal(help.parseBalance(ownerBalance), 2695000);
+    assert.equal(help.lifWei2Lif(ownerBalance), 2695000);
     // Check all final values
     await help.checkValues(token, accounts, 0, 9995000, 0, [500000, 1000000, 500000, 1000000, 2000000]);
   });
@@ -272,7 +272,7 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(auctionSuccess[8]), 50);
     assert.equal(parseInt(auctionSuccess[9]), 428);
     assert.equal(help.toEther(auctionSuccess[10]), 250000);
-    assert.equal(help.parseBalance(auctionSuccess[11]), help.parseBalance(totalWeiSent));
+    assert.equal(help.lifWei2Lif(auctionSuccess[11]), help.lifWei2Lif(totalWeiSent));
     assert.equal(parseFloat(auctionSuccess[12]), totalTokensBought);
     assert.equal(parseFloat(auctionSuccess[13]), lastPrice);
     presaleTokens = help.toWei(250000)/(lastPrice*0.5);
@@ -295,7 +295,7 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(auctionEnded[8]), 50);
     assert.equal(parseInt(auctionEnded[9]), 0);
     assert.equal(help.toEther(auctionEnded[10]), 250000);
-    assert.equal(help.parseBalance(auctionEnded[11]), help.parseBalance(totalWeiSent));
+    assert.equal(help.lifWei2Lif(auctionEnded[11]), help.lifWei2Lif(totalWeiSent));
     assert.equal(parseFloat(auctionEnded[12]), totalTokensBought);
     assert.equal(parseFloat(auctionEnded[13]), lastPrice);
     // Distribute the sold tokens and check the values
@@ -375,7 +375,7 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(auctionSuccess[8]), 0);
     assert.equal(parseInt(auctionSuccess[9]), 428);
     assert.equal(help.toEther(auctionSuccess[10]), 0);
-    assert.equal(help.parseBalance(auctionSuccess[11]), help.parseBalance(totalWeiSent));
+    assert.equal(help.lifWei2Lif(auctionSuccess[11]), help.lifWei2Lif(totalWeiSent));
     assert.equal(parseFloat(auctionSuccess[12]), totalTokensBought);
     assert.equal(parseFloat(auctionSuccess[13]), lastPrice);
 
@@ -398,7 +398,7 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(auctionEnded[8]), 0);
     assert.equal(parseInt(auctionEnded[9]), 0);
     assert.equal(help.toEther(auctionEnded[10]), 0);
-    assert.equal(help.parseBalance(auctionEnded[11]), help.parseBalance(totalWeiSent));
+    assert.equal(help.lifWei2Lif(auctionEnded[11]), help.lifWei2Lif(totalWeiSent));
     assert.equal(parseFloat(auctionEnded[12]), totalTokensBought);
     assert.equal(parseFloat(auctionEnded[13]), lastPrice);
 
@@ -470,7 +470,7 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(thirdAuctionEnded[8]), 0);
     assert.equal(parseInt(thirdAuctionEnded[9]), 0);
     assert.equal(help.toEther(thirdAuctionEnded[10]), 0);
-    assert.equal(help.parseBalance(thirdAuctionEnded[11]), help.parseBalance(totalWeiSent));
+    assert.equal(help.lifWei2Lif(thirdAuctionEnded[11]), help.lifWei2Lif(totalWeiSent));
     assert.equal(parseFloat(thirdAuctionEnded[12]), totalTokensBought);
     assert.equal(parseFloat(thirdAuctionEnded[13]), lastPrice);
 
@@ -509,7 +509,7 @@ contract('LifToken Crowdsale', function(accounts) {
     await token.claimTokensPayment(22, {from: accounts[0]});
     await token.claimTokensPayment(23, {from: accounts[0]});
     let ownerBalance = await token.balanceOf(accounts[0]);
-    assert.equal(help.parseBalance(ownerBalance), 2995992);
+    assert.equal(help.lifWei2Lif(ownerBalance), 2995992);
 
     // Check all final values
     await help.checkValues(token, accounts, 0, 9995992, 0, [875000, 700000, 500000, 700000, 500000]);

@@ -30,10 +30,10 @@ module.exports = {
     return back;
   },
 
-  parseBalance: function(balance){
+  lifWei2Lif: function(balance){
     return (balance/Math.pow(10,TOKEN_DECIMALS)).toPrecision(TOKEN_DECIMALS);
   },
-  formatBalance: function(balance){
+  lif2LifWei: function(balance){
     return (balance*Math.pow(10,TOKEN_DECIMALS));
   },
 
@@ -134,7 +134,7 @@ module.exports = {
         console.log(
           'Account[' + (i + 1) + ']',
           accounts[i + 1],
-          ", Balance:", this.parseBalance(tokenAccountBalances[i]),
+          ", Balance:", this.lifWei2Lif(tokenAccountBalances[i]),
           ", Votes:", parseInt(tokenAccountBalances[i]),
           ", txsSent / txsReceived:", parseInt(tokenAccountTxSent[i]), parseInt(tokenAccountTxReceived[i]));
       }
@@ -147,11 +147,11 @@ module.exports = {
     if (tokenPrice)
       assert.equal(this.toWei(crowdsalePrice), tokenPrice);
     if (balances){
-      assert.equal(this.parseBalance(tokenAccountBalances[0]), balances[0]);
-      assert.equal(this.parseBalance(tokenAccountBalances[1]), balances[1]);
-      assert.equal(this.parseBalance(tokenAccountBalances[2]), balances[2]);
-      assert.equal(this.parseBalance(tokenAccountBalances[3]), balances[3]);
-      assert.equal(this.parseBalance(tokenAccountBalances[4]), balances[4]);
+      assert.equal(this.lifWei2Lif(tokenAccountBalances[0]), balances[0]);
+      assert.equal(this.lifWei2Lif(tokenAccountBalances[1]), balances[1]);
+      assert.equal(this.lifWei2Lif(tokenAccountBalances[2]), balances[2]);
+      assert.equal(this.lifWei2Lif(tokenAccountBalances[3]), balances[3]);
+      assert.equal(this.lifWei2Lif(tokenAccountBalances[4]), balances[4]);
     }
     if (votes){
       assert.equal(parseInt(tokenAccountVotes[0]), votes[0]);
