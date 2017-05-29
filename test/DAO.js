@@ -64,9 +64,9 @@ contract('LifToken DAO', function(accounts) {
 
     var transfers = [];
     for (var i = 0; i < 15; i++)
-      transfers.push(token.transfer(accounts[1], help.formatBalance(100), "", {from: accounts[2]}));
+      transfers.push(token.transfer(accounts[1], help.lif2LifWei(100), "", {from: accounts[2]}));
     for (i = 0; i < 6; i++)
-      transfers.push(token.transfer(accounts[3], help.formatBalance(10), "", {from: accounts[1]}));
+      transfers.push(token.transfer(accounts[3], help.lif2LifWei(10), "", {from: accounts[1]}));
 
     await Promise.all(transfers);
     await help.checkValues(token, accounts, 1000000, 10000000, 0, [4001440,2998500,2000060,1000000,0], [6, 4, 2, 0, 0], [6, 15, 0, 0, 0], [15, 0, 6, 0, 0]);
@@ -98,9 +98,9 @@ contract('LifToken DAO', function(accounts) {
 
     var transfers = [];
     for (var i = 0; i < 15; i++)
-      transfers.push(token.transfer(accounts[1], help.formatBalance(100), "", {from: accounts[2]}));
+      transfers.push(token.transfer(accounts[1], help.lif2LifWei(100), "", {from: accounts[2]}));
     for (i = 0; i < 6; i++)
-      transfers.push(token.transfer(accounts[3], help.formatBalance(10), "", {from: accounts[1]}));
+      transfers.push(token.transfer(accounts[3], help.lif2LifWei(10), "", {from: accounts[1]}));
 
     await Promise.all(transfers);
     await help.checkValues(token, accounts, 1000000, 10000000, 0, [4001440,2998500,2000060,1000000,0], [6, 4, 2, 0, 0], [6, 15, 0, 0, 0], [15, 0, 6, 0, 0]);
@@ -143,9 +143,9 @@ contract('LifToken DAO', function(accounts) {
 
     var transfers = [];
     for (var i = 0; i < 15; i++)
-      transfers.push(token.transfer(accounts[1], help.formatBalance(100), "", {from: accounts[2]}));
+      transfers.push(token.transfer(accounts[1], help.lif2LifWei(100), "", {from: accounts[2]}));
     for (i = 0; i < 6; i++)
-      transfers.push(token.transfer(accounts[3], help.formatBalance(10), "", {from: accounts[1]}));
+      transfers.push(token.transfer(accounts[3], help.lif2LifWei(10), "", {from: accounts[1]}));
 
     await Promise.all(transfers);
     await help.checkValues(token, accounts, 1000000, 10000000, 0, [4001440,2998500,2000060,1000000,0], [6, 4, 2, 0, 0], [6, 15, 0, 0, 0], [15, 0, 6, 0, 0]);
@@ -181,9 +181,9 @@ contract('LifToken DAO', function(accounts) {
 
     var transfers = [];
     for (var i = 0; i < 15; i++)
-      transfers.push(token.transfer(accounts[1], help.formatBalance(100), "", {from: accounts[2]}));
+      transfers.push(token.transfer(accounts[1], help.lif2LifWei(100), "", {from: accounts[2]}));
     for (i = 0; i < 6; i++)
-      transfers.push(token.transfer(accounts[3], help.formatBalance(10), "", {from: accounts[1]}));
+      transfers.push(token.transfer(accounts[3], help.lif2LifWei(10), "", {from: accounts[1]}));
     await Promise.all(transfers);
     await help.checkValues(token, accounts, 1000000, 10000000, 0, [4001440,2998500,2000060,1000000,0], [6, 4, 2, 0, 0], [6, 15, 0, 0, 0], [15, 0, 6, 0, 0]);
 
@@ -205,9 +205,9 @@ contract('LifToken DAO', function(accounts) {
 
     var transfers = [];
     for (var i = 0; i < 15; i++)
-      transfers.push(token.transfer(accounts[1], help.formatBalance(100), "", {from: accounts[2]}));
+      transfers.push(token.transfer(accounts[1], help.lif2LifWei(100), "", {from: accounts[2]}));
     for (i = 0; i < 6; i++)
-      transfers.push(token.transfer(accounts[3], help.formatBalance(10), "", {from: accounts[1]}));
+      transfers.push(token.transfer(accounts[3], help.lif2LifWei(10), "", {from: accounts[1]}));
     await Promise.all(transfers);
     await help.checkValues(token, accounts, 1000000, 10000000, 0, [4001440,2998500,2000060,1000000,0], [6, 4, 2, 0, 0], [6, 15, 0, 0, 0], [15, 0, 6, 0, 0]);
 
