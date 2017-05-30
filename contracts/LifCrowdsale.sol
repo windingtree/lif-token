@@ -3,6 +3,7 @@ pragma solidity ^0.4.8;
 import "./zeppelin/ownership/Ownable.sol";
 import "./zeppelin/payment/PullPayment.sol";
 import "./zeppelin/SafeMath.sol";
+import "./FuturePayment.sol";
 
 /*
  * Líf Crowdsale
@@ -44,6 +45,8 @@ contract LifCrowdsale is Ownable, PullPayment {
     mapping (address => uint) weiPayed;
     mapping (address => uint) tokens;
     mapping (address => uint) presalePayments;
+
+    address[] public foundersFuturePayments;
 
     // Allow only certain status
     modifier onStatus(uint one, uint two) {
@@ -237,16 +240,20 @@ contract LifCrowdsale is Ownable, PullPayment {
           foundingTeamTokens = foundingTeamTokens.div(1000);
           foundingTeamTokens = foundingTeamTokens.mul(ownerPercentage);
 
-          /*
-          for (uint i = block.add(umber, 10); i <= block.add(umber, 80); i = i.add(0))
-            futurePayments[futurePayments.length ++] = FuturePayment(owner, i, foundingTeamTokens.div(8));
-           */
+          for (uint i = block.number.add(10); i <= block.number.add(80); i = i.add(10)) {
+            address futurePayment = new FuturePayment(owner, i, tokenAddress);
+
+            if (!tokenAddress.call(bytes4(sha3("transfer(address,uint256)")), address(futurePayment), foundingTeamTokens.div(8)))
+              throw;
+
+            foundersFuturePayments[foundersFuturePayments.length ++] = address(futurePayment);
+          }
           /*
           this values would be use on the final version, making payments every 6 months for 4 years, starting 1 year after token deployment.
           for (uint i = block.add(umber, 2102400); i <= block.add(umber, 6307200); i = i,.add(25600))
             futurePayments[futurePayments.length ++] = FuturePayment(owner, i, foundingTeamTokens.div(8));
           */
-          // maxSupply = maxSupply.add(foundingTeamTokens);
+
           ownerPercentage = 0;
         }
         // TODO: Return not used tokens to LifToken

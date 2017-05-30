@@ -5,6 +5,7 @@ var help = require("./helpers");
 
 var LifToken = artifacts.require("./LifToken.sol");
 var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
+var FuturePayment = artifacts.require("./FuturePayment.sol");
 
 const LOG_EVENTS = true;
 
@@ -166,16 +167,19 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(await token.balanceOf(crowdsale.contract.address), help.lif2LifWei(maxTokens));
     assert.equal(parseFloat(await token.balanceOf(token.contract.address)), 0);
 
-    await token.addFuturePayment(accounts[10], endBlock+30, paymentTokens);
+    // create future payment, issue & transfer tokens into it
+    let futurePayment = await FuturePayment.new(accounts[10], endBlock+30, token.address);
+    await token.issueTokens(paymentTokens);
+    console.log("Transfer to futurePayment:", await token.transferFrom(token.address, futurePayment.address, help.lif2LifWei(paymentTokens), {from: accounts[0]}));
 
     // Add discount of 250000 ethers
     await crowdsale.addDiscount(accounts[10], web3.toWei(250000, 'ether'));
 
-    // Check that the crowdsale stage and payments created succesfully with the right values
-    let advisorsPayment = await token.futurePayments.call(0);
-    assert.equal(advisorsPayment[0], accounts[10]);
-    assert.equal(parseFloat(advisorsPayment[1]), endBlock+30);
-    assert.equal(parseFloat(advisorsPayment[2]), 300000);
+    // Check that the crowdsale and payments created succesfully with the right values
+    assert.equal(await futurePayment.payee(), accounts[10]);
+    assert.equal(await futurePayment.afterBlock(), endBlock+30);
+    assert.equal(await futurePayment.tokenAddress(), token.address);
+    assert.equal(await token.balanceOf(futurePayment.contract.address), help.lif2LifWei(300000));
     assert.equal(parseFloat(await crowdsale.startPrice.call()), web3.toWei(5, 'ether'));
     assert.equal(parseFloat(await crowdsale.changePerBlock()), 10);
     assert.equal(parseFloat(await crowdsale.changePrice()), web3.toWei(0.4, 'ether'));
@@ -296,26 +300,27 @@ contract('LifToken Crowdsale', function(accounts) {
     await crowdsale.distributeTokens(accounts[8], false);
     await crowdsale.distributeTokens(accounts[10], true);
     console.log("before check values");
-    await help.checkValues(token, crowdsale, accounts, 0, 7000000, 0, [500000, 1000000, 500000, 1000000, 2000000]);
+    await help.checkValues(token, crowdsale, accounts, 0, 7300000, 0, [500000, 1000000, 500000, 1000000, 2000000]);
     // Shouldnt allow to a claim a payment before the requested block
     try {
-      await token.claimTokensPayment(3, {from: accounts[10]});
+      await futurePayment.claimPayment({from: accounts[10]});
       throw("claimTokensPayment should have failed and thrown an exception because we are before requested block");
     } catch (error) {
       if (error.message.search('invalid JUMP') == -1) throw error;
     }
     await help.waitToBlock(endBlock+81, accounts);
     // Should be able to claim all the payments
-    console.log("before last claim tokens payment series");
-    await token.claimTokensPayment(0, {from: accounts[10]});
-    await token.claimTokensPayment(1, {from: accounts[0]});
-    await token.claimTokensPayment(2, {from: accounts[0]});
-    await token.claimTokensPayment(3, {from: accounts[0]});
-    await token.claimTokensPayment(4, {from: accounts[0]});
-    await token.claimTokensPayment(5, {from: accounts[0]});
-    await token.claimTokensPayment(6, {from: accounts[0]});
-    await token.claimTokensPayment(7, {from: accounts[0]});
-    await token.claimTokensPayment(8, {from: accounts[0]});
+    console.log("before advisors tokens payment claim");
+    await futurePayment.claimPayment({from: accounts[10]});
+    console.log("before founders tokens payment claim series");
+
+    for(let i = 0; i < 8; i++) {
+      let futurePaymentAddress = await crowdsale.foundersFuturePayments(i);
+      console.log("claiming founder future payment:", futurePaymentAddress);
+      let futurePayment = await FuturePayment.new(futurePaymentAddress);
+      await futurePayment.claimPayment({from: accounts[0]});
+    }
+
     let ownerBalance = await token.balanceOf(accounts[0]);
     assert.equal(help.lifWei2Lif(ownerBalance), 2695000);
     // Check all final values

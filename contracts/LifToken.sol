@@ -62,9 +62,6 @@ contract LifToken is Ownable, PullPayment {
     mapping(address => uint) public txsSent;
     mapping(address => uint) public txsReceived;
 
-    // Presale addresses
-    FuturePayment[] public futurePayments;
-
     // Contract status
     // 1 = Stoped
     // 2 = Created
@@ -96,13 +93,6 @@ contract LifToken is Ownable, PullPayment {
       bytes actionData;
       uint totalVotes;
       mapping (address => uint) votes; // 0 = Vote not done, 1 = Positive, 2 = Negative.
-    }
-
-    // Structure of the FuturePayment
-    struct FuturePayment {
-      address owner;
-      uint afterBlock;
-      uint tokens;
     }
 
     // ERC20 Events
@@ -152,12 +142,6 @@ contract LifToken is Ownable, PullPayment {
 
     }
 
-    // Add a token payment that can be claimed after certain block from an address
-    function addFuturePayment(address owner, uint afterBlock, uint tokens) external onlyOwner() onStatus(2,0) {
-      futurePayments[futurePayments.length ++] = FuturePayment(owner, afterBlock, tokens);
-      maxSupply = maxSupply.add(tokens);
-    }
-
     // Issue more tokens. When called by owner, it cannot make totalSupply to exceed OWNER_SUPPLY
     // Can be called by the DAO on DAO status
     // Can be called by Owner on Created or DAO status
@@ -174,21 +158,6 @@ contract LifToken is Ownable, PullPayment {
         totalSupply = totalSupply.add(amount);
         maxSupply = maxSupply.add(amount);
       }
-
-    }
-
-    // Function that allows an address to claim a futurePayment on tokens
-    function claimTokensPayment(uint pos) external onStatus(2,4) {
-
-      if ((futurePayments[pos].tokens == 0) || (futurePayments[pos].owner != msg.sender) ||
-        ((futurePayments[pos].afterBlock > 0) && (futurePayments[pos].afterBlock > block.number)))
-        throw;
-
-      uint formatedBalance = futurePayments[pos].tokens.mul(LONG_DECIMALS);
-
-      totalSupply = totalSupply.add(futurePayments[pos].tokens);
-      balances[msg.sender] = balances[msg.sender].add(formatedBalance);
-      futurePayments[pos].tokens = 0;
 
     }
 
