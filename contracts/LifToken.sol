@@ -178,7 +178,7 @@ contract LifToken is Ownable, PullPayment {
     }
 
     // Function that allows an address to claim a futurePayment on tokens
-    function claimTokensPayment(uint pos) external onStatus(4,0) {
+    function claimTokensPayment(uint pos) external onStatus(2,4) {
 
       if ((futurePayments[pos].tokens == 0) || (futurePayments[pos].owner != msg.sender) ||
         ((futurePayments[pos].afterBlock > 0) && (futurePayments[pos].afterBlock > block.number)))
