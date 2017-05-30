@@ -32,6 +32,24 @@ contract('LifToken', function(accounts) {
     await help.checkValues(token, accounts,1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
   });
 
+  it("should be able to stop and resume the token", async function() {
+    await token.stop();
+
+    await help.addCrowdsaleStage(token, 10000000, price)[1];
+
+    var price = web3.toWei(0.1, 'ether');
+
+    assert.equal(await token.submitBid(accounts[1], 1000, { value: 1000*price, from: accounts[1]}),
+      false, // TODO: this doesn't work of course, how can I assert that the tx failed?
+      "submitBid fails because token is stopped");
+
+    await token.resume();
+
+    assert.equal(await token.submitBid(accounts[1], 1000, { value: 1000*price, from: accounts[1]}),
+      true, // TODO: this doesn't work of course, how can I assert that the tx failed?
+      "submitBid goes through because token is not stopped");
+  });
+
   it("should return the correct allowance amount after approval", async function() {
     await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts)
     await token.approve(accounts[2], help.lif2LifWei(10),{ from: accounts[1] });

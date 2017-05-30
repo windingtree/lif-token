@@ -75,6 +75,9 @@ contract LifToken is Ownable, PullPayment {
     // 4 = DAO
     uint public status;
 
+    // when stopped, save the previous status here to be able to resume on the same status later
+    uint public statusBeforeStop;
+
     // The amount of blocks that a proposal has to be approved
     uint public proposalBlocksWait;
 
@@ -172,6 +175,18 @@ contract LifToken is Ownable, PullPayment {
 
       proposals.length ++;
 
+    }
+
+    // Put a stop on token transactions, preventing any new transactions to be processed until resumed
+    function stop() external onlyOwner() {
+        if (status != 1) {
+            statusBeforeStop = status;
+            status = 1;
+        }
+    }
+
+    function resume() external onlyOwner() onStatus(1,0) {
+       status = statusBeforeStop;
     }
 
     // Add a token payment that can be claimed after certain block from an address
@@ -341,7 +356,7 @@ contract LifToken is Ownable, PullPayment {
     }
 
     // Creates a bid spending the ethers send by msg.sender.
-    function submitBid() external payable {
+    function submitBid() external payable onStatus(2,3) {
 
       uint tokenPrice = 0;
       uint stage = 0;
