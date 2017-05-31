@@ -153,9 +153,14 @@ contract('LifToken Crowdsale', function(accounts) {
     var presaleTokens = 0;
     var maxTokens = 7000000;
     var paymentTokens = 300000;
+    var ownerPercentage = 385;
+    var presaleDiscount = 40;
+    var minCap = 10000000;
+    var maxCap = 40000000;
 
     // Add crowdsale stage to sell 7M tokens using dutch auction and the future payments.
-    var crowdsale = await LifCrowdsale.new(token.address, startBlock, endBlock, web3.toWei(5, 'ether'), 10, web3.toWei(0.4, 'ether'), web3.toWei(10000000, 'ether'), web3.toWei(40000000, 'ether'), maxTokens, 40, 385);
+    var crowdsale = await LifCrowdsale.new(token.address, startBlock, endBlock, web3.toWei(5, 'ether'), 10,
+      web3.toWei(0.4, 'ether'), web3.toWei(minCap, 'ether'), web3.toWei(maxCap, 'ether'), maxTokens, presaleDiscount, ownerPercentage);
     // issue the tokens and transfer to the crowdsale
     await token.issueTokens(maxTokens);
 
@@ -170,10 +175,18 @@ contract('LifToken Crowdsale', function(accounts) {
     // create future payment, issue & transfer tokens into it
     let futurePayment = await FuturePayment.new(accounts[10], endBlock+30, token.address);
     await token.issueTokens(paymentTokens);
-    console.log("Transfer to futurePayment:", await token.transferFrom(token.address, futurePayment.address, help.lif2LifWei(paymentTokens), {from: accounts[0]}));
+    await token.transferFrom(token.address, futurePayment.address, help.lif2LifWei(paymentTokens), {from: accounts[0]});
 
     // Add discount of 250000 ethers
-    await crowdsale.addDiscount(accounts[10], web3.toWei(250000, 'ether'));
+    // But first let's transfer the max tokens this discounted amount can buy
+    let minTokenPrice = minCap / maxTokens;
+    let discountedAmount = 250000;
+    let maxDiscountTokens = (discountedAmount / minTokenPrice) * (presaleDiscount + 100) / 100;
+    console.log("Issuing & transferring max discount tokens: ", maxDiscountTokens);
+    await token.issueTokens(maxDiscountTokens);
+    await token.transferFrom(token.address, crowdsale.address, help.lif2LifWei(maxDiscountTokens), {from: accounts[0]});
+
+    await crowdsale.addDiscount(accounts[10], web3.toWei(discountedAmount, 'ether'));
 
     // Check that the crowdsale and payments created succesfully with the right values
     assert.equal(await futurePayment.payee(), accounts[10]);
@@ -184,7 +197,7 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(await crowdsale.changePerBlock()), 10);
     assert.equal(parseFloat(await crowdsale.changePrice()), web3.toWei(0.4, 'ether'));
     assert.equal(parseFloat(await crowdsale.minCap()), web3.toWei(10000000, 'ether'));
-    assert.equal(parseFloat(await token.maxSupply()), maxTokens + paymentTokens);
+    assert.equal(parseFloat(await token.maxSupply()), maxTokens + paymentTokens + maxDiscountTokens);
 
     // Shouldnt be able to submit the bid since first stage didnt started, the ethers will be returned
     try {
@@ -300,7 +313,7 @@ contract('LifToken Crowdsale', function(accounts) {
     await crowdsale.distributeTokens(accounts[8], false);
     await crowdsale.distributeTokens(accounts[10], true);
     console.log("before check values");
-    await help.checkValues(token, crowdsale, accounts, 0, 7300000, 0, [500000, 1000000, 500000, 1000000, 2000000]);
+    await help.checkValues(token, crowdsale, accounts, 0, maxTokens + paymentTokens + maxDiscountTokens, 0, [500000, 1000000, 500000, 1000000, 2000000]);
     // Shouldnt allow to a claim a payment before the requested block
     try {
       await futurePayment.claimPayment({from: accounts[10]});

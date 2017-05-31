@@ -2,6 +2,7 @@ pragma solidity ^0.4.8;
 
 import "./zeppelin/ownership/Ownable.sol";
 import "./zeppelin/payment/PullPayment.sol";
+import "./zeppelin/token/ERC20Basic.sol";
 import "./zeppelin/SafeMath.sol";
 import "./FuturePayment.sol";
 
@@ -103,8 +104,18 @@ contract LifCrowdsale is Ownable, PullPayment {
       if (presaleDiscount == 0)
         throw;
 
-      presalePayments[target] = amount;
       totalPresaleWei = totalPresaleWei.add(amount);
+      presalePayments[target] = amount;
+
+      // check that crowdsale balance is AT LEAST max(discounted)tokens at lowest possible valuation +
+      // founders tokens
+      uint minTokenPrice = minCap.div(totalTokens);
+      uint maxDiscountedTokens = totalPresaleWei.div(minTokenPrice).mul(presaleDiscount.add(100).div(100));
+      uint maxFoundersTokens = maxDiscountedTokens.mul(ownerPercentage).div(1000);
+      uint crowdsaleBalance = ERC20Basic(tokenAddress).balanceOf(address(this)).div(LONG_DECIMALS);
+
+      if (crowdsaleBalance < totalTokens + maxDiscountedTokens + maxFoundersTokens)
+        throw;
     }
 
     function distributeTokens(address buyer, bool discount) external onStatus(3, 0) {
