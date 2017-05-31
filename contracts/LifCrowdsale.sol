@@ -241,9 +241,9 @@ contract LifCrowdsale is Ownable, PullPayment {
         uint presaleTokens = getPresaleTokens(lastPrice);
 
         if (ownerPercentage > 0) {
-          foundingTeamTokens = presaleTokens.add(tokensSold);
-          foundingTeamTokens = foundingTeamTokens.div(1000);
-          foundingTeamTokens = foundingTeamTokens.mul(ownerPercentage);
+          foundingTeamTokens = presaleTokens.add(tokensSold).
+                                             div(1000).
+                                             mul(ownerPercentage);
 
           for (uint i = block.number.add(10); i <= block.number.add(80); i = i.add(10)) {
             address futurePayment = new FuturePayment(owner, i, tokenAddress);
