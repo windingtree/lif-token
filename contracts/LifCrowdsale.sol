@@ -166,6 +166,14 @@ contract LifCrowdsale is Ownable, PullPayment {
       return price;
     }
 
+    function getPresaleTokens(uint tokenPrice) returns(uint) {
+      if (presaleDiscount > 0){
+        // Calculate how much presale tokens would be distributed at this price
+        return totalPresaleWei.div(tokenPrice.div(100).mul(uint(100).sub(presaleDiscount)));
+      } else
+          return 0;
+    }
+
     // Creates a bid spending the ethers send by msg.sender.
     function submitBid() external payable onStatus(2,0) {
 
@@ -180,19 +188,10 @@ contract LifCrowdsale is Ownable, PullPayment {
       uint weiCost = tokensQty.mul(tokenPrice);
       uint weiChange = msg.value.sub(weiCost);
 
-      uint presaleTokens = tokensQty;
+      uint presaleTokens = getPresaleTokens(tokenPrice);
 
-      if (presaleDiscount > 0){
-
-        // Calculate how much presale tokens would be distributed at this price
-        presaleTokens = tokenPrice.div(100).mul(uint(100).sub(presaleDiscount));
-        presaleTokens = totalPresaleWei.div(presaleTokens);
-
-        // Add the bid tokens to presaleTokens to check not to pass the supply of the stage
-        presaleTokens = presaleTokens.add(tokensQty);
-      }
-
-      if (tokensSold.add(presaleTokens) > totalTokens)
+      // previous bids tokens + presaleTokens + current bid tokens should not exceed totalTokens
+      if (tokensSold.add(presaleTokens).add(tokensQty) > totalTokens)
         throw;
 
       if (weiRaised.add(weiCost) <= maxCap) {
@@ -228,13 +227,8 @@ contract LifCrowdsale is Ownable, PullPayment {
         maxSupply = maxSupply.add(tokensSold);
        */
 
-        uint presaleTokens = 0;
-        if (presaleDiscount > 0) {
-          presaleTokens = lastPrice.div(100);
-          presaleTokens = presaleTokens.mul(uint(100).sub(presaleDiscount));
-          presaleTokens = totalPresaleWei.div(presaleTokens);
-          // TODO: maxSupply = maxSupply.add(presaleTokens);
-        }
+        uint presaleTokens = getPresaleTokens(lastPrice);
+
         if (ownerPercentage > 0) {
           foundingTeamTokens = presaleTokens.add(tokensSold);
           foundingTeamTokens = foundingTeamTokens.div(1000);
