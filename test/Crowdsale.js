@@ -191,7 +191,10 @@ contract('LifToken Crowdsale', function(accounts) {
     console.log("after adding discount");
 
     // issue & transfer tokens for founders payments
-    let maxFoundersPaymentTokens = (maxTokens + maxDiscountTokens) * ownerPercentage / 1000.0;
+    let maxFoundersPaymentTokens = ((maxTokens + maxDiscountTokens) * ownerPercentage) / 1000;
+    console.log("before issue founders tokens, maxSupply: ", await token.maxSupply(),
+      " ownerPercentage / 1000: ", ownerPercentage / 1000,
+      "\n tokens for founders: ", maxFoundersPaymentTokens);
     token.issueTokens(maxFoundersPaymentTokens);
     token.transferFrom(token.address, crowdsale.address, help.lif2LifWei(maxFoundersPaymentTokens), {from: accounts[0]});
 
@@ -309,7 +312,6 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(await crowdsale.lastPrice()), lastPrice);
 
     // Distribute the tokens and check values
-    console.log("before distribute tokens");
     await crowdsale.distributeTokens(accounts[1], false);
     await crowdsale.distributeTokens(accounts[2], false);
     await crowdsale.distributeTokens(accounts[3], false);
@@ -330,9 +332,7 @@ contract('LifToken Crowdsale', function(accounts) {
     }
     await help.waitToBlock(endBlock+81, accounts);
     // Should be able to claim all the payments
-    console.log("before advisors tokens payment claim");
     await futurePayment.claimPayment({from: accounts[10]});
-    console.log("before founders tokens payment claim series");
 
     for(let i = 0; i < 8; i++) {
       let futurePaymentAddress = await crowdsale.foundersFuturePayments(i);
