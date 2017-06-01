@@ -144,7 +144,6 @@ contract LifCrowdsale is Ownable, PullPayment {
         if (tokens[buyer] == 0)
           throw;
 
-        uint tokensToTransfer = tokens[buyer].mul(LONG_DECIMALS);
         uint weiChange = weiPayed[buyer].sub(tokens[buyer].mul(lastPrice));
 
         if (weiChange > 0){
@@ -153,7 +152,7 @@ contract LifCrowdsale is Ownable, PullPayment {
 
         // use a call instead of instantiate contract, to avoid out of gas issues
         //lifToken.transfer(buyer, tokensToTransfer);
-        if (!tokenAddress.call(bytes4(sha3("transfer(address,uint256)")), buyer, tokensToTransfer))
+        if (!tokenAddress.call(bytes4(sha3("transfer(address,uint256)")), buyer, tokens[buyer].mul(LONG_DECIMALS)))
           throw;
 
         weiPayed[buyer] = 0;
