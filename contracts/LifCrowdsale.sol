@@ -227,22 +227,16 @@ contract LifCrowdsale is Ownable, PullPayment {
       if (block.number <= endBlock)
         throw;
 
-      //ERC20Basic lifToken = ERC20Basic(tokenAddress);
-
-      uint foundingTeamTokens = 0;
       status = 3; // Finished
       if (weiRaised >= minCap) {
-        /*
-        maxSupply = maxSupply.sub(totalTokens);
-        maxSupply = maxSupply.add(tokensSold);
-       */
-
         uint presaleTokens = getPresaleTokens(lastPrice);
+        uint foundingTeamTokens = 0;
 
         if (ownerPercentage > 0) {
           foundingTeamTokens = presaleTokens.add(tokensSold).
                                              div(1000).
-                                             mul(ownerPercentage);
+                                             mul(ownerPercentage).
+                                             mul(LONG_DECIMALS);
 
           for (uint i = block.number.add(10); i <= block.number.add(80); i = i.add(10)) {
             address futurePayment = new FuturePayment(owner, i, tokenAddress);
