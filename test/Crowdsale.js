@@ -186,7 +186,14 @@ contract('LifToken Crowdsale', function(accounts) {
     await token.issueTokens(maxDiscountTokens);
     await token.transferFrom(token.address, crowdsale.address, help.lif2LifWei(maxDiscountTokens), {from: accounts[0]});
 
+    console.log("before adding discount");
     await crowdsale.addDiscount(accounts[10], web3.toWei(discountedAmount, 'ether'));
+    console.log("after adding discount");
+
+    // issue & transfer tokens for founders payments
+    let maxFoundersPaymentTokens = (maxTokens + maxDiscountTokens) * ownerPercentage / 1000.0;
+    token.issueTokens(maxFoundersPaymentTokens);
+    token.transferFrom(token.address, crowdsale.address, help.lif2LifWei(maxFoundersPaymentTokens), {from: accounts[0]});
 
     // Check that the crowdsale and payments created succesfully with the right values
     assert.equal(await futurePayment.payee(), accounts[10]);
@@ -273,7 +280,7 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(await crowdsale.maxCap()), web3.toWei(40000000, 'ether'));
     assert.equal(parseFloat(await crowdsale.totalTokens()), 7000000);
     assert.equal(parseFloat(await crowdsale.presaleDiscount()), 40);
-    assert.equal(parseInt(await crowdsale.ownerPercentage()), 385);
+    assert.equal(parseInt(await crowdsale.ownerPercentage()), ownerPercentage);
     assert.equal(help.toEther(await crowdsale.totalPresaleWei()), 250000);
     assert.equal(help.lifWei2Lif(await crowdsale.weiRaised()), help.lifWei2Lif(totalWeiSent));
     assert.equal(parseFloat(await crowdsale.tokensSold()), totalTokensBought);
@@ -329,8 +336,7 @@ contract('LifToken Crowdsale', function(accounts) {
 
     for(let i = 0; i < 8; i++) {
       let futurePaymentAddress = await crowdsale.foundersFuturePayments(i);
-      console.log("claiming founder future payment:", futurePaymentAddress);
-      let futurePayment = await FuturePayment.new(futurePaymentAddress);
+      let futurePayment = await FuturePayment.at(futurePaymentAddress);
       await futurePayment.claimPayment({from: accounts[0]});
     }
 
