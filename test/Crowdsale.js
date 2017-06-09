@@ -145,8 +145,8 @@ contract('LifToken Crowdsale', function(accounts) {
 
   it("Should simulate a crowdsale of 7m tokens with one ducth auction stage, using future discount and distribute 3M of the tokens using futurePayments", async function() {
     var currentBlock = web3.eth.blockNumber;
-    var startBlock = currentBlock+10;
-    var endBlock = currentBlock+110;
+    var startBlock = currentBlock+15;
+    var endBlock = startBlock+100;
     var totalWeiSent = 0;
     var totalTokensBought = 0;
     var lastPrice = 0;
