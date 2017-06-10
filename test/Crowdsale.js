@@ -1,5 +1,6 @@
 
 var protobuf = require("protobufjs");
+var _ = require('lodash');
 
 var help = require("./helpers");
 
@@ -149,11 +150,10 @@ contract('LifToken Crowdsale', function(accounts) {
     var endBlock = startBlock+100;
     var totalWeiSent = 0;
     var totalTokensBought = 0;
-    var lastPrice = 0;
     var presaleTokens = 0;
     var maxTokens = 7000000;
     var paymentTokens = 300000;
-    var ownerPercentage = 385;
+    var ownerPercentage = 275;
     var presaleDiscount = 40;
     var minCap = 10000000;
     var maxCap = 40000000;
@@ -174,6 +174,10 @@ contract('LifToken Crowdsale', function(accounts) {
 
     // create future payment, issue & transfer tokens into it
     let futurePayment = await FuturePayment.new(accounts[10], endBlock+30, token.address);
+    assert.equal(await futurePayment.afterBlock(), endBlock+30);
+    assert.equal(await futurePayment.payee(), accounts[10]);
+    assert.equal(await futurePayment.tokenAddress(), token.address);
+
     await token.issueTokens(paymentTokens);
     await token.transferFrom(token.address, futurePayment.address, help.lif2LifWei(paymentTokens), {from: accounts[0]});
 
@@ -186,28 +190,23 @@ contract('LifToken Crowdsale', function(accounts) {
     await token.issueTokens(maxDiscountTokens);
     await token.transferFrom(token.address, crowdsale.address, help.lif2LifWei(maxDiscountTokens), {from: accounts[0]});
 
-    console.log("before adding discount");
     await crowdsale.addDiscount(accounts[10], web3.toWei(discountedAmount, 'ether'));
-    console.log("after adding discount");
 
     // issue & transfer tokens for founders payments
-    let maxFoundersPaymentTokens = ((maxTokens + maxDiscountTokens) * ownerPercentage) / 1000;
+    let maxFoundersPaymentTokens = (maxTokens + maxDiscountTokens) * (ownerPercentage / 1000.0) ;
     console.log("before issue founders tokens, maxSupply: ", await token.maxSupply(),
       " ownerPercentage / 1000: ", ownerPercentage / 1000,
       "\n tokens for founders: ", maxFoundersPaymentTokens);
-    token.issueTokens(maxFoundersPaymentTokens);
-    token.transferFrom(token.address, crowdsale.address, help.lif2LifWei(maxFoundersPaymentTokens), {from: accounts[0]});
+    await token.issueTokens(maxFoundersPaymentTokens);
+    await token.transferFrom(token.address, crowdsale.address, help.lif2LifWei(maxFoundersPaymentTokens), {from: accounts[0]});
 
     // Check that the crowdsale and payments created succesfully with the right values
-    assert.equal(await futurePayment.payee(), accounts[10]);
-    assert.equal(await futurePayment.afterBlock(), endBlock+30);
-    assert.equal(await futurePayment.tokenAddress(), token.address);
     assert.equal(await token.balanceOf(futurePayment.contract.address), help.lif2LifWei(300000));
     assert.equal(parseFloat(await crowdsale.startPrice.call()), web3.toWei(5, 'ether'));
     assert.equal(parseFloat(await crowdsale.changePerBlock()), 10);
     assert.equal(parseFloat(await crowdsale.changePrice()), web3.toWei(0.4, 'ether'));
     assert.equal(parseFloat(await crowdsale.minCap()), web3.toWei(10000000, 'ether'));
-    assert.equal(parseFloat(await token.maxSupply()), maxTokens + paymentTokens + maxDiscountTokens);
+    assert.equal(parseFloat(await token.maxSupply()), maxTokens + paymentTokens + maxDiscountTokens + maxFoundersPaymentTokens);
 
     // Shouldnt be able to submit the bid since first stage didnt started, the ethers will be returned
     try {
@@ -217,63 +216,82 @@ contract('LifToken Crowdsale', function(accounts) {
       if (error.message.search('invalid JUMP') == -1) throw error;
     }
 
+    console.log("after try submitbid");
+
     // assert price == 0 before start
+    // but first assert we are before start
+    assert(web3.eth.blockNumber < startBlock, "crowdsale should not have started yet");
     var price = parseFloat(await crowdsale.getPrice());
-    assert.equal(price, web3.toWei(0, 'ether'));
+    assert.equal(price, web3.toWei(0, 'ether'), "price should be 0 before the crowdsale starts");
 
     await help.waitToBlock(startBlock+1, accounts);
 
     // start crowdsale
     await crowdsale.setStatus(2);
 
+    let bids = [
+      500 * 1000,
+      1000 * 1000,
+      500 * 1000,
+      1000 * 1000,
+      2000 * 1000, 
+      750 * 1000,
+      1000 * 1000,
+      127451
+    ];
+
+    let totalBids = _.sum(bids);
+    assert(maxTokens >= totalBids, "totalBids do not exceed maxTokens");
+
     // Submit bid of 500000 on accounts[1]
     price = parseFloat(await crowdsale.getPrice());
     lastprice = price;
     assert.equal(price, web3.toWei(5, 'ether'));
-    totalWeiSent += price*500000;
-    totalTokensBought += 500000;
-    await crowdsale.submitBid({ value: web3.toWei(5, 'ether')*500000, from: accounts[1] });
-    await help.checkValues(token, crowdsale, accounts, help.toEther(500000*web3.toWei(5, 'ether')), 0, web3.toWei(5, 'ether'), [0, 0, 0, 0, 0]);
+    totalWeiSent += price*bids[0];
+    totalTokensBought += bids[0];
+    await crowdsale.submitBid({ value: web3.toWei(5, 'ether')*bids[0], from: accounts[1] });
+    await help.checkValues(token, crowdsale, accounts, help.toEther(bids[0]*web3.toWei(5, 'ether')), 0, web3.toWei(5, 'ether'), [0, 0, 0, 0, 0]);
     await help.waitToBlock(startBlock+10, accounts);
+
+    console.log("after first submitbid and checkValues");
 
     // Submit bid of 1000000 on accounts[2]
     // Submit bid of 500000 on accounts[3]
     price = parseFloat(await crowdsale.getPrice());
-    lastPrice = price;
-    totalWeiSent += price*1000000;
-    totalWeiSent += price*500000;
-    totalTokensBought += 1000000;
-    totalTokensBought += 500000;
-    await crowdsale.submitBid({ value: price*1000000, from: accounts[2] });
-    await crowdsale.submitBid({ value: price*500000, from: accounts[3] });
+    totalWeiSent += price*bids[1];
+    totalWeiSent += price*bids[2];
+    totalTokensBought += bids[1];
+    totalTokensBought += bids[2];
+    await crowdsale.submitBid({ value: price*bids[1], from: accounts[2] });
+    await crowdsale.submitBid({ value: price*bids[2], from: accounts[3] });
     await help.waitToBlock(startBlock+20, accounts);
 
     // Submit bid of 1000000 on accounts[4]
     // Submit bid of 2000000 on accounts[5]
     price = parseFloat(await crowdsale.getPrice());
-    lastPrice = price;
-    totalWeiSent += price*1000000;
-    totalWeiSent += price*2000000;
-    totalTokensBought += 1000000;
-    totalTokensBought += 2000000;
-    await crowdsale.submitBid({ value: price*1000000, from: accounts[4] });
-    await crowdsale.submitBid({ value: price*2000000, from: accounts[5] });
+    totalWeiSent += price*bids[3];
+    totalWeiSent += price*bids[4];
+    totalTokensBought += bids[3];
+    totalTokensBought += bids[4];
+    await crowdsale.submitBid({ value: price*bids[3], from: accounts[4] });
+    await crowdsale.submitBid({ value: price*bids[4], from: accounts[5] });
     await help.waitToBlock(startBlock+40, accounts);
 
     // Submit bid of 750000 on accounts[6]
     // Submit bid of 1000000 on accounts[7]
     // Submit bid of 127451 on accounts[8]
     price = parseFloat(await crowdsale.getPrice());
-    lastPrice = price;
-    totalWeiSent += price*750000;
-    totalWeiSent += price*1000000;
-    totalWeiSent += price*127451;
-    totalTokensBought += 750000;
-    totalTokensBought += 1000000;
-    totalTokensBought += 127451;
-    await crowdsale.submitBid({ value: price*750000, from: accounts[6] });
-    await crowdsale.submitBid({ value: price*1000000, from: accounts[7] });
-    await crowdsale.submitBid({ value: price*127451, from: accounts[8] });
+    totalWeiSent += price*bids[5];
+    totalWeiSent += price*bids[6];
+    totalWeiSent += price*bids[7];
+    totalTokensBought += bids[5];
+    totalTokensBought += bids[6];
+    totalTokensBought += bids[7];
+    await crowdsale.submitBid({ value: price*bids[5], from: accounts[6] });
+    await crowdsale.submitBid({ value: price*bids[6], from: accounts[7] });
+    await crowdsale.submitBid({ value: price*bids[7], from: accounts[8] });
+
+    assert.equal(totalTokensBought, totalBids);
 
     // Check that the crowdsale stage is ready to be completed and reached the completion
     assert.equal(parseFloat(await crowdsale.startPrice()), web3.toWei(5, 'ether'));
@@ -282,13 +300,13 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(await crowdsale.minCap()), web3.toWei(10000000, 'ether'));
     assert.equal(parseFloat(await crowdsale.maxCap()), web3.toWei(40000000, 'ether'));
     assert.equal(parseFloat(await crowdsale.totalTokens()), 7000000);
-    assert.equal(parseFloat(await crowdsale.presaleDiscount()), 40);
+    assert.equal(parseFloat(await crowdsale.presaleDiscount()), presaleDiscount);
     assert.equal(parseInt(await crowdsale.ownerPercentage()), ownerPercentage);
     assert.equal(help.toEther(await crowdsale.totalPresaleWei()), 250000);
     assert.equal(help.lifWei2Lif(await crowdsale.weiRaised()), help.lifWei2Lif(totalWeiSent));
     assert.equal(parseFloat(await crowdsale.tokensSold()), totalTokensBought);
-    assert.equal(parseFloat(await crowdsale.lastPrice()), lastPrice);
-    presaleTokens = help.toWei(250000)/(lastPrice*0.6);
+    assert.equal(parseFloat(await crowdsale.lastPrice()), price);
+    presaleTokens = help.toWei(250000)/(price*0.6);
 
     // Check token status and update crowdsale stage status
     let crowdsaleStatus = await crowdsale.status();
@@ -304,12 +322,12 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(await crowdsale.minCap()), web3.toWei(10000000, 'ether'));
     assert.equal(parseFloat(await crowdsale.maxCap()), web3.toWei(40000000, 'ether'));
     assert.equal(parseFloat(await crowdsale.totalTokens()), 7000000);
-    assert.equal(parseFloat(await crowdsale.presaleDiscount()), 40);
+    assert.equal(parseFloat(await crowdsale.presaleDiscount()), presaleDiscount);
     assert.equal(parseInt(await crowdsale.ownerPercentage()), 0);
     assert.equal(help.toEther(await crowdsale.totalPresaleWei()), 250000);
     assert.equal(help.lifWei2Lif(await crowdsale.weiRaised()), help.lifWei2Lif(totalWeiSent));
     assert.equal(parseFloat(await crowdsale.tokensSold()), totalTokensBought);
-    assert.equal(parseFloat(await crowdsale.lastPrice()), lastPrice);
+    assert.equal(parseFloat(await crowdsale.lastPrice()), price);
 
     // Distribute the tokens and check values
     await crowdsale.distributeTokens(accounts[1], false);
@@ -322,7 +340,7 @@ contract('LifToken Crowdsale', function(accounts) {
     await crowdsale.distributeTokens(accounts[8], false);
     await crowdsale.distributeTokens(accounts[10], true);
     console.log("before check values");
-    await help.checkValues(token, crowdsale, accounts, 0, maxTokens + paymentTokens + maxDiscountTokens, 0, [500000, 1000000, 500000, 1000000, 2000000]);
+    await help.checkValues(token, crowdsale, accounts, 0, maxTokens + paymentTokens + maxDiscountTokens + maxFoundersPaymentTokens, 0, [500000, 1000000, 500000, 1000000, 2000000]);
     // Shouldnt allow to a claim a payment before the requested block
     try {
       await futurePayment.claimPayment({from: accounts[10]});
@@ -340,11 +358,17 @@ contract('LifToken Crowdsale', function(accounts) {
       await futurePayment.claimPayment({from: accounts[0]});
     }
 
+    actualPrice = await crowdsale.lastPrice();
+    expectedDiscountedTokens = Math.round((discountedAmount / help.toEther(actualPrice)) / (100 - presaleDiscount) * 100);
+
+    assert.equal(paymentTokens + expectedDiscountedTokens, help.lifWei2Lif(await token.balanceOf(accounts[10])),
+      "accounts[10] should have received the paymentTokens + the actual discounted tokens (given the actual price)");
+    let expectedFoundersTokens = Math.round((totalBids + expectedDiscountedTokens) * (ownerPercentage / 1000));
     let ownerBalance = await token.balanceOf(accounts[0]);
-    assert.equal(help.lifWei2Lif(ownerBalance), 2695000);
+    assert.equal(help.lifWei2Lif(ownerBalance), expectedFoundersTokens);
     // Check all final values
-    console.log("before final check values");
-    await help.checkValues(token, crowdsale, accounts, 0, 9995000, 0, [500000, 1000000, 500000, 1000000, 2000000]);
+    let totalIssuedTokens = maxTokens + paymentTokens + maxDiscountTokens + maxFoundersPaymentTokens;
+    await help.checkValues(token, crowdsale, accounts, 0, totalIssuedTokens, 0, [500000, 1000000, 500000, 1000000, 2000000]);
   });
 
 
