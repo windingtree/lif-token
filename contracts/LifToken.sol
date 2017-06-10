@@ -191,9 +191,6 @@ contract LifToken is Ownable, PullPayment {
     //ERC20 token transfer method
     function transfer(address to, uint value) returns (bool success) {
 
-      if (to == address(this))
-        throw;
-
       balances[msg.sender] = balances[msg.sender].sub(value);
       balances[to] = balances[to].add(value);
       giveVotes(msg.sender, to);

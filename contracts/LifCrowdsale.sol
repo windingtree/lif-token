@@ -254,7 +254,13 @@ contract LifCrowdsale is Ownable, PullPayment {
 
           ownerPercentage = 0;
         }
-        // TODO: Return not used tokens to LifToken
+        // Return not used tokens to LifToken
+        uint toReturnTokens = ERC20Basic(tokenAddress).balanceOf(address(this)).
+            sub(presaleTokens.mul(LONG_DECIMALS)).sub(tokensSold.mul(LONG_DECIMALS));
+
+        if (!tokenAddress.call(bytes4(sha3("transfer(address,uint256)")), tokenAddress, toReturnTokens))
+          throw;
+
       } else if (weiRaised < minCap) { // return all tokens
         // use a call instead of instantiate contract, to avoid out of gas issues
         //lifToken.transfer(tokenAddress, totalTokens);
