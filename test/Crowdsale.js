@@ -369,6 +369,13 @@ contract('LifToken Crowdsale', function(accounts) {
     // Check all final values
     let totalIssuedTokens = maxTokens + paymentTokens + maxDiscountTokens + maxFoundersPaymentTokens;
     await help.checkValues(token, crowdsale, accounts, 0, totalIssuedTokens, 0, [500000, 1000000, 500000, 1000000, 2000000]);
+
+    assert.equal(help.lifWei2Lif(await token.balanceOf(token.contract.address)),
+      Math.round(
+        (maxDiscountTokens - expectedDiscountedTokens) +
+        (maxTokens - totalBids) +
+        (maxFoundersPaymentTokens - expectedFoundersTokens)
+      ), "unused tokens should have been returned to the token contract");
   });
 
 
