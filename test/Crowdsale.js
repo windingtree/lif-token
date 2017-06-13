@@ -113,7 +113,16 @@ contract('LifToken Crowdsale', function(accounts) {
     let crowdsaleStatus = await crowdsale.status();
     assert.equal(parseFloat(await crowdsale.status()), 2);
     await help.waitToBlock(endBlock+1, accounts);
+
+    // crowdsale has all the tokens before checkCrowdsale
+    assert.equal(parseFloat(await token.balanceOf(token.contract.address)), 0);
+    assert.equal(parseFloat(await token.balanceOf(crowdsale.contract.address)), help.lif2LifWei(maxTokens));
+
     await crowdsale.checkCrowdsale();
+
+    // crowdsale has returned unused tokens to the LifToken (keeps only tokens for the bids actually made
+    assert.equal(parseFloat(await token.balanceOf(crowdsale.contract.address)), help.lif2LifWei(tokens1));
+    assert.equal(parseFloat(await token.balanceOf(token.contract.address)), help.lif2LifWei(maxTokens - tokens1));
 
     // Check the values of the ended crowdsale stage, token status, and claim the tokens
     assert.equal(parseInt(await crowdsale.status()), 3);
@@ -133,9 +142,8 @@ contract('LifToken Crowdsale', function(accounts) {
     // Distribute the tokens and check values
     console.log("before distribute tokens");
     assert.equal(parseFloat(await token.balanceOf(accounts[1])), 0);
-    assert.equal(parseFloat(await token.balanceOf(crowdsale.contract.address)), help.lif2LifWei(maxTokens));
     await crowdsale.distributeTokens(accounts[1], false);
-    assert.equal(parseFloat(await token.balanceOf(crowdsale.contract.address)), help.lif2LifWei(maxTokens - tokens1));
+    assert.equal(parseFloat(await token.balanceOf(crowdsale.contract.address)), 0);
     assert.equal(parseFloat(await token.balanceOf(accounts[1])), help.lif2LifWei(tokens1));
     console.log("before check values");
     await help.checkValues(token, crowdsale, accounts, 0, maxTokens, 0, [tokens1, 0, 0, 0, 0]);
