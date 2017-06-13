@@ -273,7 +273,7 @@ contract LifCrowdsale is Ownable, PullPayment {
     // Function that allows a buyer to claim the ether back of a failed crowdsale
     function claimEth(uint stage) external onStatus(3,0) {
 
-      if ((block.number < endBlock) || (weiRaised > minCap) || (weiPayed[msg.sender] == 0))
+      if ((block.number < endBlock) || (weiRaised >= minCap) || (weiPayed[msg.sender] == 0))
         throw;
 
       safeSend(msg.sender, weiPayed[msg.sender]);
