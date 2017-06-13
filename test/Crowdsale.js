@@ -150,6 +150,21 @@ contract('LifToken Crowdsale', function(accounts) {
     // Check all final values
     console.log("before final check values");
     await help.checkValues(token, crowdsale, accounts, 0, maxTokens, 0, [tokens1, 0, 0, 0, 0]);
+
+    // check that the owner can fund a new crowdsale with the unused tokens
+
+    var crowdsale2 = await LifCrowdsale.new(
+      token.address, startBlock, endBlock, startPrice, 10, web3.toWei(0.4, 'ether'), minCap, maxCap, maxTokens - tokens1, 40, ownerPercentage
+    );
+
+    // Transfer tokens to the crowdsale
+    assert.equal(parseFloat(await token.balanceOf(crowdsale2.contract.address)), 0);
+    /*
+     * TODO: Make this to work: owner should be able to fund a new crowdsale with the unused tokens
+     *
+    await token.transferFrom(token.contract.address, crowdsale2.contract.address, help.lif2LifWei(maxTokens - tokens1), {from: accounts[0]});
+    assert.equal(parseFloat(await token.balanceOf(crowdsale2.contract.address)), help.lif2LifWei(maxTokens - tokens1));
+    */
   });
 
   it("Should simulate a crowdsale of 7m tokens with one ducth auction stage, using future discount and distribute 3M of the tokens using futurePayments", async function() {
