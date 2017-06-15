@@ -201,6 +201,32 @@ module.exports = {
     console.log('['+parsedProposal.id+'] To: '+parsedProposal.target+', Value: '+parsedProposal.value +', MaxBlock: '+parsedProposal.maxBlock+', Desc: '+parsedProposal.description+', Status: '+parsedProposal.status, ', Votes: ',parsedProposal.totalVotes,'/',parsedProposal.votesNeeded);
   },
 
+  createAndFundCrowdsale: async function(params, accounts) {
+    let token = params.token;
+    var crowdsale = await LifCrowdsale.new(token.address, params.startBlock, params.endBlock, params.startPrice, params.changePerBlock,
+      params.changePrice, params.minCap, params.maxCap, params.maxTokens, params.presaleDiscount, params.ownerPercentage);
+
+    let oldTokenBalance = parseFloat(await token.balanceOf(token.contract.address));
+
+    // issue the tokens and transfer to the crowdsale
+    await token.issueTokens(params.maxTokens);
+
+    assert.equal(this.lifWei2Lif(parseFloat(await token.balanceOf(token.contract.address))), oldTokenBalance + params.maxTokens);
+
+    // transfer the tokens
+    await token.transferFrom(token.address, crowdsale.address, this.lif2LifWei(params.maxTokens), {from: accounts[0]});
+
+    assert.equal(await token.balanceOf(crowdsale.contract.address), this.lif2LifWei(params.maxTokens));
+    assert.equal(parseFloat(await token.balanceOf(token.contract.address)), oldTokenBalance);
+
+    assert.equal(parseFloat(await crowdsale.startPrice()), params.startPrice);
+    assert.equal(parseFloat(await crowdsale.changePerBlock()), params.changePerBlock);
+    assert.equal(parseFloat(await crowdsale.changePrice()), params.changePrice);
+    assert.equal(parseFloat(await crowdsale.minCap()), params.minCap);
+
+    return crowdsale;
+  },
+
   simulateCrowdsale: async function(token, total, price, balances, accounts){
     var startBlock = web3.eth.blockNumber;
     var endBlock = web3.eth.blockNumber+10;
