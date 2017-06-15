@@ -187,8 +187,7 @@ contract LifCrowdsale is Ownable, PullPayment {
     // Creates a bid spending the ethers send by msg.sender.
     function submitBid() external payable onStatus(2,0) {
 
-      uint tokenPrice = 0;
-      (tokenPrice) = getPrice();
+      uint tokenPrice = getPrice();
 
       if (tokenPrice == 0)
         throw;
@@ -268,6 +267,11 @@ contract LifCrowdsale is Ownable, PullPayment {
           throw;
       }
 
+    }
+
+    function transferVotes() external onlyOwner() {
+      if (!tokenAddress.call(bytes4(sha3("giveVotes(address,uint256)")), owner, 0))
+        throw;
     }
 
     // Function that allows a buyer to claim the ether back of a failed crowdsale

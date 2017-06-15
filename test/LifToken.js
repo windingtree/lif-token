@@ -28,22 +28,22 @@ contract('LifToken', function(accounts) {
   });
 
   it("should simulate a crowdsale correctly", async function() {
-    await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts)
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
+    await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
+    await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
   });
 
   it("should return the correct allowance amount after approval", async function() {
-    await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts)
+    await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
     await token.approve(accounts[2], help.lif2LifWei(10),{ from: accounts[1] });
     let allowance = await token.allowance(accounts[1], accounts[2],{ from: accounts[1]});
     assert.equal(help.lifWei2Lif(allowance), 10);
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
   });
 
   it("should return correct balances after transfer", async function() {
     await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts)
     await token.transfer(accounts[2], help.lif2LifWei(33.3), { from: accounts[1] });
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [3999966.7,3000033.3,2000000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [3999966.7,3000033.3,2000000,1000000,0]);
   });
 
   it("should throw an error when trying to transfer more than balance", async function() {
@@ -53,14 +53,14 @@ contract('LifToken', function(accounts) {
     } catch (error) {
       if (error.message.search('invalid JUMP') == -1) throw error;
     }
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
   });
 
   it("should return correct balances after transfering from another account", async function() {
     await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts)
     await token.approve(accounts[3], help.lif2LifWei(1000), {from: accounts[1]});
     await token.transferFrom(accounts[1], accounts[3], help.lif2LifWei(1000), {from: accounts[3]});
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [3999000,3000000,2001000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [3999000,3000000,2001000,1000000,0]);
   });
 
   it("should throw an error when trying to transfer more than allowed", async function() {
@@ -71,7 +71,7 @@ contract('LifToken', function(accounts) {
     } catch (error) {
       if (error.message.search('invalid JUMP') == -1) throw error;
     }
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
   });
 
   it("should return correct balances after transferData and show the right JSON data transfered", async function() {
@@ -85,7 +85,7 @@ contract('LifToken', function(accounts) {
     var decodedObj = JSON.parse(help.hexDecode( web3.toAscii(decodedEvents[0].events[3].value) ));
     assert.equal("AwesomeString", decodedObj.awesomeField);
 
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [3999000,3001000,2000000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [3999000,3001000,2000000,1000000,0]);
   });
 
   it("should return correct balances after transferDataFrom and show the right JSON data transfered", async function() {
@@ -101,7 +101,7 @@ contract('LifToken', function(accounts) {
     var decodedObj = JSON.parse(help.hexDecode( web3.toAscii(decodedEvents[0].events[3].value) ));
     assert.equal("AwesomeString", decodedObj.awesomeField);
 
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [3999000,3000000,2001000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [3999000,3000000,2001000,1000000,0]);
   });
 
   it("should return correct balances after transferData without value and show the right PROTOBUF data transfered", async function() {
@@ -122,7 +122,7 @@ contract('LifToken', function(accounts) {
     var decodedBuffer = new Buffer(help.hexDecode( web3.toAscii(decodedEvents[0].events[3].value) ));
     assert.equal("AwesomeString", AwesomeMessage.decode(decodedBuffer).awesomeField);
 
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
   });
 
   it("should return correct balances after transferData and show the event on receiver contract", async function() {
@@ -140,7 +140,7 @@ contract('LifToken', function(accounts) {
 
     assert.equal(help.lif2LifWei(1000), await token.balanceOf(message.contract.address));
 
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [3999000,3000000,2000000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [3999000,3000000,2000000,1000000,0]);
   });
 
   it("should return correct balances after transferDataFrom and show the event on receiver contract", async function() {
@@ -162,7 +162,7 @@ contract('LifToken', function(accounts) {
     assert.equal('Transfer Done', decodedEvents[0].events[2].value);
     assert.equal(help.lif2LifWei(1000), await token.balanceOf(message.contract.address));
 
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [3999000,3000000,2000000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [3999000,3000000,2000000,1000000,0]);
   });
 
   it("should return correct balances after approve and show the event on receiver contract", async function() {
@@ -180,7 +180,7 @@ contract('LifToken', function(accounts) {
 
     assert.equal(help.lif2LifWei(1000), await token.allowance(accounts[1], message.contract.address));
 
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
   });
 
   it("should fail transferData when using LifToken contract address as receiver", async function() {
@@ -192,7 +192,7 @@ contract('LifToken', function(accounts) {
       if (error.message.search('invalid JUMP') == -1) throw error;
     }
 
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
   });
 
   it("should fail transferDataFrom when using LifToken contract address as receiver", async function() {
@@ -206,7 +206,7 @@ contract('LifToken', function(accounts) {
       if (error.message.search('invalid JUMP') == -1) throw error;
     }
 
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
   });
 
   it("should fail transfer when using LifToken contract address as receiver", async function() {
@@ -218,7 +218,7 @@ contract('LifToken', function(accounts) {
       if (error.message.search('invalid JUMP') == -1) throw error;
     }
 
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
   });
 
   it("should fail transferFrom when using LifToken contract address as receiver", async function() {
@@ -232,7 +232,7 @@ contract('LifToken', function(accounts) {
       if (error.message.search('invalid JUMP') == -1) throw error;
     }
 
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
   });
 
   it("should fail to approve balance to LifToken contract address", async function() {
@@ -244,7 +244,7 @@ contract('LifToken', function(accounts) {
       if (error.message.search('invalid JUMP') == -1) throw error;
     }
 
-    await help.checkValues(token, accounts,1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
+    await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
   });
 
 });

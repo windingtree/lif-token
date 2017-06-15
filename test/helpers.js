@@ -1,7 +1,9 @@
 
 var LifToken = artifacts.require("./LifToken.sol");
+var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
 var abiDecoder = require('abi-decoder');
 abiDecoder.addABI(LifToken._json.abi);
+abiDecoder.addABI(LifCrowdsale._json.abi);
 
 const TOKEN_DECIMALS = 8;
 const DEBUG_MODE = (process.env.WT_DEBUG == "true") || false;
@@ -76,11 +78,9 @@ module.exports = {
     });
   },
 
-  checkValues: async function(token, crowdsale, accounts, etherBalance, totalSupply, tokenPrice, balances, votes, txsSent, txsReceived) {
+  checkToken: async function(token, accounts, totalSupply, balances, votes, txsSent, txsReceived) {
     let [
-      crowdsaleEtherBalance,
       tokenTotalSupply,
-      crowdsalePrice,
       tokenTotalVotes,
       tokenIncrementSent,
       tokenIncrementReceived,
@@ -89,9 +89,7 @@ module.exports = {
       tokenAccountTxSent,
       tokenAccountTxReceived
     ] = await Promise.all([
-      web3.eth.getBalance(crowdsale.contract.address),
       token.totalSupply(),
-      crowdsale.getPrice(),
       token.totalVotes(),
       token.votesIncrementSent(),
       token.votesIncrementReceived(),
@@ -126,9 +124,7 @@ module.exports = {
     ]);
 
     if (DEBUG_MODE) {
-      console.log('Contract Balance:', this.toEther(crowdsaleEtherBalance), 'Ether;', this.toWei(crowdsaleEtherBalance), 'Wei');
       console.log('Total Supply:', parseInt(tokenTotalSupply));
-      console.log('Token Price:', parseInt(crowdsalePrice));
       console.log('Dao Total Votes:', parseInt(tokenTotalVotes), 'Dao Votes Increment Exponent sent/received:', parseInt(tokenIncrementSent),'/',parseInt(tokenIncrementReceived));
       for(i = 0; i < 5; i++) {
         console.log(
@@ -140,12 +136,8 @@ module.exports = {
       }
     }
 
-    if (etherBalance)
-      assert.equal(this.toEther(crowdsaleEtherBalance), etherBalance, "Crowdsale should have the expected ether balance");
     if (totalSupply)
       assert.equal(parseInt(tokenTotalSupply), totalSupply);
-    if (tokenPrice)
-      assert.equal(this.toWei(crowdsalePrice), tokenPrice);
     if (balances){
       assert.equal(this.lifWei2Lif(tokenAccountBalances[0]), balances[0]);
       assert.equal(this.lifWei2Lif(tokenAccountBalances[1]), balances[1]);
@@ -176,6 +168,21 @@ module.exports = {
     }
   },
 
+  checkCrowdsale: async function(crowdsale, etherBalance, tokenPrice) {
+    let crowdsaleEtherBalance = await web3.eth.getBalance(crowdsale.contract.address);
+    let crowdsalePrice = await crowdsale.getPrice();
+
+    if (DEBUG_MODE) {
+      console.log('Contract Balance:', this.toEther(crowdsaleEtherBalance), 'Ether;', this.toWei(crowdsaleEtherBalance), 'Wei');
+      console.log('Token Price:', parseInt(crowdsalePrice));
+    }
+
+    if (etherBalance)
+      assert.equal(this.toEther(crowdsaleEtherBalance), etherBalance, "Crowdsale should have the expected ether balance");
+    if (tokenPrice)
+      assert.equal(this.toWei(crowdsalePrice), tokenPrice);
+  },
+
   getProposal: async function(token, id) {
     var proposal = await token.proposals.call(id);
     var parsedProposal = {
@@ -191,38 +198,44 @@ module.exports = {
       actionData: proposal[9],
       totalVotes: parseInt(proposal[10])
     };
-    console.log('['+parsedProposal.id+'] To: '+parsedProposal.target+', Value: '+parsedProposal.value +', MaxBlock: '+parsedProposal.maxBlock+', Desc: '+parsedProposal.description+', Status: '+parsedProposal.status, ', Votes: ',parsedProposal.totalVotes);
+    console.log('['+parsedProposal.id+'] To: '+parsedProposal.target+', Value: '+parsedProposal.value +', MaxBlock: '+parsedProposal.maxBlock+', Desc: '+parsedProposal.description+', Status: '+parsedProposal.status, ', Votes: ',parsedProposal.totalVotes,'/',parsedProposal.votesNeeded);
   },
 
   simulateCrowdsale: async function(token, total, price, balances, accounts){
     var startBlock = web3.eth.blockNumber;
-    var endBlock = web3.eth.blockNumber+6;
+    var endBlock = web3.eth.blockNumber+10;
     var targetBalance = parseFloat(total*price);
-    await token.addCrowdsaleStage(startBlock, endBlock, price, 10, web3.toWei(0.1, 'ether'), 1, targetBalance, total, 0, 0);
+    var crowdsale = await LifCrowdsale.new(
+      token.address, startBlock, endBlock, price, 10, web3.toWei(0.1, 'ether'), 1, targetBalance, total, 0, 0
+    );
+    await token.issueTokens(total);
+    await token.transferFrom(token.contract.address, crowdsale.contract.address, this.lif2LifWei(total), {from: accounts[0]});
+    assert.equal(await token.balanceOf(crowdsale.contract.address), this.lif2LifWei(total));
+    await crowdsale.setStatus(2);
+    await this.waitToBlock(startBlock+1, accounts);
     if (balances[0] > 0)
-      await token.submitBid({ value: balances[0]*price, from: accounts[1] });
+      await crowdsale.submitBid({ value: balances[0]*price, from: accounts[1] });
     if (balances[1] > 0)
-      await token.submitBid({ value: balances[1]*price, from: accounts[2] });
+      await crowdsale.submitBid({ value: balances[1]*price, from: accounts[2] });
     if (balances[2] > 0)
-      await token.submitBid({ value: balances[2]*price, from: accounts[3] });
+      await crowdsale.submitBid({ value: balances[2]*price, from: accounts[3] });
     if (balances[3] > 0)
-      await token.submitBid({ value: balances[3]*price, from: accounts[4] });
+      await crowdsale.submitBid({ value: balances[3]*price, from: accounts[4] });
     if (balances[4] > 0)
-      await token.submitBid({ value: balances[4]*price, from: accounts[5] });
+      await crowdsale.submitBid({ value: balances[4]*price, from: accounts[5] });
     await this.waitToBlock(endBlock+1, accounts);
-    await token.checkCrowdsaleStage(0);
-    let auctionEnded = await token.crowdsaleStages.call(0);
-    let tokenStatus = await token.status();
-    assert.equal(parseInt(tokenStatus), 4);
+    await crowdsale.checkCrowdsale(0);
     if (balances[0] > 0)
-      await token.distributeTokens(0, accounts[1], false);
+      await crowdsale.distributeTokens(accounts[1], false);
     if (balances[1] > 0)
-      await token.distributeTokens(0, accounts[2], false);
+      await crowdsale.distributeTokens(accounts[2], false);
     if (balances[2] > 0)
-      await token.distributeTokens(0, accounts[3], false);
+      await crowdsale.distributeTokens(accounts[3], false);
     if (balances[3] > 0)
-      await token.distributeTokens(0, accounts[4], false);
+      await crowdsale.distributeTokens(accounts[4], false);
     if (balances[4] > 0)
-      await token.distributeTokens(0, accounts[5], false);
+      await crowdsale.distributeTokens(accounts[5], false);
+    await crowdsale.transferVotes();
+    return crowdsale;
   }
 };

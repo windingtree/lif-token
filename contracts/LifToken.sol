@@ -193,7 +193,7 @@ contract LifToken is Ownable, PullPayment {
 
       balances[msg.sender] = balances[msg.sender].sub(value);
       balances[to] = balances[to].add(value);
-      giveVotes(msg.sender, to);
+      issueVotes(msg.sender, to);
       Transfer(msg.sender, to, value);
 
       return true;
@@ -210,7 +210,7 @@ contract LifToken is Ownable, PullPayment {
       balances[to] = balances[to].add(value);
       balances[from] = balances[from].sub(value);
       allowed[from][msg.sender] = allowance.sub(value);
-      giveVotes(msg.sender, to);
+      issueVotes(msg.sender, to);
       Transfer(from, to, value);
 
       return true;
@@ -257,7 +257,7 @@ contract LifToken is Ownable, PullPayment {
       if (value > 0) {
         balances[tx.origin] = balances[tx.origin].sub(value);
         balances[to] = balances[to].add(value);
-        giveVotes(tx.origin, to);
+        issueVotes(tx.origin, to);
       }
 
       if (doCall && to.call(data))
@@ -281,7 +281,7 @@ contract LifToken is Ownable, PullPayment {
         balances[from] = balances[from].sub(value);
         balances[to] = balances[to].add(value);
         allowed[from][tx.origin] = allowance.sub(value);
-        giveVotes(tx.origin, to);
+        issueVotes(tx.origin, to);
       }
 
       if (doCall && to.call(data))
@@ -347,7 +347,7 @@ contract LifToken is Ownable, PullPayment {
     }
 
     // Execute a proporal, only the owner can make this call, the check of the votes is optional because it can ran out of gas.
-    function executeProposal(uint proposalID) external onlyOwner() onStatus(4,0) {
+    function executeProposal(uint proposalID) external onStatus(4,0) {
 
       // Get the proposal using proposalsIndex
       Proposal p = proposals[proposalID];
@@ -444,7 +444,7 @@ contract LifToken is Ownable, PullPayment {
     }
 
     // Internal contract function that add votes if necessary sent/receive txs amount is reached
-    function giveVotes(address sender, address receiver) internal {
+    function issueVotes(address sender, address receiver) internal {
 
       if ((txsSent[sender] < (votesIncrementSent**sentTxVotes[sender])) && (txsSent[sender].add(1) >= (votesIncrementSent**sentTxVotes[sender]))) {
         sentTxVotes[sender] ++;
@@ -458,6 +458,20 @@ contract LifToken is Ownable, PullPayment {
       txsSent[sender] ++;
       txsReceived[receiver] ++;
 
+    }
+
+    function giveVotes(address receiver, uint amount) external {
+      if (amount == 0){
+        sentTxVotes[receiver] = sentTxVotes[receiver].add(sentTxVotes[msg.sender]);
+        receivedTxVotes[receiver] = receivedTxVotes[receiver].add(receivedTxVotes[msg.sender]);
+        sentTxVotes[msg.sender] = 0;
+        receivedTxVotes[msg.sender] = 0;
+      } else {
+        sentTxVotes[msg.sender] = sentTxVotes[msg.sender].sub(amount);
+        receivedTxVotes[msg.sender] = receivedTxVotes[msg.sender].sub(amount);
+        sentTxVotes[receiver] = sentTxVotes[receiver].add(amount);
+        receivedTxVotes[receiver] = receivedTxVotes[receiver].add(amount);
+      }
     }
 
     // Safe send of ethers to an address, try to use default send function and if dosent succeed it creates an asyncPayment

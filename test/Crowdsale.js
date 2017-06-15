@@ -85,12 +85,13 @@ contract('LifToken Crowdsale', function(accounts) {
 
     // Submit bid of 500000 on accounts[1]
     price = parseFloat(await crowdsale.getPrice());
-    var tokens1 = 500000
+    var tokens1 = 500000;
     assert.equal(price, startPrice);
     totalWeiSent += price*tokens1;
     totalTokensBought += tokens1;
-    await crowdsale.submitBid({ value: web3.toWei(5, 'ether')*tokens1, from: accounts[1] });
-    await help.checkValues(token, crowdsale, accounts, help.toEther(tokens1*web3.toWei(5, 'ether')), 0, web3.toWei(5, 'ether'), [0, 0, 0, 0, 0]);
+    await crowdsale.submitBid({value: web3.toWei(5, 'ether')*tokens1, from: accounts[1] });
+    await help.checkToken(token, accounts, maxTokens, [0, 0, 0, 0, 0]);
+    await help.checkCrowdsale(crowdsale, help.toEther(tokens1*web3.toWei(5, 'ether')), 0);
     await help.waitToBlock(startBlock+10, accounts);
 
     // Check that the crowdsale stage is ready to be completed and reached the completion
@@ -146,10 +147,12 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(await token.balanceOf(crowdsale.contract.address)), 0);
     assert.equal(parseFloat(await token.balanceOf(accounts[1])), help.lif2LifWei(tokens1));
     console.log("before check values");
-    await help.checkValues(token, crowdsale, accounts, 0, maxTokens, 0, [tokens1, 0, 0, 0, 0]);
+    await help.checkToken(token, accounts, maxTokens, [tokens1, 0, 0, 0, 0]);
+    await help.checkCrowdsale(crowdsale, 0, 0);
     // Check all final values
     console.log("before final check values");
-    await help.checkValues(token, crowdsale, accounts, 0, maxTokens, 0, [tokens1, 0, 0, 0, 0]);
+    await help.checkToken(token, accounts, maxTokens, [tokens1, 0, 0, 0, 0]);
+    await help.checkCrowdsale(crowdsale, 0, 0);
 
     // check that the owner can fund a new crowdsale with the unused tokens
 
@@ -257,7 +260,7 @@ contract('LifToken Crowdsale', function(accounts) {
       1000 * 1000,
       500 * 1000,
       1000 * 1000,
-      2000 * 1000, 
+      2000 * 1000,
       750 * 1000,
       1000 * 1000,
       127451
@@ -273,10 +276,11 @@ contract('LifToken Crowdsale', function(accounts) {
     totalWeiSent += price*bids[0];
     totalTokensBought += bids[0];
     await crowdsale.submitBid({ value: web3.toWei(5, 'ether')*bids[0], from: accounts[1] });
-    await help.checkValues(token, crowdsale, accounts, help.toEther(bids[0]*web3.toWei(5, 'ether')), 0, web3.toWei(5, 'ether'), [0, 0, 0, 0, 0]);
+    await help.checkToken(token, accounts, 0, [0, 0, 0, 0, 0]);
+    await help.checkCrowdsale(crowdsale, help.toEther(bids[0]*web3.toWei(5, 'ether')), 0);
     await help.waitToBlock(startBlock+10, accounts);
 
-    console.log("after first submitbid and checkValues");
+    console.log("after first submitbid and checkToken");
 
     // Submit bid of 1000000 on accounts[2]
     // Submit bid of 500000 on accounts[3]
@@ -363,7 +367,8 @@ contract('LifToken Crowdsale', function(accounts) {
     await crowdsale.distributeTokens(accounts[8], false);
     await crowdsale.distributeTokens(accounts[10], true);
     console.log("before check values");
-    await help.checkValues(token, crowdsale, accounts, 0, maxTokens + paymentTokens + maxDiscountTokens + maxFoundersPaymentTokens, 0, [500000, 1000000, 500000, 1000000, 2000000]);
+    await help.checkToken(token, accounts, maxTokens + paymentTokens + maxDiscountTokens + maxFoundersPaymentTokens, [500000, 1000000, 500000, 1000000, 2000000]);
+    await help.checkCrowdsale(crowdsale, 0, 0);
     // Shouldnt allow to a claim a payment before the requested block
     try {
       await futurePayment.claimPayment({from: accounts[10]});
@@ -391,7 +396,8 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(help.lifWei2Lif(ownerBalance), expectedFoundersTokens);
     // Check all final values
     let totalIssuedTokens = maxTokens + paymentTokens + maxDiscountTokens + maxFoundersPaymentTokens;
-    await help.checkValues(token, crowdsale, accounts, 0, totalIssuedTokens, 0, [500000, 1000000, 500000, 1000000, 2000000]);
+    await help.checkToken(token, accounts, totalIssuedTokens, [500000, 1000000, 500000, 1000000, 2000000]);
+    await help.checkCrowdsale(crowdsale, 0);
 
     assert.equal(help.lifWei2Lif(await token.balanceOf(token.contract.address)),
       Math.round(
@@ -439,7 +445,7 @@ contract('LifToken Crowdsale', function(accounts) {
     await crowdsale.submitBid({ value: price*700000, from: accounts[1] });
     await crowdsale.submitBid({ value: price*400000, from: accounts[2] });
 
-    await help.checkValues(token, accounts, help.toEther(totalWeiSent), 0, web3.toWei(5, 'ether'), [0, 0, 0, 0, 0]);
+    await help.checkToken(token, accounts, help.toEther(totalWeiSent), 0, web3.toWei(5, 'ether'), [0, 0, 0, 0, 0]);
     await help.waitToBlock(startBlock+10, accounts);
 
     // Submit bid of 200000 on accounts[3]
@@ -525,7 +531,7 @@ contract('LifToken Crowdsale', function(accounts) {
     await token.distributeTokens(0, accounts[7], false, {from: accounts[0]});
     await token.distributeTokens(0, accounts[8], false, {from: accounts[0]});
     await token.distributeTokens(0, accounts[10], true, {from: accounts[0]});
-    await help.checkValues(token, accounts, 0, 4125000, 0, [700000, 400000, 200000, 200000, 500000]);
+    await help.checkToken(token, accounts, 0, 4125000, 0, [700000, 400000, 200000, 200000, 500000]);
 
     // Start another stage to try to sell the remaining tokens
     currentBlock = web3.eth.blockNumber;
@@ -625,7 +631,7 @@ contract('LifToken Crowdsale', function(accounts) {
     await token.distributeTokens(1, accounts[6], false, {from: accounts[0]});
     await token.distributeTokens(1, accounts[7], false, {from: accounts[0]});
     await token.distributeTokens(1, accounts[8], false, {from: accounts[0]});
-    await help.checkValues(token, accounts, 0, 6125000, 0, [700000, 400000, 300000, 500000, 500000]);
+    await help.checkToken(token, accounts, 0, 6125000, 0, [700000, 400000, 300000, 500000, 500000]);
 
     // Start another stage to try to sell the remaining tokens
     currentBlock = web3.eth.blockNumber;
@@ -697,7 +703,7 @@ contract('LifToken Crowdsale', function(accounts) {
     await token.distributeTokens(2, accounts[2], false, {from: accounts[0]});
     await token.distributeTokens(2, accounts[3], false, {from: accounts[0]});
     await token.distributeTokens(2, accounts[4], false, {from: accounts[0]});
-    await help.checkValues(token, accounts, 0, 7000000, 0, [875000, 700000, 500000, 700000, 500000]);
+    await help.checkToken(token, accounts, 0, 7000000, 0, [875000, 700000, 500000, 700000, 500000]);
 
     // Should be able to claim all the payments
     await help.waitToBlock(endBlock+81, accounts);
@@ -729,7 +735,7 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(help.lifWei2Lif(ownerBalance), 2995992);
 
     // Check all final values
-    await help.checkValues(token, accounts, 0, 9995992, 0, [875000, 700000, 500000, 700000, 500000]);
+    await help.checkToken(token, accounts, 0, 9995992, 0, [875000, 700000, 500000, 700000, 500000]);
   });
   */
 
