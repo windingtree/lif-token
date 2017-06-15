@@ -209,17 +209,24 @@ contract('LifToken', function(accounts) {
     await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
   });
 
+  /*
+   * TODO: should we prevent transfers to the LifToken contract again?
+   * We started allowing this transfers so the crowdsale can return the unused
+   * tokens to the LifToken, but we might want to disallow it in the future
+   * in which case this test should be uncommented
   it("should fail transfer when using LifToken contract address as receiver", async function() {
     await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
 
     try {
       await token.transfer(token.contract.address, help.lif2LifWei(1000), {from: accounts[1]});
+      assert.equal(false, true, "transfer should have failed because LifToken should not receive tokens");
     } catch (error) {
       if (error.message.search('invalid JUMP') == -1) throw error;
     }
 
     await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
   });
+  */
 
   it("should fail transferFrom when using LifToken contract address as receiver", async function() {
     await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
