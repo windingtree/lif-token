@@ -31,8 +31,8 @@ contract('LifToken Crowdsale', function(accounts) {
 
   it("Should simulate a crowdsale of 7m tokens, no owner payment, with one dutch auction and just 1 bidder", async function() {
     var currentBlock = web3.eth.blockNumber;
-    var startBlock = currentBlock+10;
-    var endBlock = currentBlock+20;
+    var startBlock = currentBlock+5;
+    var endBlock = currentBlock+10;
     var totalWeiSent = 0;
     var totalTokensBought = 0;
     var presaleTokens = 0;
@@ -82,7 +82,7 @@ contract('LifToken Crowdsale', function(accounts) {
     await crowdsale.submitBid({value: web3.toWei(5, 'ether')*tokens1, from: accounts[1] });
     await help.checkToken(token, accounts, maxTokens, [0, 0, 0, 0, 0]);
     await help.checkCrowdsale(crowdsale, help.toEther(tokens1*web3.toWei(5, 'ether')), 0);
-    await help.waitToBlock(startBlock+10, accounts);
+    await help.waitToBlock(startBlock+5, accounts);
 
     // Check that the crowdsale stage is ready to be completed and reached the completion
     assert.equal(parseFloat(await crowdsale.startPrice()), startPrice);
@@ -163,7 +163,7 @@ contract('LifToken Crowdsale', function(accounts) {
   it("Should simulate a crowdsale of 7m tokens with one ducth auction stage, using future discount and distribute 3M of the tokens using futurePayments", async function() {
     var currentBlock = web3.eth.blockNumber;
     var startBlock = currentBlock+15;
-    var endBlock = startBlock+100;
+    var endBlock = startBlock+50;
     var totalWeiSent = 0;
     var totalTokensBought = 0;
     var presaleTokens = 0;
@@ -186,8 +186,8 @@ contract('LifToken Crowdsale', function(accounts) {
     }, accounts);
 
     // create future payment, issue & transfer tokens into it
-    let futurePayment = await FuturePayment.new(accounts[10], endBlock+30, token.address);
-    assert.equal(await futurePayment.afterBlock(), endBlock+30);
+    let futurePayment = await FuturePayment.new(accounts[10], endBlock+20, token.address);
+    assert.equal(await futurePayment.afterBlock(), endBlock+20);
     assert.equal(await futurePayment.payee(), accounts[10]);
     assert.equal(await futurePayment.tokenAddress(), token.address);
 
@@ -359,7 +359,7 @@ contract('LifToken Crowdsale', function(accounts) {
     } catch (error) {
       if (error.message.search('invalid JUMP') == -1) throw error;
     }
-    await help.waitToBlock(endBlock+81, accounts);
+    await help.waitToBlock(endBlock+41, accounts);
     // Should be able to claim all the payments
     await futurePayment.claimPayment({from: accounts[10]});
 
