@@ -359,7 +359,7 @@ contract('LifToken Crowdsale', function(accounts) {
     } catch (error) {
       if (error.message.search('invalid JUMP') == -1) throw error;
     }
-    await help.waitToBlock(endBlock+51, accounts);
+    await help.waitToBlock(endBlock+41, accounts);
     // Should be able to claim all the payments
     await futurePayment.claimPayment({from: accounts[10]});
 
