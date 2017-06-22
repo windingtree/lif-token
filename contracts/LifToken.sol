@@ -223,6 +223,12 @@ contract LifToken is Ownable, PullPayment {
       if (spender == address(this))
         throw;
 
+      // To change the approve amount you first have to reduce the addresses`
+      //  allowance to zero by calling `approve(spender, 0)` if it is not
+      //  already 0 to mitigate the race condition described here:
+      //  https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+      if ((value != 0) && (allowed[msg.sender][spender] != 0)) throw;
+
       allowed[msg.sender][spender] = value;
       Approval(msg.sender, spender, value);
 
