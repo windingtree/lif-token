@@ -51,7 +51,7 @@ contract('LifToken Crowdsale', function(accounts) {
       changePerBlock: 10, changePrice: web3.toWei(0.4, 'ether'),
       minCap: minCap, maxCap: maxCap,
       maxTokens: maxTokens,
-      presaleDiscount: 40, ownerPercentage: ownerPercentage
+      presaleBonusRate: 40, ownerPercentage: ownerPercentage
     }, accounts);
 
     assert.equal(parseFloat(await token.maxSupply()), maxTokens + paymentTokens);
@@ -91,7 +91,7 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(await crowdsale.minCap()), minCap);
     assert.equal(parseFloat(await crowdsale.maxCap()), maxCap);
     assert.equal(parseFloat(await crowdsale.totalTokens()), 7000000);
-    assert.equal(parseFloat(await crowdsale.presaleDiscount()), 40);
+    assert.equal(parseFloat(await crowdsale.presaleBonusRate()), 40);
     assert.equal(parseInt(await crowdsale.ownerPercentage()), ownerPercentage);
     assert.equal(help.toEther(await crowdsale.totalPresaleWei()), 0);
     assert.equal(parseFloat(await crowdsale.weiRaised()), totalWeiSent);
@@ -123,7 +123,7 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(await crowdsale.minCap()), minCap);
     assert.equal(parseFloat(await crowdsale.maxCap()), maxCap);
     assert.equal(parseFloat(await crowdsale.totalTokens()), 7000000);
-    assert.equal(parseFloat(await crowdsale.presaleDiscount()), 40);
+    assert.equal(parseFloat(await crowdsale.presaleBonusRate()), 40);
     assert.equal(parseInt(await crowdsale.ownerPercentage()), 0);
     assert.equal(help.toEther(await crowdsale.totalPresaleWei()), 0);
     assert.equal(parseFloat(await crowdsale.weiRaised()), totalWeiSent);
@@ -170,7 +170,7 @@ contract('LifToken Crowdsale', function(accounts) {
     var maxTokens = 7000000;
     var paymentTokens = 300000;
     var ownerPercentage = 275;
-    var presaleDiscount = 40;
+    var presaleBonusRate = 40;
     var minCap = 10000000;
     var maxCap = 40000000;
 
@@ -182,7 +182,7 @@ contract('LifToken Crowdsale', function(accounts) {
       changePerBlock: 10, changePrice: web3.toWei(0.4, 'ether'),
       minCap: web3.toWei(minCap, 'ether'), maxCap: web3.toWei(maxCap, 'ether'),
       maxTokens: maxTokens,
-      presaleDiscount: presaleDiscount, ownerPercentage: ownerPercentage
+      presaleBonusRate: presaleBonusRate, ownerPercentage: ownerPercentage
     }, accounts);
 
     // create future payment, issue & transfer tokens into it
@@ -198,12 +198,12 @@ contract('LifToken Crowdsale', function(accounts) {
     // But first let's transfer the max tokens this discounted amount can buy
     let minTokenPrice = minCap / maxTokens;
     let discountedAmount = 250000;
-    let maxDiscountTokens = (discountedAmount / minTokenPrice) * (presaleDiscount + 100) / 100;
+    let maxDiscountTokens = (discountedAmount / minTokenPrice) * (presaleBonusRate + 100) / 100;
     help.debug("Issuing & transferring max discount tokens: ", maxDiscountTokens);
     await token.issueTokens(maxDiscountTokens);
     await token.transferFrom(token.address, crowdsale.address, help.lif2LifWei(maxDiscountTokens), {from: accounts[0]});
 
-    await crowdsale.addDiscount(accounts[10], web3.toWei(discountedAmount, 'ether'));
+    await crowdsale.addPresalePayment(accounts[10], web3.toWei(discountedAmount, 'ether'));
 
     // issue & transfer tokens for founders payments
     let maxFoundersPaymentTokens = (maxTokens + maxDiscountTokens) * (ownerPercentage / 1000.0) ;
@@ -302,7 +302,7 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(await crowdsale.minCap()), web3.toWei(10000000, 'ether'));
     assert.equal(parseFloat(await crowdsale.maxCap()), web3.toWei(40000000, 'ether'));
     assert.equal(parseFloat(await crowdsale.totalTokens()), 7000000);
-    assert.equal(parseFloat(await crowdsale.presaleDiscount()), presaleDiscount);
+    assert.equal(parseFloat(await crowdsale.presaleBonusRate()), presaleBonusRate);
     assert.equal(parseInt(await crowdsale.ownerPercentage()), ownerPercentage);
     assert.equal(help.toEther(await crowdsale.totalPresaleWei()), 250000);
     assert.equal(help.lifWei2Lif(await crowdsale.weiRaised()), help.lifWei2Lif(totalWeiSent));
@@ -324,7 +324,7 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(await crowdsale.minCap()), web3.toWei(10000000, 'ether'));
     assert.equal(parseFloat(await crowdsale.maxCap()), web3.toWei(40000000, 'ether'));
     assert.equal(parseFloat(await crowdsale.totalTokens()), 7000000);
-    assert.equal(parseFloat(await crowdsale.presaleDiscount()), presaleDiscount);
+    assert.equal(parseFloat(await crowdsale.presaleBonusRate()), presaleBonusRate);
     assert.equal(parseInt(await crowdsale.ownerPercentage()), 0);
     assert.equal(help.toEther(await crowdsale.totalPresaleWei()), 250000);
     assert.equal(help.lifWei2Lif(await crowdsale.weiRaised()), help.lifWei2Lif(totalWeiSent));
@@ -362,7 +362,7 @@ contract('LifToken Crowdsale', function(accounts) {
     }
 
     actualPrice = await crowdsale.lastPrice();
-    expectedDiscountedTokens = Math.round((discountedAmount / help.toEther(actualPrice)) / (100 - presaleDiscount) * 100);
+    expectedDiscountedTokens = Math.round((discountedAmount / help.toEther(actualPrice)) / (100 - presaleBonusRate) * 100);
 
     assert.equal(paymentTokens + expectedDiscountedTokens, help.lifWei2Lif(await token.balanceOf(accounts[10])),
       "accounts[10] should have received the paymentTokens + the actual discounted tokens (given the actual price)");
@@ -397,7 +397,7 @@ contract('LifToken Crowdsale', function(accounts) {
     await token.addCrowdsaleStage(startBlock, endBlock, web3.toWei(5, 'ether'), 10, web3.toWei(0.2, 'ether'), web3.toWei(10000000, 'ether'), web3.toWei(40000000, 'ether'), 7000000, 50, 428);
 
     // Add 250000 ethers discount
-    await crowdsale.addDiscount(accounts[10], web3.toWei(250000, 'ether'));
+    await crowdsale.addPresalePayment(accounts[10], web3.toWei(250000, 'ether'));
 
     // Check that the crowdsale stage and payments created succesfully with the right values
     let dutchAuction = await help.getStage(token, 0);
@@ -516,7 +516,7 @@ contract('LifToken Crowdsale', function(accounts) {
 
     //Try to add a discount, but it will be rejected due to not discount on auction
     try {
-      await crowdsale.addDiscount(accounts[10], web3.toWei(250000, 'ether'));
+      await crowdsale.addPresalePayment(accounts[10], web3.toWei(250000, 'ether'));
     } catch (error) {
       if (error.message.search('invalid JUMP') == -1) throw error;
     }

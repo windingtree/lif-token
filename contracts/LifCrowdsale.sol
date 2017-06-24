@@ -37,7 +37,7 @@ contract LifCrowdsale is Ownable, PullPayment {
     uint public minCap;
     uint public maxCap;
     uint public totalTokens;
-    uint public presaleDiscount;
+    uint public presaleBonusRate;
     uint public ownerPercentage;
     uint public totalPresaleWei;
     uint public weiRaised;
@@ -61,7 +61,7 @@ contract LifCrowdsale is Ownable, PullPayment {
     function LifCrowdsale(address _tokenAddress, uint _startBlock, uint _endBlock,
                           uint _startPrice, uint _changePerBlock, uint _changePrice,
                           uint _minCap, uint _maxCap, uint _totalTokens,
-                          uint _presaleDiscount, uint _ownerPercentage) {
+                          uint _presaleBonusRate, uint _ownerPercentage) {
       tokenAddress = _tokenAddress;
       startBlock = _startBlock;
       endBlock = _endBlock;
@@ -71,7 +71,7 @@ contract LifCrowdsale is Ownable, PullPayment {
       minCap = _minCap;
       maxCap = _maxCap;
       totalTokens = _totalTokens;
-      presaleDiscount = _presaleDiscount;
+      presaleBonusRate = _presaleBonusRate;
       ownerPercentage = _ownerPercentage;
       status = 1;
     }
@@ -102,22 +102,22 @@ contract LifCrowdsale is Ownable, PullPayment {
     // founders vesting compensation and presale payments
     function getMaxTokens() public returns (uint) {
       uint minTokenPrice = minCap.div(totalTokens);
-      uint maxDiscountedTokens = totalPresaleWei.div(minTokenPrice).mul(presaleDiscount.add(100).div(100));
-      uint maxFoundersTokens = maxDiscountedTokens.mul(ownerPercentage).div(1000);
+      uint maxWithBonusTokens = totalPresaleWei.div(minTokenPrice).mul(presaleBonusRate.add(100).div(100));
+      uint maxFoundersTokens = maxWithBonusTokens.mul(ownerPercentage).div(1000);
 
-      return totalTokens + maxDiscountedTokens + maxFoundersTokens;
+      return totalTokens + maxWithBonusTokens + maxFoundersTokens;
     }
 
-    // Add an address that would be able to spend certain amounts of ethers with discount
-    function addDiscount(address target, uint amount) external onlyOwner() onStatus(1,2) {
+    // Add an address that would be able to spend certain amounts of ethers with a bonus rate
+    function addPresalePayment(address target, uint amount) external onlyOwner() onStatus(1,2) {
 
-      if (presaleDiscount == 0)
+      if (presaleBonusRate == 0)
         throw;
 
       totalPresaleWei = totalPresaleWei.add(amount);
       presalePayments[target] = amount;
 
-      // check that crowdsale balance is AT LEAST max(discounted)tokens at lowest possible valuation +
+      // check that crowdsale balance is AT LEAST max(with bonus)tokens at lowest possible valuation +
       // founders tokens
       uint crowdsaleBalance = ERC20Basic(tokenAddress).balanceOf(address(this)).div(LONG_DECIMALS);
 
@@ -125,15 +125,15 @@ contract LifCrowdsale is Ownable, PullPayment {
         throw;
     }
 
-    function distributeTokens(address buyer, bool discount) external onStatus(3, 0) {
+    function distributeTokens(address buyer, bool withBonus) external onStatus(3, 0) {
 
-      if (discount){
+      if (withBonus){
 
         if (presalePayments[buyer] == 0)
           throw;
 
         uint tokensQty = presalePayments[buyer].div(
-            lastPrice.div(100).mul(uint(100).sub(presaleDiscount))
+            lastPrice.div(100).mul(uint(100).sub(presaleBonusRate))
         );
 
         tokensSold = tokensSold.add(tokensQty);
@@ -182,10 +182,10 @@ contract LifCrowdsale is Ownable, PullPayment {
       return price;
     }
 
-    function getPresaleTokens(uint tokenPrice) returns(uint) {
-      if (presaleDiscount > 0){
+    function getPresaleTokens(uint tokenPrice) public returns(uint) {
+      if (presaleBonusRate > 0){
         // Calculate how much presale tokens would be distributed at this price
-        return totalPresaleWei.div(tokenPrice.div(100).mul(uint(100).sub(presaleDiscount)));
+        return totalPresaleWei.div(tokenPrice.div(100).mul(uint(100).sub(presaleBonusRate)));
       } else
           return 0;
     }
