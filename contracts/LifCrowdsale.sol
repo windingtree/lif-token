@@ -167,10 +167,9 @@ contract LifCrowdsale is Ownable, PullPayment {
       uint price = 0;
 
       if ((startBlock < block.number) && (block.number < endBlock)) {
-        price = block.number.sub(startBlock);
-        price = price.div(changePerBlock);
-        price = price.mul(changePrice);
-        price = startPrice.sub(price);
+        price = startPrice.sub(
+          block.number.sub(startBlock).div(changePerBlock).mul(changePrice)
+        );
       }
 
       return price;
