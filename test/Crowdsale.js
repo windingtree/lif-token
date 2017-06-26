@@ -29,6 +29,41 @@ contract('LifToken Crowdsale', function(accounts) {
     done();
   });
 
+  it("calculates presale payments with bonus rate", async function() {
+    var startBlock = web3.eth.blockNumber + 5;
+    var endBlock = startBlock + 5;
+    var startPrice = web3.toWei(5, 'ether');
+    var maxTokens = 1000;
+    var minCap = 1000;
+    var maxCap = 1500;
+    var presaleBonusRate = 30;
+
+    var crowdsale = await help.createAndFundCrowdsale({
+      token: token,
+      startBlock: startBlock, endBlock: endBlock,
+      startPrice: startPrice,
+      changePerBlock: 10, changePrice: web3.toWei(0.4, 'ether'),
+      minCap: web3.toWei(minCap, 'ether'), maxCap: web3.toWei(maxCap, 'ether'),
+      maxTokens: maxTokens,
+      presaleBonusRate: presaleBonusRate, ownerPercentage: 0
+    }, accounts);
+
+    // Add discount of 1200 ethers
+    // But first let's transfer the max tokens this discounted amount can buy
+    let minTokenPrice = minCap / maxTokens;
+
+    let presaleAmount = 1200; // ether
+    let maxWithBonusTokens = (presaleAmount / minTokenPrice) * (presaleBonusRate + 100) / 100;
+
+    await token.issueTokens(maxWithBonusTokens);
+    await token.transferFrom(token.address, crowdsale.address, help.lif2LifWei(maxWithBonusTokens), {from: accounts[0]});
+
+    await crowdsale.addPresalePayment(accounts[10], web3.toWei(presaleAmount, 'ether'));
+
+    assert.equal(parseFloat(await crowdsale.getPresaleTokens.call(web3.toWei(1, 'ether'))), 1200 * 1.3,
+      "assuming token price of 1 ether, presale tokens should equal to presale amount adjusted by bonus rate");
+  });
+
   it("Should simulate a crowdsale of 7m tokens, no owner payment, with one dutch auction and just 1 bidder", async function() {
     var currentBlock = web3.eth.blockNumber;
     var startBlock = currentBlock+5;
