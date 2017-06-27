@@ -230,7 +230,7 @@ contract('LifToken Crowdsale', function(accounts) {
     let minTokenPrice = minCap / maxTokens;
     let discountedAmount = 250000;
     let maxDiscountTokens = (discountedAmount / minTokenPrice) * (presaleBonusRate + 100) / 100;
-    help.debug("Issuing & transferring max discount tokens: ", maxDiscountTokens);
+    help.debug("Issuing & transferring max discount tokens: ", maxDiscountTokens, ", min token price:", minTokenPrice);
     await token.issueTokens(maxDiscountTokens);
     await token.transferFrom(token.address, crowdsale.address, help.lif2LifWei(maxDiscountTokens), {from: accounts[0]});
 
@@ -288,7 +288,7 @@ contract('LifToken Crowdsale', function(accounts) {
       price = parseFloat(await crowdsale.getPrice());
       totalWeiSent += price * bid;
       totalTokensBought += bid;
-      console.log("making bid for ", bid, " tokens at price ", price);
+      help.debug("making bid for ", bid, " tokens at price ", price);
       await crowdsale.submitBid({value: price * bid, from: accounts[i + 1]});
     }
 
@@ -346,13 +346,13 @@ contract('LifToken Crowdsale', function(accounts) {
     let crowdsaleStatus = await crowdsale.status();
     assert.equal(parseFloat(await crowdsale.status()), 2);
     await help.waitToBlock(endBlock+1, accounts);
-    console.log("before checkCrowdsale. Balance in crowdsale: ",
+    help.debug("before checkCrowdsale. Balance in crowdsale: ",
       help.lifWei2Lif(await token.balanceOf(crowdsale.address)),
       "Balance in token: ", help.lifWei2Lif(await token.balanceOf(token.address)));
     await crowdsale.checkCrowdsale();
 
     price = parseFloat(await crowdsale.lastPrice());
-    console.log("after checkCrowdsale. Balance in crowdsale: ",
+    help.debug("after checkCrowdsale. Balance in crowdsale: ",
       help.lifWei2Lif(await token.balanceOf(crowdsale.address)),
       "crowdsale price: ", price,
       "\npresaleTokens: ", parseFloat(await crowdsale.getPresaleTokens.call(price)),
@@ -375,11 +375,11 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(await crowdsale.tokensSold()), totalTokensBought);
     assert.equal(parseFloat(await crowdsale.lastPrice()), price);
 
-    console.log("before distribute tokens. Balance in crowdsale: ", help.lifWei2Lif(await token.balanceOf(crowdsale.address)));
+    help.debug("before distribute tokens. Balance in crowdsale: ", help.lifWei2Lif(await token.balanceOf(crowdsale.address)));
 
     // Distribute the tokens and check values
     await crowdsale.distributeTokens(accounts[1], false);
-    console.log("after first distribute tokens. Balance in crowdsale: ",
+    help.debug("after first distribute tokens. Balance in crowdsale: ",
       help.lifWei2Lif(await token.balanceOf(crowdsale.address)),
       ", balance in accounts[1]: ",  help.lifWei2Lif(await token.balanceOf(accounts[1])),
       ", bid for accounts[1]: ", bids[0]
@@ -391,8 +391,8 @@ contract('LifToken Crowdsale', function(accounts) {
     await crowdsale.distributeTokens(accounts[6], false);
     await crowdsale.distributeTokens(accounts[7], false);
     await crowdsale.distributeTokens(accounts[8], false);
-    console.log("before last distribute tokens. lastPrice: ", parseFloat(await crowdsale.lastPrice()));
-    console.log("balance in crowdsale:", help.lifWei2Lif(await token.balanceOf(crowdsale.address)));
+    help.debug("before last distribute tokens. lastPrice: ", parseFloat(await crowdsale.lastPrice()));
+    help.debug("balance in crowdsale:", help.lifWei2Lif(await token.balanceOf(crowdsale.address)));
     await crowdsale.distributeTokens(accounts[10], true);
     help.debug("before check values");
     await help.checkToken(token, accounts, maxTokens + paymentTokens + maxDiscountTokens + maxFoundersPaymentTokens, [500000, 1000000, 500000, 1000000, 2000000]);
