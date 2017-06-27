@@ -55,16 +55,23 @@ module.exports = {
 
   waitToBlock: function(blockNumber, accounts){
     let debug = this.debug;
+    let blocksLeft = blockNumber - web3.eth.blockNumber;
+
+    if ((blocksLeft % 5) != 0 && blocksLeft > 0)
+      debug('Waiting ', blocksLeft, ' blocks..');
+
     return new Promise(function(resolve, reject) {
-      var wait = setInterval( function() {
-        debug('Waiting '+parseInt(-(web3.eth.blockNumber-blockNumber))+' blocks..');
-        if (web3.eth.blockNumber >= blockNumber) {
+      var wait = setInterval(function() {
+        let blocksLeft = blockNumber - web3.eth.blockNumber;
+        if ((blocksLeft % 5) == 0)
+          debug('Waiting ', blocksLeft, ' blocks..');
+        if (blocksLeft < 0) {
           clearInterval(wait);
           resolve(true);
         } else {
           web3.eth.sendTransaction({from: accounts[0], to: accounts[1], value: 1});
         }
-      }, 10 );
+      }, 10);
     });
   },
 
