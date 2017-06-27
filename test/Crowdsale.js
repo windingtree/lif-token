@@ -336,11 +336,11 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(await crowdsale.totalTokens()), 7000000);
     assert.equal(parseFloat(await crowdsale.presaleBonusRate()), presaleBonusRate);
     assert.equal(parseInt(await crowdsale.ownerPercentage()), ownerPercentage);
-    assert.equal(help.toEther(await crowdsale.totalPresaleWei()), 250000);
+    assert.equal(help.toEther(await crowdsale.totalPresaleWei()), discountedAmount);
     assert.equal(help.lifWei2Lif(await crowdsale.weiRaised()), help.lifWei2Lif(totalWeiSent));
     assert.equal(parseFloat(await crowdsale.tokensSold()), totalTokensBought);
     assert.equal(parseFloat(await crowdsale.lastPrice()), price);
-    presaleTokens = help.toWei(250000)/(price*0.6);
+    presaleTokens = help.toWei(discountedAmount) / price * (presaleBonusRate + 100) / 100;
 
     // Check token status and update crowdsale stage status
     let crowdsaleStatus = await crowdsale.status();
@@ -415,7 +415,7 @@ contract('LifToken Crowdsale', function(accounts) {
     }
 
     actualPrice = await crowdsale.lastPrice();
-    expectedDiscountedTokens = Math.round((discountedAmount / help.toEther(actualPrice)) / (100 - presaleBonusRate) * 100);
+    expectedDiscountedTokens = Math.round((discountedAmount / help.toEther(actualPrice)) * (100 + presaleBonusRate) / 100);
 
     assert.equal(paymentTokens + expectedDiscountedTokens, help.lifWei2Lif(await token.balanceOf(accounts[10])),
       "accounts[10] should have received the paymentTokens + the actual discounted tokens (given the actual price)");
