@@ -419,7 +419,7 @@ contract('LifToken Crowdsale', function(accounts) {
 
     assert.equal(paymentTokens + expectedDiscountedTokens, help.lifWei2Lif(await token.balanceOf(accounts[10])),
       "accounts[10] should have received the paymentTokens + the actual discounted tokens (given the actual price)");
-    let expectedFoundersTokens = Math.round((totalBids + expectedDiscountedTokens) * (ownerPercentage / 1000));
+    let expectedFoundersTokens = (totalBids + expectedDiscountedTokens) * (ownerPercentage / 1000);
     let ownerBalance = await token.balanceOf(accounts[0]);
     assert.equal(help.lifWei2Lif(ownerBalance), expectedFoundersTokens);
     // Check all final values
