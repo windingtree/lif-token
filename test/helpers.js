@@ -48,19 +48,7 @@ module.exports = {
   },
 
   waitBlocks: function(toWait, accounts){
-    let debug = this.debug;
-    return new Promise(function(resolve, reject) {
-      toWait += parseInt(web3.eth.blockNumber);
-      var wait = setInterval( function() {
-        debug('Waiting '+parseInt(web3.eth.blockNumber-toWait)+' blocks..');
-        if (web3.eth.blockNumber >= toWait) {
-          clearInterval(wait);
-          resolve();
-        } else {
-          web3.eth.sendTransaction({from: accounts[0], to: accounts[1], value: 1});
-        }
-      }, 100 );
-    });
+    return this.waitToBlock(parseInt(web3.eth.blockNumber) + toWait, accounts);
   },
 
   debug: DEBUG_MODE ? console.log : function() {},
