@@ -427,12 +427,15 @@ contract('LifToken Crowdsale', function(accounts) {
     await help.checkToken(token, accounts, totalIssuedTokens, [500000, 1000000, 500000, 1000000, 2000000]);
     await help.checkCrowdsale(crowdsale, 0);
 
-    assert.equal(help.lifWei2Lif(await token.balanceOf(token.contract.address)),
-      Math.round(
-        (maxDiscountTokens - expectedDiscountedTokens) +
-        (maxTokens - totalBids) +
-        (maxFoundersPaymentTokens - expectedFoundersTokens)
-      ), "unused tokens should have been returned to the token contract");
+    let actualTokenBalance = help.lifWei2Lif(await token.balanceOf(token.contract.address));
+    let expectedTokenBalance =
+      (maxDiscountTokens - expectedDiscountedTokens) +
+      (maxTokens - totalBids) +
+      (maxFoundersPaymentTokens - expectedFoundersTokens)
+
+    // check that token balance is the expected balance, except for a tiny rounding difference (< 0.00000001)
+    assert(Math.abs(actualTokenBalance - expectedTokenBalance) < 0.00000001,
+      "unused tokens should have been returned to the token contract");
   });
 
 
