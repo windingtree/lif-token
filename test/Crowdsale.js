@@ -252,13 +252,20 @@ contract('LifToken Crowdsale', function(accounts) {
     let totalBids = _.sum(bids);
     assert(maxTokens >= totalBids, "totalBids do not exceed maxTokens");
 
+    let submitBid = async function(i) {
+      let bid = bids[i];
+      price = parseFloat(await crowdsale.getPrice());
+      totalWeiSent += price * bid;
+      totalTokensBought += bid;
+      await crowdsale.submitBid({ value: price * bid, from: accounts[i + 1] });
+    }
+
     // Submit bid of 500000 on accounts[1]
     price = parseFloat(await crowdsale.getPrice());
-    lastprice = price;
     assert.equal(price, web3.toWei(5, 'ether'));
-    totalWeiSent += price*bids[0];
-    totalTokensBought += bids[0];
-    await crowdsale.submitBid({ value: web3.toWei(5, 'ether')*bids[0], from: accounts[1] });
+
+    await submitBid(0);
+
     await help.checkToken(token, accounts, 0, [0, 0, 0, 0, 0]);
     await help.checkCrowdsale(crowdsale, help.toEther(bids[0]*web3.toWei(5, 'ether')), 0);
     await help.waitToBlock(startBlock+10, accounts);
@@ -267,39 +274,24 @@ contract('LifToken Crowdsale', function(accounts) {
 
     // Submit bid of 1000000 on accounts[2]
     // Submit bid of 500000 on accounts[3]
-    price = parseFloat(await crowdsale.getPrice());
-    totalWeiSent += price*bids[1];
-    totalWeiSent += price*bids[2];
-    totalTokensBought += bids[1];
-    totalTokensBought += bids[2];
-    await crowdsale.submitBid({ value: price*bids[1], from: accounts[2] });
-    await crowdsale.submitBid({ value: price*bids[2], from: accounts[3] });
+    await submitBid(1);
+    await submitBid(2);
+
     await help.waitToBlock(startBlock+20, accounts);
 
     // Submit bid of 1000000 on accounts[4]
     // Submit bid of 2000000 on accounts[5]
-    price = parseFloat(await crowdsale.getPrice());
-    totalWeiSent += price*bids[3];
-    totalWeiSent += price*bids[4];
-    totalTokensBought += bids[3];
-    totalTokensBought += bids[4];
-    await crowdsale.submitBid({ value: price*bids[3], from: accounts[4] });
-    await crowdsale.submitBid({ value: price*bids[4], from: accounts[5] });
+    await submitBid(3);
+    await submitBid(4);
+
     await help.waitToBlock(startBlock+40, accounts);
 
     // Submit bid of 750000 on accounts[6]
     // Submit bid of 1000000 on accounts[7]
     // Submit bid of 127451 on accounts[8]
-    price = parseFloat(await crowdsale.getPrice());
-    totalWeiSent += price*bids[5];
-    totalWeiSent += price*bids[6];
-    totalWeiSent += price*bids[7];
-    totalTokensBought += bids[5];
-    totalTokensBought += bids[6];
-    totalTokensBought += bids[7];
-    await crowdsale.submitBid({ value: price*bids[5], from: accounts[6] });
-    await crowdsale.submitBid({ value: price*bids[6], from: accounts[7] });
-    await crowdsale.submitBid({ value: price*bids[7], from: accounts[8] });
+    await submitBid(5);
+    await submitBid(6);
+    await submitBid(7);
 
     assert.equal(totalTokensBought, totalBids);
 

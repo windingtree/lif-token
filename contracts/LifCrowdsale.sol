@@ -98,6 +98,16 @@ contract LifCrowdsale is Ownable, PullPayment {
       } else throw;
     }
 
+    // calculates absolute max tokens that can be distributed from the crowdsale, including bids,
+    // founders vesting compensation and presale payments
+    function getMaxTokens() public returns (uint) {
+      uint minTokenPrice = minCap.div(totalTokens);
+      uint maxDiscountedTokens = totalPresaleWei.div(minTokenPrice).mul(presaleDiscount.add(100).div(100));
+      uint maxFoundersTokens = maxDiscountedTokens.mul(ownerPercentage).div(1000);
+
+      return totalTokens + maxDiscountedTokens + maxFoundersTokens;
+    }
+
     // Add an address that would be able to spend certain amounts of ethers with discount
     function addDiscount(address target, uint amount) external onlyOwner() onStatus(1,2) {
 
@@ -109,12 +119,9 @@ contract LifCrowdsale is Ownable, PullPayment {
 
       // check that crowdsale balance is AT LEAST max(discounted)tokens at lowest possible valuation +
       // founders tokens
-      uint minTokenPrice = minCap.div(totalTokens);
-      uint maxDiscountedTokens = totalPresaleWei.div(minTokenPrice).mul(presaleDiscount.add(100).div(100));
-      uint maxFoundersTokens = maxDiscountedTokens.mul(ownerPercentage).div(1000);
       uint crowdsaleBalance = ERC20Basic(tokenAddress).balanceOf(address(this)).div(LONG_DECIMALS);
 
-      if (crowdsaleBalance < totalTokens + maxDiscountedTokens + maxFoundersTokens)
+      if (crowdsaleBalance < getMaxTokens())
         throw;
     }
 
@@ -167,10 +174,9 @@ contract LifCrowdsale is Ownable, PullPayment {
       uint price = 0;
 
       if ((startBlock < block.number) && (block.number < endBlock)) {
-        price = block.number.sub(startBlock);
-        price = price.div(changePerBlock);
-        price = price.mul(changePrice);
-        price = startPrice.sub(price);
+        price = startPrice.sub(
+          block.number.sub(startBlock).div(changePerBlock).mul(changePrice)
+        );
       }
 
       return price;
