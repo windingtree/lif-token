@@ -48,11 +48,11 @@ module.exports = {
   },
 
   waitBlocks: function(toWait, accounts){
+    let debug = this.debug;
     return new Promise(function(resolve, reject) {
       toWait += parseInt(web3.eth.blockNumber);
       var wait = setInterval( function() {
-        if (DEBUG_MODE)
-          console.log('Waiting '+parseInt(web3.eth.blockNumber-toWait)+' blocks..');
+        debug('Waiting '+parseInt(web3.eth.blockNumber-toWait)+' blocks..');
         if (web3.eth.blockNumber >= toWait) {
           clearInterval(wait);
           resolve();
@@ -63,11 +63,13 @@ module.exports = {
     });
   },
 
+  debug: DEBUG_MODE ? console.log : function() {},
+
   waitToBlock: function(blockNumber, accounts){
+    let debug = this.debug;
     return new Promise(function(resolve, reject) {
       var wait = setInterval( function() {
-        if (DEBUG_MODE)
-          console.log('Waiting '+parseInt(-(web3.eth.blockNumber-blockNumber))+' blocks..');
+        debug('Waiting '+parseInt(-(web3.eth.blockNumber-blockNumber))+' blocks..');
         if (web3.eth.blockNumber >= blockNumber) {
           clearInterval(wait);
           resolve(true);
@@ -79,6 +81,7 @@ module.exports = {
   },
 
   checkToken: async function(token, accounts, totalSupply, balances, votes, txsSent, txsReceived) {
+    let debug = this.debug;
     let [
       tokenTotalSupply,
       tokenTotalVotes,
@@ -123,17 +126,16 @@ module.exports = {
       ]),
     ]);
 
-    if (DEBUG_MODE) {
-      console.log('Total Supply:', parseInt(tokenTotalSupply));
-      console.log('Dao Total Votes:', parseInt(tokenTotalVotes), 'Dao Votes Increment Exponent sent/received:', parseInt(tokenIncrementSent),'/',parseInt(tokenIncrementReceived));
-      for(i = 0; i < 5; i++) {
-        console.log(
-          'Account[' + (i + 1) + ']',
-          accounts[i + 1],
-          ", Balance:", this.lifWei2Lif(tokenAccountBalances[i]),
-          ", Votes:", parseInt(tokenAccountBalances[i]),
-          ", txsSent / txsReceived:", parseInt(tokenAccountTxSent[i]), parseInt(tokenAccountTxReceived[i]));
-      }
+    debug('Total Supply:', parseInt(tokenTotalSupply));
+    debug('Dao Total Votes:', parseInt(tokenTotalVotes), 'Dao Votes Increment Exponent sent/received:', parseInt(tokenIncrementSent),'/',parseInt(tokenIncrementReceived));
+    for(i = 0; i < 5; i++) {
+      debug(
+        'Account[' + (i + 1) + ']',
+        accounts[i + 1],
+        ", Balance:", this.lifWei2Lif(tokenAccountBalances[i]),
+        ", Votes:", parseInt(tokenAccountBalances[i]),
+        ", txsSent / txsReceived:", parseInt(tokenAccountTxSent[i]), parseInt(tokenAccountTxReceived[i])
+      );
     }
 
     if (totalSupply)
@@ -169,13 +171,12 @@ module.exports = {
   },
 
   checkCrowdsale: async function(crowdsale, etherBalance, tokenPrice) {
+    let debug = this.debug;
     let crowdsaleEtherBalance = await web3.eth.getBalance(crowdsale.contract.address);
     let crowdsalePrice = await crowdsale.getPrice();
 
-    if (DEBUG_MODE) {
-      console.log('Contract Balance:', this.toEther(crowdsaleEtherBalance), 'Ether;', this.toWei(crowdsaleEtherBalance), 'Wei');
-      console.log('Token Price:', parseInt(crowdsalePrice));
-    }
+    debug('Contract Balance:', this.toEther(crowdsaleEtherBalance), 'Ether;', this.toWei(crowdsaleEtherBalance), 'Wei');
+    debug('Token Price:', parseInt(crowdsalePrice));
 
     if (etherBalance)
       assert.equal(this.toEther(crowdsaleEtherBalance), etherBalance, "Crowdsale should have the expected ether balance");

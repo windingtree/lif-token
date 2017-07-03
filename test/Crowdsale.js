@@ -131,16 +131,16 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(parseFloat(await crowdsale.lastPrice()), price);
 
     // Distribute the tokens and check values
-    console.log("before distribute tokens");
+    help.debug("before distribute tokens");
     assert.equal(parseFloat(await token.balanceOf(accounts[1])), 0);
     await crowdsale.distributeTokens(accounts[1], false);
     assert.equal(parseFloat(await token.balanceOf(crowdsale.contract.address)), 0);
     assert.equal(parseFloat(await token.balanceOf(accounts[1])), help.lif2LifWei(tokens1));
-    console.log("before check values");
+    help.debug("before check values");
     await help.checkToken(token, accounts, maxTokens, [tokens1, 0, 0, 0, 0]);
     await help.checkCrowdsale(crowdsale, 0, 0);
     // Check all final values
-    console.log("before final check values");
+    help.debug("before final check values");
     await help.checkToken(token, accounts, maxTokens, [tokens1, 0, 0, 0, 0]);
     await help.checkCrowdsale(crowdsale, 0, 0);
 
@@ -199,7 +199,7 @@ contract('LifToken Crowdsale', function(accounts) {
     let minTokenPrice = minCap / maxTokens;
     let discountedAmount = 250000;
     let maxDiscountTokens = (discountedAmount / minTokenPrice) * (presaleDiscount + 100) / 100;
-    console.log("Issuing & transferring max discount tokens: ", maxDiscountTokens);
+    help.debug("Issuing & transferring max discount tokens: ", maxDiscountTokens);
     await token.issueTokens(maxDiscountTokens);
     await token.transferFrom(token.address, crowdsale.address, help.lif2LifWei(maxDiscountTokens), {from: accounts[0]});
 
@@ -207,7 +207,7 @@ contract('LifToken Crowdsale', function(accounts) {
 
     // issue & transfer tokens for founders payments
     let maxFoundersPaymentTokens = (maxTokens + maxDiscountTokens) * (ownerPercentage / 1000.0) ;
-    console.log("before issue founders tokens, maxSupply: ", await token.maxSupply(),
+    help.debug("before issue founders tokens, maxSupply: ", await token.maxSupply(),
       " ownerPercentage / 1000: ", ownerPercentage / 1000,
       "\n tokens for founders: ", maxFoundersPaymentTokens);
     await token.issueTokens(maxFoundersPaymentTokens);
@@ -225,7 +225,7 @@ contract('LifToken Crowdsale', function(accounts) {
       if (error.message.search('invalid JUMP') == -1) throw error;
     }
 
-    console.log("after try submitbid");
+    help.debug("after try submitbid");
 
     // assert price == 0 before start
     // but first assert we are before start
@@ -270,7 +270,7 @@ contract('LifToken Crowdsale', function(accounts) {
     await help.checkCrowdsale(crowdsale, help.toEther(bids[0]*web3.toWei(5, 'ether')), 0);
     await help.waitToBlock(startBlock+10, accounts);
 
-    console.log("after first submitbid and checkToken");
+    help.debug("after first submitbid and checkToken");
 
     // Submit bid of 1000000 on accounts[2]
     // Submit bid of 500000 on accounts[3]
@@ -341,7 +341,7 @@ contract('LifToken Crowdsale', function(accounts) {
     await crowdsale.distributeTokens(accounts[7], false);
     await crowdsale.distributeTokens(accounts[8], false);
     await crowdsale.distributeTokens(accounts[10], true);
-    console.log("before check values");
+    help.debug("before check values");
     await help.checkToken(token, accounts, maxTokens + paymentTokens + maxDiscountTokens + maxFoundersPaymentTokens, [500000, 1000000, 500000, 1000000, 2000000]);
     await help.checkCrowdsale(crowdsale, 0, 0);
     // Shouldnt allow to a claim a payment before the requested block
