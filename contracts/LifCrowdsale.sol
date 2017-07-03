@@ -125,6 +125,11 @@ contract LifCrowdsale is Ownable, PullPayment {
         throw;
     }
 
+    function getBuyerPresaleTokens(address buyer) public returns (uint) {
+        return presalePayments[buyer].div(lastPrice).mul(
+          uint(100).add(presaleBonusRate)).div(100);
+    }
+
     function distributeTokens(address buyer, bool withBonus) external onStatus(3, 0) {
 
       if (withBonus){
@@ -132,9 +137,7 @@ contract LifCrowdsale is Ownable, PullPayment {
         if (presalePayments[buyer] == 0)
           throw;
 
-        uint tokensQty = presalePayments[buyer].div(
-            lastPrice.div(100).mul(uint(100).sub(presaleBonusRate))
-        );
+        uint tokensQty = getBuyerPresaleTokens(buyer);
 
         tokensSold = tokensSold.add(tokensQty);
 
@@ -185,7 +188,7 @@ contract LifCrowdsale is Ownable, PullPayment {
     function getPresaleTokens(uint tokenPrice) public returns(uint) {
       if (presaleBonusRate > 0){
         // Calculate how much presale tokens would be distributed at this price
-        return totalPresaleWei.div(tokenPrice.div(100).mul(uint(100).sub(presaleBonusRate)));
+        return totalPresaleWei.div(tokenPrice).div(100).mul(uint(100).add(presaleBonusRate));
       } else {
         return 0;
       }

@@ -351,9 +351,14 @@ contract('LifToken Crowdsale', function(accounts) {
       "Balance in token: ", help.lifWei2Lif(await token.balanceOf(token.address)));
     await crowdsale.checkCrowdsale();
 
+    price = parseFloat(await crowdsale.lastPrice());
     console.log("after checkCrowdsale. Balance in crowdsale: ",
       help.lifWei2Lif(await token.balanceOf(crowdsale.address)),
-      "Balance in token: ", help.lifWei2Lif(await token.balanceOf(token.address)));
+      "crowdsale price: ", price,
+      "\npresaleTokens: ", parseFloat(await crowdsale.getPresaleTokens.call(price)),
+      "\nestimated presaleTokens: ", presaleTokens,
+      "\npresale buyer tokens: ", parseFloat(await crowdsale.getBuyerPresaleTokens.call(accounts[10])),
+      "\nBalance in token: ", help.lifWei2Lif(await token.balanceOf(token.address)));
 
     // Check the values of the ended crowdsale stage, token status, and claim the tokens
     assert.equal(parseInt(await crowdsale.status()), 3);
