@@ -48,35 +48,30 @@ module.exports = {
   },
 
   waitBlocks: function(toWait, accounts){
-    let debug = this.debug;
-    return new Promise(function(resolve, reject) {
-      toWait += parseInt(web3.eth.blockNumber);
-      var wait = setInterval( function() {
-        debug('Waiting '+parseInt(web3.eth.blockNumber-toWait)+' blocks..');
-        if (web3.eth.blockNumber >= toWait) {
-          clearInterval(wait);
-          resolve();
-        } else {
-          web3.eth.sendTransaction({from: accounts[0], to: accounts[1], value: 1});
-        }
-      }, 100 );
-    });
+    return this.waitToBlock(parseInt(web3.eth.blockNumber) + toWait, accounts);
   },
 
   debug: DEBUG_MODE ? console.log : function() {},
 
   waitToBlock: function(blockNumber, accounts){
     let debug = this.debug;
+    let blocksLeft = blockNumber - web3.eth.blockNumber;
+
+    if ((blocksLeft % 5) != 0 && blocksLeft > 0)
+      debug('Waiting ', blocksLeft, ' blocks..');
+
     return new Promise(function(resolve, reject) {
-      var wait = setInterval( function() {
-        debug('Waiting '+parseInt(-(web3.eth.blockNumber-blockNumber))+' blocks..');
-        if (web3.eth.blockNumber >= blockNumber) {
+      var wait = setInterval(function() {
+        let blocksLeft = blockNumber - web3.eth.blockNumber;
+        if ((blocksLeft % 5) == 0)
+          debug('Waiting ', blocksLeft, ' blocks..');
+        if (blocksLeft < 0) {
           clearInterval(wait);
           resolve(true);
         } else {
           web3.eth.sendTransaction({from: accounts[0], to: accounts[1], value: 1});
         }
-      }, 10 );
+      }, 10);
     });
   },
 
