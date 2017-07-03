@@ -65,9 +65,8 @@ contract('LifToken Crowdsale', function(accounts) {
   });
 
   it("Should simulate a crowdsale of 7m tokens, no owner payment, with one dutch auction and just 1 bidder", async function() {
-    var currentBlock = web3.eth.blockNumber;
-    var startBlock = currentBlock+5;
-    var endBlock = currentBlock+10;
+    var startBlock = web3.eth.blockNumber+5;
+    var endBlock = startBlock+5;
     var totalWeiSent = 0;
     var totalTokensBought = 0;
     var presaleTokens = 0;
@@ -196,8 +195,7 @@ contract('LifToken Crowdsale', function(accounts) {
   });
 
   it("Should simulate a crowdsale of 7m tokens with one ducth auction stage, using future discount and distribute 3M of the tokens using futurePayments", async function() {
-    var currentBlock = web3.eth.blockNumber;
-    var startBlock = currentBlock+15;
+    var startBlock = web3.eth.blockNumber+15;
     var endBlock = startBlock+50;
     var totalWeiSent = 0;
     var totalTokensBought = 0;
@@ -211,13 +209,11 @@ contract('LifToken Crowdsale', function(accounts) {
 
     // Add crowdsale stage to sell 7M tokens using dutch auction and the future payments.
     var crowdsale = await help.createAndFundCrowdsale({
-      token: token,
-      startBlock: startBlock, endBlock: endBlock,
+      token: token, startBlock: startBlock, endBlock: endBlock,
       startPrice: web3.toWei(5, 'ether'),
       changePerBlock: 10, changePrice: web3.toWei(0.4, 'ether'),
       minCap: web3.toWei(minCap, 'ether'), maxCap: web3.toWei(maxCap, 'ether'),
-      maxTokens: maxTokens,
-      presaleBonusRate: presaleBonusRate, ownerPercentage: ownerPercentage
+      maxTokens: maxTokens, presaleBonusRate: presaleBonusRate, ownerPercentage: ownerPercentage
     }, accounts);
 
     // create future payment, issue & transfer tokens into it
@@ -293,7 +289,7 @@ contract('LifToken Crowdsale', function(accounts) {
       totalWeiSent += price * bid;
       totalTokensBought += bid;
       console.log("making bid for ", bid, " tokens at price ", price);
-      await crowdsale.submitBid({ value: price * bid, from: accounts[i + 1] });
+      await crowdsale.submitBid({value: price * bid, from: accounts[i + 1]});
     }
 
     // Submit bid of 500000 on accounts[1]

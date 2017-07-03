@@ -186,8 +186,9 @@ contract LifCrowdsale is Ownable, PullPayment {
       if (presaleBonusRate > 0){
         // Calculate how much presale tokens would be distributed at this price
         return totalPresaleWei.div(tokenPrice.div(100).mul(uint(100).sub(presaleBonusRate)));
-      } else
-          return 0;
+      } else {
+        return 0;
+      }
     }
 
     // Creates a bid spending the ethers send by msg.sender.
