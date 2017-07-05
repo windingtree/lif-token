@@ -200,7 +200,7 @@ module.exports = {
   createAndFundCrowdsale: async function(params, accounts) {
     let token = params.token;
     var crowdsale = await LifCrowdsale.new(token.address, params.startBlock, params.endBlock, params.startPrice, params.changePerBlock,
-      params.changePrice, params.minCap, params.maxCap, params.maxTokens, params.presaleDiscount, params.ownerPercentage);
+      params.changePrice, params.minCap, params.maxCap, params.maxTokens, params.presaleBonusRate, params.ownerPercentage);
 
     let oldTokenBalance = parseFloat(await token.balanceOf(token.contract.address));
 
