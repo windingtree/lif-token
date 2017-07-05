@@ -51,7 +51,7 @@ contract('LifToken', function(accounts) {
     try {
       await token.transfer(accounts[2], help.lif2LifWei(4000001));
     } catch (error) {
-      if (error.message.search('invalid JUMP') == -1) throw error;
+      if (error.message.search('invalid opcode') == -1) throw error;
     }
     await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
   });
@@ -69,7 +69,7 @@ contract('LifToken', function(accounts) {
     try {
       await token.transferFrom(accounts[1], accounts[3], help.lif2LifWei(1001), {from: accounts[3]});
     } catch (error) {
-      if (error.message.search('invalid JUMP') == -1) throw error;
+      if (error.message.search('invalid opcode') == -1) throw error;
     }
     await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
   });
@@ -189,7 +189,7 @@ contract('LifToken', function(accounts) {
     try {
       await token.transferData(token.contract.address, help.lif2LifWei(1000), web3.toHex(0), true, {from: accounts[1]});
     } catch (error) {
-      if (error.message.search('invalid JUMP') == -1) throw error;
+      if (error.message.search('invalid opcode') == -1) throw error;
     }
 
     await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
@@ -203,7 +203,7 @@ contract('LifToken', function(accounts) {
     try {
       await token.transferDataFrom(accounts[3], token.contract.address, help.lif2LifWei(1000), web3.toHex(0), true, {from: accounts[1]});
     } catch (error) {
-      if (error.message.search('invalid JUMP') == -1) throw error;
+      if (error.message.search('invalid opcode') == -1) throw error;
     }
 
     await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
@@ -221,7 +221,7 @@ contract('LifToken', function(accounts) {
       await token.transfer(token.contract.address, help.lif2LifWei(1000), {from: accounts[1]});
       assert.equal(false, true, "transfer should have failed because LifToken should not receive tokens");
     } catch (error) {
-      if (error.message.search('invalid JUMP') == -1) throw error;
+      if (error.message.search('invalid opcode') == -1) throw error;
     }
 
     await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
@@ -236,7 +236,7 @@ contract('LifToken', function(accounts) {
     try {
       await token.transferFrom(accounts[3], token.contract.address, help.lif2LifWei(1000), {from: accounts[1]});
     } catch (error) {
-      if (error.message.search('invalid JUMP') == -1) throw error;
+      if (error.message.search('invalid opcode') == -1) throw error;
     }
 
     await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);
@@ -248,7 +248,7 @@ contract('LifToken', function(accounts) {
     try {
       await token.approve(token.contract.address, help.lif2LifWei(1000), {from: accounts[3]});
     } catch (error) {
-      if (error.message.search('invalid JUMP') == -1) throw error;
+      if (error.message.search('invalid opcode') == -1) throw error;
     }
 
     await help.checkToken(token, accounts, 10000000, [4000000,3000000,2000000,1000000,0]);

@@ -98,7 +98,7 @@ contract('LifToken Crowdsale', function(accounts) {
       await crowdsale.submitBid({ value: web3.toWei(1, 'ether'), from: accounts[1] });
       assert.equal(false, true, "submitBid should have thrown an error because crowdsale has not started yet");
     } catch (error) {
-      if (error.message.search('invalid JUMP') == -1) throw error;
+      if (error.message.search('invalid opcode') == -1) throw error;
     }
 
     // Assert price == 0 before start
@@ -253,7 +253,7 @@ contract('LifToken Crowdsale', function(accounts) {
       await crowdsale.submitBid({ value: web3.toWei(1, 'ether'), from: accounts[1] });
       assert.equal(false, true, "submitBid should have thrown an error because crowdsale has not started yet");
     } catch (error) {
-      if (error.message.search('invalid JUMP') == -1) throw error;
+      if (error.message.search('invalid opcode') == -1) throw error;
     }
 
     help.debug("after try submitbid");
@@ -402,7 +402,7 @@ contract('LifToken Crowdsale', function(accounts) {
       await futurePayment.claimPayment({from: accounts[10]});
       throw("claimTokensPayment should have failed and thrown an exception because we are before requested block");
     } catch (error) {
-      if (error.message.search('invalid JUMP') == -1) throw error;
+      if (error.message.search('invalid opcode') == -1) throw error;
     }
     await help.waitToBlock(endBlock+41, accounts);
     // Should be able to claim all the payments
@@ -574,7 +574,7 @@ contract('LifToken Crowdsale', function(accounts) {
     try {
       await crowdsale.addPresalePayment(accounts[10], web3.toWei(250000, 'ether'));
     } catch (error) {
-      if (error.message.search('invalid JUMP') == -1) throw error;
+      if (error.message.search('invalid opcode') == -1) throw error;
     }
     let secondDutchAuction = await help.getStage(token, 1);
 
