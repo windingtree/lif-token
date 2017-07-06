@@ -6,7 +6,9 @@ node_js:
   - "7"
 before_install:
   - npm i -g jshint
+cache:
+  yarn: true
 script:
   - set -e
   - jshint --show-non-errors test/*.js || echo "Errors in jshint ignored bc it doesn't support async/await"
-  - npm test
+  - yarn test
