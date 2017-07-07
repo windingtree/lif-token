@@ -26,11 +26,11 @@
     "protobufjs": "^6.0.2",
     "solc": "^0.4.9",
     "truffle-hdwallet-provider": "0.0.3",
-    "zeppelin-solidity": "1.0.6"
+    "zeppelin-solidity": "1.1.0"
   },
   "devDependencies": {
     "ethereumjs-testrpc": "3.0.3",
-    "truffle": "3.2.1"
+    "truffle": "3.2.2"
   },
   "jshintConfig": {
     "esversion": 6

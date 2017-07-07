@@ -1,9 +1,9 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.11;
 
-import "./zeppelin/ownership/Ownable.sol";
-import "./zeppelin/payment/PullPayment.sol";
-import "./zeppelin/token/ERC20Basic.sol";
-import "./zeppelin/SafeMath.sol";
+import "zeppelin-solidity/contracts/ownership/Ownable.sol";
+import "zeppelin-solidity/contracts/payment/PullPayment.sol";
+import "zeppelin-solidity/contracts/token/ERC20Basic.sol";
+import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "./FuturePayment.sol";
 
 /*

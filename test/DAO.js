@@ -82,7 +82,7 @@ contract('LifToken DAO', function(accounts) {
     try {
       await token.newProposal(token.contract.address, 0, 'Set minProposalVotes to 20', 100, signature, data, {from: accounts[1], value: web3.toWei(10, 'ether')});
     } catch (error) {
-      if (error.message.indexOf('invalid JUMP') < 0) throw error;
+      if (error.message.indexOf('invalid opcode') < 0) throw error;
     }
     let minProposalVotes = await token.minProposalVotes();
     console.log('New minProposalVotes on token:', parseInt(minProposalVotes));
@@ -120,7 +120,7 @@ contract('LifToken DAO', function(accounts) {
     try {
       await token.newProposal(token.contract.address, 0, 'Set baseProposalFee to 100 ETH', 100, signature, data, {from: accounts[1], value: web3.toWei(10, 'ether')});
     } catch (error) {
-      if (error.message.indexOf('invalid JUMP') < 0) throw error;
+      if (error.message.indexOf('invalid opcode') < 0) throw error;
     }
 
     var data = token.contract.setBaseProposalFee.getData( web3.toHex( web3.toWei(100, 'ether') ) ).toString('hex');
@@ -174,7 +174,7 @@ contract('LifToken DAO', function(accounts) {
     try {
       await token.executeProposal(2, {from: accounts[0]});
     } catch (error) {
-      if (error.message.indexOf('invalid JUMP') < 0) throw error;
+      if (error.message.indexOf('invalid opcode') < 0) throw error;
     }
     await token.removeProposal(2, {from: accounts[2]});
   });
