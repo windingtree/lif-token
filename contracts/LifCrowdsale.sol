@@ -2,8 +2,8 @@ pragma solidity ^0.4.11;
 
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "zeppelin-solidity/contracts/payment/PullPayment.sol";
-import "zeppelin-solidity/contracts/token/ERC20Basic.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
+import "./LifInterface.sol";
 import "./FuturePayment.sol";
 
 /*
@@ -119,7 +119,7 @@ contract LifCrowdsale is Ownable, PullPayment {
 
       // check that crowdsale balance is AT LEAST max(with bonus)tokens at lowest possible valuation +
       // founders tokens
-      uint crowdsaleBalance = ERC20Basic(tokenAddress).balanceOf(address(this)).div(LONG_DECIMALS);
+      uint crowdsaleBalance = LifInterface(tokenAddress).balanceOf(address(this)).div(LONG_DECIMALS);
 
       if (crowdsaleBalance < getMaxTokens())
         throw;
@@ -143,10 +143,7 @@ contract LifCrowdsale is Ownable, PullPayment {
 
         tokensSold = tokensSold.add(tokensQty);
 
-        // use a call instead of instantiate contract, to avoid out of gas issues
-        //lifToken.transfer(buyer, tokensQty.mul(LONG_DECIMALS));
-        if (!tokenAddress.call(bytes4(sha3("transfer(address,uint256)")), buyer, tokensQty.mul(LONG_DECIMALS)))
-          throw;
+        LifInterface(tokenAddress).transfer(buyer, tokensQty.mul(LONG_DECIMALS));
 
         totalPresaleWei = totalPresaleWei.sub(presalePayments[buyer]);
         presalePayments[buyer] = 0;
@@ -162,10 +159,7 @@ contract LifCrowdsale is Ownable, PullPayment {
           safeSend(buyer, weiChange);
         }
 
-        // use a call instead of instantiate contract, to avoid out of gas issues
-        //lifToken.transfer(buyer, tokensToTransfer);
-        if (!tokenAddress.call(bytes4(sha3("transfer(address,uint256)")), buyer, tokens[buyer].mul(LONG_DECIMALS)))
-          throw;
+        LifInterface(tokenAddress).transfer(buyer, tokens[buyer].mul(LONG_DECIMALS));
 
         weiPayed[buyer] = 0;
         tokens[buyer] = 0;
@@ -255,8 +249,7 @@ contract LifCrowdsale is Ownable, PullPayment {
           for (uint i = block.number.add(5); i <= block.number.add(40); i = i.add(5)) {
             address futurePayment = new FuturePayment(owner, i, tokenAddress);
 
-            if (!tokenAddress.call(bytes4(sha3("transfer(address,uint256)")), address(futurePayment), foundingTeamTokens.div(8)))
-              throw;
+            LifInterface(tokenAddress).transfer(futurePayment, foundingTeamTokens.div(8));
 
             foundersFuturePayments[foundersFuturePayments.length ++] = address(futurePayment);
           }
@@ -269,17 +262,14 @@ contract LifCrowdsale is Ownable, PullPayment {
           ownerPercentage = 0;
         }
         // Return not used tokens to LifToken
-        uint toReturnTokens = ERC20Basic(tokenAddress).balanceOf(address(this)).
+        uint toReturnTokens = LifInterface(tokenAddress).balanceOf(address(this)).
             sub(presaleTokens.mul(LONG_DECIMALS)).sub(tokensSold.mul(LONG_DECIMALS));
 
-        if (!tokenAddress.call(bytes4(sha3("transfer(address,uint256)")), tokenAddress, toReturnTokens))
-          throw;
+        LifInterface(tokenAddress).transfer(tokenAddress, toReturnTokens);
 
-      } else if (weiRaised < minCap) { // return all tokens
-        // use a call instead of instantiate contract, to avoid out of gas issues
-        //lifToken.transfer(tokenAddress, totalTokens);
-        if (!tokenAddress.call(bytes4(sha3("transfer(address,uint256)")), tokenAddress, totalTokens))
-          throw;
+      } else if (weiRaised < minCap) {
+        // return all tokens
+        LifInterface(tokenAddress).transfer(tokenAddress, totalTokens);
       }
 
     }
