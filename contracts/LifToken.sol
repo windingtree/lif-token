@@ -3,6 +3,7 @@ pragma solidity ^0.4.11;
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "zeppelin-solidity/contracts/payment/PullPayment.sol";
 import 'zeppelin-solidity/contracts/math/SafeMath.sol';
+import './LifInterface.sol';
 
 /*
  * Líf Token
@@ -13,7 +14,7 @@ import 'zeppelin-solidity/contracts/math/SafeMath.sol';
  */
 
 
-contract LifToken is Ownable, PullPayment {
+contract LifToken is LifInterface, Ownable, PullPayment {
     using SafeMath for uint;
 
     // Token Name
@@ -199,19 +200,17 @@ contract LifToken is Ownable, PullPayment {
     }
 
     //ERC20 token transfer method
-    function transfer(address to, uint value) onlyPayloadSize(2 * 32) returns (bool success) {
+    function transfer(address to, uint value) onlyPayloadSize(2 * 32) {
 
       balances[msg.sender] = balances[msg.sender].sub(value);
       balances[to] = balances[to].add(value);
       issueVotes(msg.sender, to);
       Transfer(msg.sender, to, value);
 
-      return true;
-
     }
 
     //ERC20 token transfer method
-    function transferFrom(address from, address to, uint value) onlyPayloadSize(3 * 32) returns (bool success) {
+    function transferFrom(address from, address to, uint value) onlyPayloadSize(3 * 32) {
 
       if (to == address(this))
         throw;
@@ -223,12 +222,10 @@ contract LifToken is Ownable, PullPayment {
       issueVotes(msg.sender, to);
       Transfer(from, to, value);
 
-      return true;
-
     }
 
     //ERC20 token approve method
-    function approve(address spender, uint value) returns (bool success) {
+    function approve(address spender, uint value) {
 
       if (spender == address(this))
         throw;
@@ -242,12 +239,10 @@ contract LifToken is Ownable, PullPayment {
       allowed[msg.sender][spender] = value;
       Approval(msg.sender, spender, value);
 
-      return true;
-
     }
 
     //ERC20 token approve method with data call/log option.
-    function approveData(address spender, uint value, bytes data, bool doCall) returns (bool success) {
+    function approveData(address spender, uint value, bytes data, bool doCall) {
 
       if (spender == address(this))
         throw;
@@ -259,13 +254,11 @@ contract LifToken is Ownable, PullPayment {
       else if (!doCall)
         ApprovalData(tx.origin, spender, value, data);
 
-      return true;
-
     }
 
     // ERC20 transfer method with data call/log option.
     // TODO: protect from short address attack (can't use onlyPayloadSize b/c data is variable size
-    function transferData(address to, uint value, bytes data, bool doCall) external returns (bool success) {
+    function transferData(address to, uint value, bytes data, bool doCall) {
 
       if (to == address(this))
         throw;
@@ -282,13 +275,11 @@ contract LifToken is Ownable, PullPayment {
       else if (!doCall)
         TransferData(tx.origin, to, value, data);
 
-      return true;
-
     }
 
     // ERC20 transferFrom method with data call/log option.
     // TODO: protect from short address attack (can't use onlyPayloadSize b/c data is variable size
-    function transferDataFrom(address from, address to, uint value, bytes data, bool doCall) external returns (bool success) {
+    function transferDataFrom(address from, address to, uint value, bytes data, bool doCall) {
 
       if (to == address(this))
         throw;
@@ -306,7 +297,6 @@ contract LifToken is Ownable, PullPayment {
         TransferData(tx.origin, to, value, data);
       else if (!doCall)
         TransferData(tx.origin, to, value, data);
-      return true;
 
     }
 
