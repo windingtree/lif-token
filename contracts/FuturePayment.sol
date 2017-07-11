@@ -1,6 +1,6 @@
 pragma solidity ^0.4.11;
 
-import 'zeppelin-solidity/contracts/token/ERC20Basic.sol';
+import './LifInterface.sol';
 
 contract FuturePayment {
 
@@ -14,7 +14,7 @@ contract FuturePayment {
     function FuturePayment(address _payee, uint _afterBlock, address _tokenAddress) {
         payee = _payee;
         afterBlock = _afterBlock;
-        tokenAddress = _tokenAddress;   
+        tokenAddress = _tokenAddress;
     }
 
     // Function that allows an address to claim a futurePayment on tokens
@@ -23,9 +23,9 @@ contract FuturePayment {
       if ((payee != msg.sender) || (afterBlock > block.number))
         throw;
 
-      ERC20Basic token = ERC20Basic(tokenAddress);
+      LifInterface lifToken = LifInterface(tokenAddress);
 
-      token.transfer(payee, token.balanceOf(address(this)));
+      lifToken.transfer(payee, lifToken.balanceOf(address(this)));
 
       PaymentDone();
     }
