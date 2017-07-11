@@ -127,16 +127,6 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
         _;
     }
 
-    // Used to implement fix for short address attack. More information and original
-    // fix taken from https://github.com/OpenZeppelin/zeppelin-solidity/commit/d9b9ed227b175
-    modifier onlyPayloadSize(uint size) {
-      if (!(msg.data.length == size + 4)) {
-        throw;
-      }
-
-      _;
-    }
-
     // LifToken constructor
     function LifToken(uint _baseProposalFee, uint _proposalBlocksWait, uint _votesIncrementSent, uint _votesIncrementReceived, uint _minProposalVotes) {
 
@@ -201,7 +191,7 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
     }
 
     //ERC20 token transfer method
-    function transfer(address to, uint value) onlyPayloadSize(2 * 32) {
+    function transfer(address to, uint value) {
 
       balances[msg.sender] = balances[msg.sender].sub(value);
       balances[to] = balances[to].add(value);
@@ -211,8 +201,7 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
     }
 
     //ERC20 token transfer method
-    function transferFrom(address from, address to, uint value) onlyPayloadSize(3 * 32) {
-
+    function transferFrom(address from, address to, uint value) {
       if (to == address(this))
         throw;
 
@@ -258,7 +247,6 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
     }
 
     // ERC20 transfer method with data call/log option.
-    // TODO: protect from short address attack (can't use onlyPayloadSize b/c data is variable size
     function transferData(address to, uint value, bytes data, bool doCall) {
 
       if (to == address(this))
@@ -279,7 +267,6 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
     }
 
     // ERC20 transferFrom method with data call/log option.
-    // TODO: protect from short address attack (can't use onlyPayloadSize b/c data is variable size
     function transferDataFrom(address from, address to, uint value, bytes data, bool doCall) {
 
       if (to == address(this))
