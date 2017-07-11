@@ -5,6 +5,7 @@ import "zeppelin-solidity/contracts/payment/PullPayment.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "./LifInterface.sol";
 import "./FuturePayment.sol";
+import "./LifDAOInterface.sol";
 
 /*
  * Líf Crowdsale
@@ -275,8 +276,7 @@ contract LifCrowdsale is Ownable, PullPayment {
     }
 
     function transferVotes() external onlyOwner() {
-      if (!tokenAddress.call(bytes4(sha3("giveVotes(address,uint256)")), owner, 0))
-        throw;
+      LifDAOInterface(tokenAddress).giveVotes(owner, 0);
     }
 
     // Function that allows a buyer to claim the ether back of a failed crowdsale

@@ -4,6 +4,7 @@ import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "zeppelin-solidity/contracts/payment/PullPayment.sol";
 import 'zeppelin-solidity/contracts/math/SafeMath.sol';
 import './LifInterface.sol';
+import './LifDAOInterface.sol';
 
 /*
  * Líf Token
@@ -14,7 +15,7 @@ import './LifInterface.sol';
  */
 
 
-contract LifToken is LifInterface, Ownable, PullPayment {
+contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
     using SafeMath for uint;
 
     // Token Name
@@ -330,7 +331,7 @@ contract LifToken is LifInterface, Ownable, PullPayment {
     }
 
     // Vote a contract proposal
-    function vote(uint proposalID, bool vote) external onStatus(3,4) returns (bool) {
+    function vote(uint proposalID, bool vote) onStatus(3,4) {
 
       //Get the proposal by proposalID
       Proposal p = proposals[proposalID];
@@ -350,12 +351,10 @@ contract LifToken is LifInterface, Ownable, PullPayment {
 
       VoteAdded(proposalID);
 
-      return true;
-
     }
 
     // Execute a proporal, only the owner can make this call, the check of the votes is optional because it can ran out of gas.
-    function executeProposal(uint proposalID) external onStatus(4,0) {
+    function executeProposal(uint proposalID) onStatus(4,0) {
 
       // Get the proposal using proposalsIndex
       Proposal p = proposals[proposalID];
@@ -386,7 +385,7 @@ contract LifToken is LifInterface, Ownable, PullPayment {
     }
 
     // Remove a proposal if it passed the maxBlock number.
-    function removeProposal(uint proposalID) external onStatus(4,0) {
+    function removeProposal(uint proposalID) onStatus(4,0) {
 
       // Get the proposal using proposalsIndex
       Proposal p = proposals[proposalID];
@@ -422,17 +421,17 @@ contract LifToken is LifInterface, Ownable, PullPayment {
     }
 
     // Get votes needed for a DAO action
-    function getActionDAO(address target, bytes4 signature) external constant returns (uint) {
+    function getActionDAO(address target, bytes4 signature) constant returns (uint) {
       return actionsDAO[target][signature];
     }
 
     // Get proposals array lenght
-    function proposalsLenght() external constant returns (uint) {
+    function proposalsLenght() constant returns (uint) {
       return proposals.length;
     }
 
     // Function to get the total votes of an address
-    function getVotes(address voter) public constant returns (uint) {
+    function getVotes(address voter) constant returns (uint) {
       uint senderVotes = sentTxVotes[voter].add(receivedTxVotes[voter]);
       return senderVotes;
     }
@@ -468,7 +467,7 @@ contract LifToken is LifInterface, Ownable, PullPayment {
 
     }
 
-    function giveVotes(address receiver, uint amount) external {
+    function giveVotes(address receiver, uint amount) {
       if (amount == 0){
         sentTxVotes[receiver] = sentTxVotes[receiver].add(sentTxVotes[msg.sender]);
         receivedTxVotes[receiver] = receivedTxVotes[receiver].add(receivedTxVotes[msg.sender]);
