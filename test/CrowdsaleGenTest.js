@@ -28,29 +28,6 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     done();
   });
 
-  let getExpectedPrice = function(startBlock, endBlock, crowdsaleData) {
-    if (web3.eth.blockNumber < startBlock || web3.eth.blockNumber > endBlock) {
-      return 0;
-    } else if (crowdsaleData.changePerBlock == 0) {
-      return -1; // this should throw anyways
-    } else {
-      let blocksCount = ((web3.eth.blockNumber > endBlock) ? endBlock : web3.eth.blockNumber) - startBlock;
-      help.debug("price data: ", crowdsaleData.startPrice, blocksCount, crowdsaleData.changePrice, crowdsaleData.changePerBlock);
-      return crowdsaleData.startPrice - (blocksCount * crowdsaleData.changePrice / crowdsaleData.changePerBlock);
-    }
-  }
-
-  let shouldGetPriceThrow = function(startBlock, endBlock, crowdsaleData) {
-    if (web3.eth.blockNumber < startBlock) {
-      return false;
-    } else if (crowdsaleData.changePerBlock == 0) {
-      return true;
-    } else {
-      let blocksCount = ((web3.eth.blockNumber > endBlock) ? endBlock : web3.eth.blockNumber) - startBlock;
-      return crowdsaleData.startPrice < (blocksCount * crowdsaleData.changePrice / crowdsaleData.changePerBlock);
-    }
-  }
-
   it("distributes tokens correctly on any combination of bids", async function() {
     /*
     var weiGen = jsc.nat.generator.map(function(x) {
@@ -117,12 +94,12 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         help.debug("block before getPrice:", web3.eth.blockNumber);
         price = parseFloat(await crowdsale.getPrice());
         help.debug("block after getPrice:", web3.eth.blockNumber);
-        assert.equal(false, shouldGetPriceThrow(startBlock, endBlock, crowdsaleData),
+        assert.equal(false, help.shouldCrowdsaleGetPriceThrow(startBlock, endBlock, crowdsaleData),
           "getPrice should have thrown because crowdsale config makes the price go negative");
 
         if (price != 0) {
           // all of this is because there is a small rounding difference sometimes.
-          let priceDiffPercent = (getExpectedPrice(startBlock, endBlock, crowdsaleData) - price) / price;
+          let priceDiffPercent = (help.getCrowdsaleExpectedPrice(startBlock, endBlock, crowdsaleData) - price) / price;
           let maxPriceDiff = 0.000000001;
           help.debug("price:", price, "price diff: ", priceDiffPercent);
           assert.equal(true, Math.abs(priceDiffPercent) <= maxPriceDiff, "price diff should be less than " + maxPriceDiff + " but it's " + priceDiffPercent);
@@ -130,10 +107,10 @@ contract('LifCrowdsale Property-based test', function(accounts) {
           assert.equal(0, price);
       }
       catch (e) {
-        help.debug("estimatedPrice:", getExpectedPrice(startBlock, endBlock, crowdsaleData),
-          "shouldGetPriceThrow: ", shouldGetPriceThrow(startBlock, endBlock, crowdsaleData),
+        help.debug("estimatedPrice:", help.getCrowdsaleExpectedPrice(startBlock, endBlock, crowdsaleData),
+          "shouldGetPriceThrow: ", help.shouldCrowdsaleGetPriceThrow(startBlock, endBlock, crowdsaleData),
           "error: ", e);
-        assert.equal(true, shouldGetPriceThrow(startBlock, endBlock, crowdsaleData), "we didn't expect getPrice to throw but it did...");
+        assert.equal(true, help.shouldCrowdsaleGetPriceThrow(startBlock, endBlock, crowdsaleData), "we didn't expect getPrice to throw but it did...");
 
         help.debug("the crowdsale params are invalid but the test catched that fine. Stopping here");
         return true;

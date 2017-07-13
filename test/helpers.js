@@ -270,5 +270,21 @@ module.exports = {
       await crowdsale.distributeTokens(accounts[5], false);
     await crowdsale.transferVotes();
     return crowdsale;
+  },
+
+  getCrowdsaleExpectedPrice: function(startBlock, endBlock, crowdsale) {
+    if (web3.eth.blockNumber < startBlock || web3.eth.blockNumber > endBlock) {
+      return 0;
+    } else if (crowdsale.changePerBlock == 0) {
+      return -1; // this should throw anyways
+    } else {
+      let blocksCount = ((web3.eth.blockNumber > endBlock) ? endBlock : web3.eth.blockNumber) - startBlock;
+      this.debug("price data: ", crowdsale.startPrice, blocksCount, crowdsale.changePrice, crowdsale.changePerBlock);
+      return crowdsale.startPrice - (blocksCount * crowdsale.changePrice / crowdsale.changePerBlock);
+    }
+  },
+
+  shouldCrowdsaleGetPriceThrow: function(startBlock, endBlock, crowdsaleData) {
+    return this.getCrowdsaleExpectedPrice(startBlock, endBlock, crowdsaleData) < 0;
   }
 };
