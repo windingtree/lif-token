@@ -280,7 +280,7 @@ module.exports = {
     } else {
       let blocksCount = ((web3.eth.blockNumber > endBlock) ? endBlock : web3.eth.blockNumber) - startBlock;
       this.debug("price data: ", crowdsale.startPrice, blocksCount, crowdsale.changePrice, crowdsale.changePerBlock);
-      return crowdsale.startPrice - (blocksCount * crowdsale.changePrice / crowdsale.changePerBlock);
+      return crowdsale.startPrice - Math.floor(blocksCount / crowdsale.changePerBlock) * crowdsale.changePrice;
     }
   },
 
