@@ -29,12 +29,6 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   });
 
   it("distributes tokens correctly on any combination of bids", async function() {
-    /*
-    var weiGen = jsc.nat.generator.map(function(x) {
-      return web3.toWei(x, 'ether');
-    });
-    */
-
     let crowdsaleRawGen = jsc.record({
       startPriceEth: jsc.nat,
       changePerBlock: jsc.nat,
@@ -47,14 +41,14 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     });
 
     let crowdsaleGen = jsc.suchthat(crowdsaleRawGen, function(c) {
-      return c.maxCap >= c.minCap &&
-        c.changePerBlock > 0;
+      return (c.maxCapEth >= c.minCapEth) &&
+        (c.changePerBlock > 0);
     });
 
     let bidsGen = jsc.array(jsc.nat);
 
     let crowdsaleTestInputGen = jsc.record({
-      crowdsale: crowdsaleRawGen,
+      crowdsale: crowdsaleGen,
       bids: bidsGen
     });
 
