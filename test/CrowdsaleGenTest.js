@@ -45,12 +45,58 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         (c.changePerBlock > 0);
     });
 
-    let bidsGen = jsc.array(jsc.nat);
+    let waitBlockCommandGen = jsc.record({
+      type: jsc.constant("waitBlock")
+    });
+    let checkPriceCommandGen = jsc.record({
+      type: jsc.constant("checkPrice")
+    });
+
+    let commandsGen = jsc.oneof([waitBlockCommandGen, checkPriceCommandGen]);
 
     let crowdsaleTestInputGen = jsc.record({
       crowdsale: crowdsaleGen,
-      bids: bidsGen
+      commands: jsc.array(commandsGen)
     });
+
+    let shouldCommandThrow = function(command, state) {
+      if (command.type == "waitBlock") {
+        return false;
+      } else if (command.type = "checkPrice") {
+        let crowdsale = state.crowdsaleData;
+        let { startBlock, endBlock } = crowdsale;
+        return help.shouldCrowdsaleGetPriceThrow(startBlock, endBlock, crowdsale);
+      }
+    }
+
+    let runCommand = async function(command, state) {
+      if (command.type == "waitBlock") {
+        await help.waitBlocks(1, accounts);
+        return state;
+      } else if (command.type == "checkPrice") {
+        let expectedPrice = help.getCrowdsaleExpectedPrice(
+          state.crowdsaleData.startBlock, state.crowdsaleData.endBlock, state.crowdsaleData
+        );
+        let price = parseFloat(await state.crowdsaleContract.getPrice());
+
+        if (price != 0) {
+          // all of this is because there is a small rounding difference sometimes.
+          let priceDiffPercent = (expectedPrice - price) / price;
+          help.debug("price", price, " expected price: ", expectedPrice, " diff %: ", priceDiffPercent);
+          let maxPriceDiff = 0.000000001;
+          assert.equal(true, Math.abs(priceDiffPercent) <= maxPriceDiff,
+            "price diff should be less than " + maxPriceDiff + " but it's " + priceDiffPercent);
+        } else {
+          assert.equal(expectedPrice, price,
+            "expected price is different! Expected: " + expectedPrice + ", actual: " + price + ". blocks: " + web3.eth.blockNumber + ", start/end: " + 
+            state.crowdsaleData.startBlock + "/" + state.crowdsaleData.endBlock);
+        }
+
+        return state;
+      } else {
+        throw("Unknown command type " + command.type);
+      }
+    }
 
     let property = jsc.forall(crowdsaleTestInputGen, async function(input) {
       let blocksCount = 5;
@@ -79,41 +125,30 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
       await help.fundCrowdsale(crowdsaleData, crowdsale, accounts);
 
-      // wait to crowdsale start
-      await help.waitToBlock(startBlock, accounts);
+      var state = {
+        crowdsaleData: crowdsaleData,
+        crowdsaleContract: crowdsale
+      };
 
-      help.debug("fetching new price");
-
-      try {
-        help.debug("block before getPrice:", web3.eth.blockNumber);
-        price = parseFloat(await crowdsale.getPrice());
-        help.debug("block after getPrice:", web3.eth.blockNumber);
-        assert.equal(false, help.shouldCrowdsaleGetPriceThrow(startBlock, endBlock, crowdsaleData),
-          "getPrice should have thrown because crowdsale config makes the price go negative");
-
-        if (price != 0) {
-          // all of this is because there is a small rounding difference sometimes.
-          let priceDiffPercent = (help.getCrowdsaleExpectedPrice(startBlock, endBlock, crowdsaleData) - price) / price;
-          let maxPriceDiff = 0.000000001;
-          help.debug("price:", price, "price diff: ", priceDiffPercent);
-          assert.equal(true, Math.abs(priceDiffPercent) <= maxPriceDiff, "price diff should be less than " + maxPriceDiff + " but it's " + priceDiffPercent);
-        } else
-          assert.equal(0, price);
-      }
-      catch (e) {
-        help.debug("estimatedPrice:", help.getCrowdsaleExpectedPrice(startBlock, endBlock, crowdsaleData),
-          "shouldGetPriceThrow: ", help.shouldCrowdsaleGetPriceThrow(startBlock, endBlock, crowdsaleData),
-          "error: ", e);
-        assert.equal(true, help.shouldCrowdsaleGetPriceThrow(startBlock, endBlock, crowdsaleData), "we didn't expect getPrice to throw but it did...");
-
-        help.debug("the crowdsale params are invalid but the test catched that fine. Stopping here");
-        return true;
+      for (let command of input.commands) {
+        let shouldThrow = shouldCommandThrow(command, state);
+        try {
+          state = await runCommand(command, state);
+          assert.equal(false, shouldThrow, "command " + command + " should have thrown but it didn't.\nState: " + state);
+        }
+        catch(error) {
+          if (e instanceof AssertionError) {
+            throw(e);
+          } else {
+            assert.equal(true, shouldThrow, "command " + command + " should not have thrown but it did.\nError: " + error + "\nState: " + state);
+          }
+        }
       }
 
       return true;
     });
 
-    return jsc.assert(property, {tests: 10, size: 10});
+    return jsc.assert(property, {tests: 20});
   });
 
 });
