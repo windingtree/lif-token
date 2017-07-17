@@ -194,6 +194,25 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     return true;
   }
 
+  it("should consider endBlock part of the crowdsale", async function() {
+    // this case found by the generative test, it was a bug on the getPrice function
+    // added here to avoid future regressions
+    let crowdsaleAndCommands = {
+      commands: [
+        {"type":"waitBlock"}, {"type":"waitBlock"}, {"type":"waitBlock"},
+        {"type":"setStatus","status":3},
+        {"type":"checkPrice"}
+      ],
+      crowdsale: {
+        startPriceEth: 16, changePerBlock: 37, changePriceEth: 45,
+        minCapEth: 23, maxCapEth: 32, maxTokens: 40,
+        presaleBonusRate: 23, ownerPercentage: 27
+      }
+    };
+
+    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
+  });
+
   it("distributes tokens correctly on any combination of bids", async function() {
     // stateful prob based tests can take a long time to finish when shrinking...
     this.timeout(120 * 1000);
