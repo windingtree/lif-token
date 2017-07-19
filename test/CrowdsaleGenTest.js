@@ -15,20 +15,6 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   var token;
   var eventsWatcher;
 
-  beforeEach(async function() {
-    token = await LifToken.new(web3.toWei(10, 'ether'), 10000, 2, 3, 5, {from: accounts[0]});
-    eventsWatcher = token.allEvents();
-    eventsWatcher.watch(function(error, log){
-      if (LOG_EVENTS)
-        console.log('Event:', log.event, ':',log.args);
-    });
-  });
-
-  afterEach(function(done) {
-    eventsWatcher.stopWatching();
-    done();
-  });
-
   let crowdsaleRawGen = jsc.record({
     startPriceEth: jsc.nat,
     changePerBlock: jsc.nat,
@@ -162,45 +148,63 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     help.debug("crowdsaleTestInput data:\n", input, startBlock, endBlock);
 
-    let crowdsaleData = {
-      token: token,
-      startBlock: startBlock, endBlock: endBlock,
-      startPrice: web3.toWei(input.crowdsale.startPriceEth, 'ether'),
-      changePerBlock: input.crowdsale.changePerBlock, changePrice: web3.toWei(input.crowdsale.changePriceEth, 'ether'),
-      minCap: web3.toWei(input.crowdsale.minCapEth, 'ether'), maxCap: web3.toWei(input.crowdsale.maxCapEth, 'ether'),
-      maxTokens: input.crowdsale.maxTokens,
-      presaleBonusRate: input.crowdsale.presaleBonusRate, ownerPercentage: input.crowdsale.ownerPercentage
-    };
+    token = await LifToken.new(web3.toWei(10, 'ether'), 10000, 2, 3, 5, {from: accounts[0]});
+    eventsWatcher = token.allEvents();
+    eventsWatcher.watch(function(error, log){
+      if (LOG_EVENTS)
+        console.log('Event:', log.event, ':',log.args);
+    });
 
-    let crowdsale = await help.createCrowdsale(crowdsaleData, accounts);
+    try {
+      let crowdsaleData = {
+        token: token,
+        startBlock: startBlock, endBlock: endBlock,
+        startPrice: web3.toWei(input.crowdsale.startPriceEth, 'ether'),
+        changePerBlock: input.crowdsale.changePerBlock, changePrice: web3.toWei(input.crowdsale.changePriceEth, 'ether'),
+        minCap: web3.toWei(input.crowdsale.minCapEth, 'ether'), maxCap: web3.toWei(input.crowdsale.maxCapEth, 'ether'),
+        maxTokens: input.crowdsale.maxTokens,
+        presaleBonusRate: input.crowdsale.presaleBonusRate, ownerPercentage: input.crowdsale.ownerPercentage
+      };
 
-    help.debug("created crowdsale at address ", crowdsale.address);
+      let crowdsale = await help.createCrowdsale(crowdsaleData, accounts);
 
-    // Assert price == 0 before start
-    let price = parseFloat(await crowdsale.getPrice());
-    assert.equal(price, web3.toWei(0, 'ether'));
+      help.debug("created crowdsale at address ", crowdsale.address);
 
-    await help.fundCrowdsale(crowdsaleData, crowdsale, accounts);
+      // Assert price == 0 before start
+      let price = parseFloat(await crowdsale.getPrice());
+      assert.equal(price, web3.toWei(0, 'ether'));
 
-    var state = {
-      crowdsaleData: crowdsaleData,
-      crowdsaleContract: crowdsale,
-      status: 1 // crowdsale status
-    };
+      await help.fundCrowdsale(crowdsaleData, crowdsale, accounts);
 
-    for (let command of input.commands) {
-      let shouldThrow = shouldCommandThrow(command, state);
-      try {
-        state = await runCommand(command, state);
-        assert.equal(false, shouldThrow, "command " + command + " should have thrown but it didn't.\nState: " + state);
-      }
-      catch(error) {
-        if (error instanceof chai.AssertionError) {
-          throw(error);
-        } else {
-          assert.equal(true, shouldThrow, "command " + command + " should not have thrown but it did.\nError: " + error + "\nState: " + state);
+      // issue & transfer tokens for founders payments
+      let maxFoundersPaymentTokens = crowdsaleData.maxTokens * (crowdsaleData.ownerPercentage / 1000.0) ;
+      // TODO: is there a way to avoid the Math.ceil code? I don't think so, except by always issuing multiples of 1000 tokens...
+      await token.issueTokens(Math.ceil(maxFoundersPaymentTokens));
+      await token.transferFrom(token.address, crowdsale.address, help.lif2LifWei(maxFoundersPaymentTokens), {from: accounts[0]});
+
+      var state = {
+        crowdsaleData: crowdsaleData,
+        crowdsaleContract: crowdsale,
+        status: 1 // crowdsale status
+      };
+
+      for (let command of input.commands) {
+        let shouldThrow = shouldCommandThrow(command, state);
+        try {
+          state = await runCommand(command, state);
+          assert.equal(false, shouldThrow, "command " + command + " should have thrown but it didn't.\nCommand: " + JSON.stringify(command) + "\nState: " + state);
+        }
+        catch(error) {
+          help.debug("An error occurred, block number: " + web3.eth.blockNumber);
+          if (error instanceof chai.AssertionError) {
+            throw(error);
+          } else {
+            assert.equal(true, shouldThrow, "command " + JSON.stringify(command) + " should not have thrown but it did.\nError: " + error + "\nState: " + state);
+          }
         }
       }
+    } finally {
+      eventsWatcher.stopWatching();
     }
 
     return true;
