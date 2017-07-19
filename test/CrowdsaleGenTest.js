@@ -58,14 +58,20 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   });
   let setStatusCommandGen = jsc.record({
     type: jsc.constant("setStatus"),
-    status: jsc.elements([1,2,3])
+    status: jsc.elements([1,2,3]),
+    fromAccount: jsc.elements(accounts)
+  });
+  let checkCrowdsaleCommandGen = jsc.record({
+    type: jsc.constant("checkCrowdsale"),
+    fromAccount: jsc.elements(accounts)
   });
 
   let commandsGen = jsc.nonshrink(jsc.oneof([
     waitBlockCommandGen,
     checkPriceCommandGen,
     submitBidCommandGen,
-    setStatusCommandGen
+    setStatusCommandGen,
+    checkCrowdsaleCommandGen
   ]));
 
   let crowdsaleTestInputGen = jsc.record({
@@ -94,6 +100,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         (soldTokens + command.tokens > crowdsale.maxTokens);
     } else if (command.type == "setStatus") {
       return false;
+    } else if (command.type == "checkCrowdsale") {
+      return state.status != 2 || web3.eth.blockNumber <= state.crowdsaleData.endBlock;
     } else {
       assert(false, "unknnow command " + command.type);
     }
@@ -137,6 +145,10 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     } else if (command.type == "setStatus") {
       await state.crowdsaleContract.setStatus(command.status, {from: accounts[0]});
       state.status = command.status;
+      return state;
+    } else if (command.type == "checkCrowdsale") {
+      await state.crowdsaleContract.checkCrowdsale({from: command.fromAccount});
+      state.status = 3;
       return state;
     } else {
       throw("Unknown command type " + command.type);
