@@ -11,6 +11,10 @@ var FuturePayment = artifacts.require("./FuturePayment.sol");
 
 const LOG_EVENTS = true;
 
+let GEN_TESTS_QTY = parseInt(process.env.GEN_TESTS_QTY);
+if (isNaN(GEN_TESTS_QTY))
+  GEN_TESTS_QTY = 50;
+
 contract('LifCrowdsale Property-based test', function(accounts) {
   var token;
   var eventsWatcher;
@@ -231,13 +235,14 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   it("distributes tokens correctly on any combination of bids", async function() {
     // stateful prob based tests can take a long time to finish when shrinking...
-    this.timeout(120 * 1000);
+    this.timeout(240 * 1000);
 
     let property = jsc.forall(crowdsaleTestInputGen, async function(crowdsaleAndCommands) {
       return await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
     });
 
-    return jsc.assert(property, {tests: 20});
+    console.log("Generative tests to run:", GEN_TESTS_QTY);
+    return jsc.assert(property, {tests: GEN_TESTS_QTY});
   });
 
 });
