@@ -222,6 +222,22 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     return true;
   }
 
+  it("should throw when submitBid is for 0 tokens", async function() {
+    let crowdsaleAndCommands = {
+      commands: [
+        {"type":"setStatus","status":2,"fromAccount":0},
+        {"type":"submitBid","account":7,"tokens":0}
+      ],
+      crowdsale: {
+        startPriceEth: 3, changePerBlock: 1, changePriceEth: 0,
+        minCapEth: 20, maxCapEth: 33, maxTokens: 16,
+        presaleBonusRate: 32, ownerPercentage: 0
+      }
+    };
+
+    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
+  });
+
   it("should raise when sum of bids exceed total tokens to be sold", async function() {
 
     let crowdsaleAndCommands = {

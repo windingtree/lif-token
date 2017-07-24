@@ -199,7 +199,7 @@ contract LifCrowdsale is Ownable, PullPayment {
 
       uint tokenPrice = getPrice();
 
-      if (tokenPrice == 0)
+      if ((tokenPrice == 0) || (msg.value == 0))
         throw;
 
       // Calculate the total cost in wei of buying the tokens.
