@@ -204,7 +204,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         let shouldThrow = shouldCommandThrow(command, state);
         try {
           state = await runCommand(command, state);
-          assert.equal(false, shouldThrow, "command " + command + " should have thrown but it didn't.\nCommand: " + JSON.stringify(command) + "\nState: " + state);
+          assert.equal(false, shouldThrow, "command " + JSON.stringify(command) + " should have thrown but it didn't.\nState: " + state);
         }
         catch(error) {
           help.debug("An error occurred, block number: " + web3.eth.blockNumber);
