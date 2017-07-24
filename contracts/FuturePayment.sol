@@ -20,8 +20,8 @@ contract FuturePayment {
     // Function that allows an address to claim a futurePayment on tokens
     function claimPayment() external {
 
-      if ((payee != msg.sender) || (afterBlock > block.number))
-        throw;
+      require(payee == msg.sender);
+      require(block.number >= afterBlock);
 
       LifInterface lifToken = LifInterface(tokenAddress);
 
