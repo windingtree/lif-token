@@ -43,17 +43,17 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   });
   let submitBidCommandGen = jsc.record({
     type: jsc.constant("submitBid"),
-    account: jsc.elements(accounts),
+    account: jsc.nat(accounts.length - 1),
     tokens: jsc.nat
   });
   let setStatusCommandGen = jsc.record({
     type: jsc.constant("setStatus"),
     status: jsc.elements([1,2,3]),
-    fromAccount: jsc.elements(accounts)
+    fromAccount: jsc.nat(accounts.length - 1)
   });
   let checkCrowdsaleCommandGen = jsc.record({
     type: jsc.constant("checkCrowdsale"),
-    fromAccount: jsc.elements(accounts)
+    fromAccount: jsc.nat(accounts.length - 1)
   });
 
   let commandsGen = jsc.nonshrink(jsc.oneof([
@@ -125,19 +125,22 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       let price = help.getCrowdsaleExpectedPrice(
         state.crowdsaleData.startBlock, state.crowdsaleData.endBlock, state.crowdsaleData
       );
+      let account = accounts[command.account],
+        weiCost = price * command.tokens;
       help.debug("submitBid price:", price, "blockNumber:", web3.eth.blockNumber);
       await state.crowdsaleContract.submitBid({
-        value: price * command.tokens,
-        from: command.account
+        value: weiCost,
+        from: account
       });
       state.bids = _.concat(state.bids || [], {tokens: command.tokens, price: price, account: command.account});
       return state;
     } else if (command.type == "setStatus") {
-      await state.crowdsaleContract.setStatus(command.status, {from: accounts[0]});
-      state.status = command.status;
+      await state.crowdsaleContract.setStatus(command.status, {from: accounts[command.fromAccount]});
+      if (command.fromAccount == 0) // actually change status when sent from owner only
+        state.status = command.status;
       return state;
     } else if (command.type == "checkCrowdsale") {
-      await state.crowdsaleContract.checkCrowdsale({from: command.fromAccount});
+      await state.crowdsaleContract.checkCrowdsale({from: accounts[command.fromAccount]});
       state.status = 3;
       return state;
     } else {
@@ -220,7 +223,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     let crowdsaleAndCommands = {
       commands: [
         {"type":"waitBlock"}, {"type":"waitBlock"}, {"type":"waitBlock"},
-        {"type":"setStatus","status":3},
+        {"type":"setStatus","status":3,"fromAccount":0},
         {"type":"checkPrice"}
       ],
       crowdsale: {
