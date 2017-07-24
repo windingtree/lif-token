@@ -77,16 +77,18 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       let { startBlock, endBlock } = crowdsale;
       return help.shouldCrowdsaleGetPriceThrow(startBlock, endBlock, crowdsale);
     } else if (command.type == "submitBid") {
-      let crowdsale = state.crowdsaleData;
-      let { startBlock, endBlock } = crowdsale;
-      let price = help.getCrowdsaleExpectedPrice(startBlock, endBlock, crowdsale);
-      let soldTokens = _.sumBy(state.bids || [], (b) => b.tokens);
+      let crowdsale = state.crowdsaleData,
+        { startBlock, endBlock, maxCap } = crowdsale,
+        { weiRaised } = state,
+        price = help.getCrowdsaleExpectedPrice(startBlock, endBlock, crowdsale),
+        weiCost = price * command.tokens,
+        soldTokens = _.sumBy(state.bids, (b) => b.tokens);
 
       return (web3.eth.blockNumber < crowdsale.startBlock) ||
         (web3.eth.blockNumber > crowdsale.endBlock) ||
         (state.status != 2) ||
-        (command.tokens == 0) ||
-        (price == 0) ||
+        (weiCost == 0) ||
+        (weiRaised + weiCost > maxCap) ||
         (soldTokens + command.tokens > crowdsale.maxTokens);
     } else if (command.type == "setStatus") {
       return false;
@@ -132,7 +134,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         value: weiCost,
         from: account
       });
-      state.bids = _.concat(state.bids || [], {tokens: command.tokens, price: price, account: command.account});
+      state.bids = _.concat(state.bids || [], {tokens: command.tokens, price: price, account: account});
+      state.weiRaised += weiCost;
       return state;
     } else if (command.type == "setStatus") {
       await state.crowdsaleContract.setStatus(command.status, {from: accounts[command.fromAccount]});
@@ -192,6 +195,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       var state = {
         crowdsaleData: crowdsaleData,
         crowdsaleContract: crowdsale,
+        bids: [],
+        weiRaised: 0,
         status: 1 // crowdsale status
       };
 
@@ -216,6 +221,24 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     return true;
   }
+
+  it("should raise when sum of bids exceed total tokens to be sold", async function() {
+
+    let crowdsaleAndCommands = {
+      commands: [
+        {"type":"setStatus","status":2,"fromAccount":0},
+        {"type":"submitBid","account":1,"tokens":2},
+        {"type":"submitBid","account":2,"tokens":2}
+      ],
+      crowdsale: {
+        startPriceEth: 5, changePerBlock: 5, changePriceEth: 0,
+        minCapEth: 1, maxCapEth: 2, maxTokens: 3,
+        presaleBonusRate: 5, ownerPercentage: 3
+      }
+    };
+
+    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
+  });
 
   it("should consider endBlock part of the crowdsale", async function() {
     // this case found by the generative test, it was a bug on the getPrice function

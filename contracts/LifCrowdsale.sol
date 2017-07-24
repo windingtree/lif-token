@@ -213,21 +213,22 @@ contract LifCrowdsale is Ownable, PullPayment {
       if (tokensSold.add(presaleTokens).add(tokensQty) > totalTokens)
         throw;
 
-      if (weiRaised.add(weiCost) <= maxCap) {
+      if (weiRaised.add(weiCost) > maxCap)
+        throw;
 
-        if (weiChange > 0)
-          safeSend(msg.sender, weiChange);
+      //
+      // bid is accepted from here
+      //
 
-        lastPrice = tokenPrice;
-        weiPayed[msg.sender] = weiCost;
-        tokens[msg.sender] = tokensQty;
-        weiRaised = weiRaised.add(weiCost);
-        tokensSold = tokensSold.add(tokensQty);
+      // asynchronously send weiChange if any
+      if (weiChange > 0)
+        safeSend(msg.sender, weiChange);
 
-      } else {
-        safeSend(msg.sender, msg.value);
-      }
-
+      lastPrice = tokenPrice;
+      weiPayed[msg.sender] = weiCost;
+      tokens[msg.sender] = tokensQty;
+      weiRaised = weiRaised.add(weiCost);
+      tokensSold = tokensSold.add(tokensQty);
     }
 
     // See if the status of the crowdsale can be changed
