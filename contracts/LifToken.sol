@@ -368,7 +368,7 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
       // Get the proposal using proposalsIndex
       Proposal p = proposals[proposalID];
 
-      // If proposal didnt reach maxBlocksWait throw.
+      // require to have reached proposal maxBlock
       require(block.number > p.maxBlock);
 
       // Change the status of the proposal to declined
