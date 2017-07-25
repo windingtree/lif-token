@@ -197,10 +197,13 @@ module.exports = {
     console.log('['+parsedProposal.id+'] To: '+parsedProposal.target+', Value: '+parsedProposal.value +', MaxBlock: '+parsedProposal.maxBlock+', Desc: '+parsedProposal.description+', Status: '+parsedProposal.status, ', Votes: ',parsedProposal.totalVotes,'/',parsedProposal.votesNeeded);
   },
 
-  createAndFundCrowdsale: async function(params, accounts) {
+  createCrowdsale: async function(params) {
+    return await LifCrowdsale.new(params.token.address, params.startBlock, params.endBlock, params.startPrice, params.changePerBlock,
+      params.changePrice, params.minCap, params.maxCap, params.maxTokens, params.presaleBonusRate, params.ownerPercentage)
+  },
+
+  fundCrowdsale: async function(params, crowdsale, accounts) {
     let token = params.token;
-    var crowdsale = await LifCrowdsale.new(token.address, params.startBlock, params.endBlock, params.startPrice, params.changePerBlock,
-      params.changePrice, params.minCap, params.maxCap, params.maxTokens, params.presaleBonusRate, params.ownerPercentage);
 
     let oldTokenBalance = parseFloat(await token.balanceOf(token.contract.address));
 
@@ -219,6 +222,14 @@ module.exports = {
     assert.equal(parseFloat(await crowdsale.changePerBlock()), params.changePerBlock);
     assert.equal(parseFloat(await crowdsale.changePrice()), params.changePrice);
     assert.equal(parseFloat(await crowdsale.minCap()), params.minCap);
+  },
+
+  createAndFundCrowdsale: async function(params, accounts) {
+    let self = this;
+    let token = params.token;
+    var crowdsale = await self.createCrowdsale(params);
+
+    await self.fundCrowdsale(params, crowdsale, accounts);
 
     return crowdsale;
   },
@@ -259,5 +270,21 @@ module.exports = {
       await crowdsale.distributeTokens(accounts[5], false);
     await crowdsale.transferVotes();
     return crowdsale;
+  },
+
+  getCrowdsaleExpectedPrice: function(startBlock, endBlock, crowdsale) {
+    if (web3.eth.blockNumber < startBlock || web3.eth.blockNumber > endBlock) {
+      return 0;
+    } else if (crowdsale.changePerBlock == 0) {
+      return -1; // this should throw anyways
+    } else {
+      let blocksCount = ((web3.eth.blockNumber > endBlock) ? endBlock : web3.eth.blockNumber) - startBlock;
+      this.debug("price data: ", crowdsale.startPrice, blocksCount, crowdsale.changePrice, crowdsale.changePerBlock);
+      return crowdsale.startPrice - Math.floor(blocksCount / crowdsale.changePerBlock) * crowdsale.changePrice;
+    }
+  },
+
+  shouldCrowdsaleGetPriceThrow: function(startBlock, endBlock, crowdsaleData) {
+    return this.getCrowdsaleExpectedPrice(startBlock, endBlock, crowdsaleData) < 0;
   }
 };

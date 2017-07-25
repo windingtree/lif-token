@@ -65,7 +65,7 @@ contract('LifToken Crowdsale', function(accounts) {
   });
 
   it("Should simulate a crowdsale of 7m tokens, no owner payment, with one dutch auction and just 1 bidder", async function() {
-    var startBlock = web3.eth.blockNumber+5;
+    var startBlock = web3.eth.blockNumber+7;
     var endBlock = startBlock+5;
     var totalWeiSent = 0;
     var totalTokensBought = 0;
@@ -105,7 +105,7 @@ contract('LifToken Crowdsale', function(accounts) {
     var price = parseFloat(await crowdsale.getPrice());
     assert.equal(price, web3.toWei(0, 'ether'));
 
-    await help.waitToBlock(startBlock+1, accounts);
+    await help.waitToBlock(startBlock, accounts);
 
     // Submit bid of 500000 on accounts[1]
     price = parseFloat(await crowdsale.getPrice());

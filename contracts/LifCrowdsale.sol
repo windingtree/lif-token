@@ -173,7 +173,7 @@ contract LifCrowdsale is Ownable, PullPayment {
 
       uint price = 0;
 
-      if ((startBlock < block.number) && (block.number < endBlock)) {
+      if ((block.number >= startBlock) && (block.number <= endBlock)) {
         price = startPrice.sub(
           block.number.sub(startBlock).div(changePerBlock).mul(changePrice)
         );
@@ -199,7 +199,7 @@ contract LifCrowdsale is Ownable, PullPayment {
 
       uint tokenPrice = getPrice();
 
-      if (tokenPrice == 0)
+      if ((tokenPrice == 0) || (msg.value == 0))
         throw;
 
       // Calculate the total cost in wei of buying the tokens.
@@ -213,21 +213,22 @@ contract LifCrowdsale is Ownable, PullPayment {
       if (tokensSold.add(presaleTokens).add(tokensQty) > totalTokens)
         throw;
 
-      if (weiRaised.add(weiCost) <= maxCap) {
+      if (weiRaised.add(weiCost) > maxCap)
+        throw;
 
-        if (weiChange > 0)
-          safeSend(msg.sender, weiChange);
+      //
+      // bid is accepted from here
+      //
 
-        lastPrice = tokenPrice;
-        weiPayed[msg.sender] = weiCost;
-        tokens[msg.sender] = tokensQty;
-        weiRaised = weiRaised.add(weiCost);
-        tokensSold = tokensSold.add(tokensQty);
+      // asynchronously send weiChange if any
+      if (weiChange > 0)
+        safeSend(msg.sender, weiChange);
 
-      } else {
-        safeSend(msg.sender, msg.value);
-      }
-
+      lastPrice = tokenPrice;
+      weiPayed[msg.sender] = weiCost;
+      tokens[msg.sender] = tokensQty;
+      weiRaised = weiRaised.add(weiCost);
+      tokensSold = tokensSold.add(tokensQty);
     }
 
     // See if the status of the crowdsale can be changed
