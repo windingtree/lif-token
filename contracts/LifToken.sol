@@ -115,16 +115,16 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
 
     // Allow only required status
     modifier onStatus(uint one, uint two) {
-      if (((one != 0) && (status == one)) || ((two != 0) && (status == two)))
-        _;
-      else
-        throw;
+      require(((one != 0) && (status == one)) || ((two != 0) && (status == two)));
+
+      _;
     }
 
     // Dont allow on specified status
     modifier fromSelf() {
-      if (msg.sender == address(this))
-        _;
+      require(msg.sender == address(this));
+
+      _;
     }
 
     // LifToken constructor
@@ -149,18 +149,15 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
     // Can be called by Owner on Created or DAO status
     function issueTokens(uint amount) external {
 
-      if (((msg.sender == address(this)) && (status == 4)) || ((msg.sender == owner) && ((status == 2) || (status == 4)))) {
+      require(((msg.sender == address(this)) && (status == 4)) ||
+              ((msg.sender == owner) && ((status == 2) || (status == 4))
+               && (OWNER_SUPPLY >= maxSupply.add(amount))));
 
-        if ((msg.sender == owner) && (OWNER_SUPPLY < maxSupply.add(amount)))
-          throw;
-
-        uint formatedBalance = amount.mul(LONG_DECIMALS);
-        balances[address(this)] = balances[address(this)].add(formatedBalance);
-        allowed[address(this)][owner] = allowed[address(this)][owner].add(formatedBalance);
-        totalSupply = totalSupply.add(amount);
-        maxSupply = maxSupply.add(amount);
-      }
-
+      uint formatedBalance = amount.mul(LONG_DECIMALS);
+      balances[address(this)] = balances[address(this)].add(formatedBalance);
+      allowed[address(this)][owner] = allowed[address(this)][owner].add(formatedBalance);
+      totalSupply = totalSupply.add(amount);
+      maxSupply = maxSupply.add(amount);
     }
 
     // Change contract variable functions
@@ -202,8 +199,7 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
 
     //ERC20 token transfer method
     function transferFrom(address from, address to, uint value) {
-      if (to == address(this))
-        throw;
+      require(to != address(this));
 
       uint allowance = allowed[from][msg.sender];
       balances[to] = balances[to].add(value);
@@ -217,14 +213,13 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
     //ERC20 token approve method
     function approve(address spender, uint value) {
 
-      if (spender == address(this))
-        throw;
+      require(spender != address(this));
 
       // To change the approve amount you first have to reduce the addresses`
       //  allowance to zero by calling `approve(spender, 0)` if it is not
       //  already 0 to mitigate the race condition described here:
       //  https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-      if ((value != 0) && (allowed[msg.sender][spender] != 0)) throw;
+      require((value == 0) || (allowed[msg.sender][spender] == 0));
 
       allowed[msg.sender][spender] = value;
       Approval(msg.sender, spender, value);
@@ -234,8 +229,7 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
     //ERC20 token approve method with data call/log option.
     function approveData(address spender, uint value, bytes data, bool doCall) {
 
-      if (spender == address(this))
-        throw;
+      require(spender != address(this));
 
       allowed[tx.origin][spender] = value;
 
@@ -249,8 +243,7 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
     // ERC20 transfer method with data call/log option.
     function transferData(address to, uint value, bytes data, bool doCall) {
 
-      if (to == address(this))
-        throw;
+      require(to != address(this));
 
       // If transfer have value process it
       if (value > 0) {
@@ -269,8 +262,7 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
     // ERC20 transferFrom method with data call/log option.
     function transferDataFrom(address from, address to, uint value, bytes data, bool doCall) {
 
-      if (to == address(this))
-        throw;
+      require(to != address(this));
 
       // If transfer have value process it
       if (value > 0) {
@@ -294,10 +286,9 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
       // Check that action is valid by target and signature
       // Check sender necessary votes
       // Check proposal fee
-      if ((actionsDAO[target][signature] == 0)
-        || (getVotes(msg.sender) < minProposalVotes)
-        || (msg.value < baseProposalFee))
-        throw;
+      require(actionsDAO[target][signature] > 0);
+      require(getVotes(msg.sender) >= minProposalVotes);
+      require(msg.value >= baseProposalFee);
 
       // Get the needed votes % for action approval
       uint votesNeeded = divide(totalVotes, 100, 1);
@@ -324,8 +315,8 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
       Proposal p = proposals[proposalID];
 
       // Check sender vote and proposal status
-      if ((p.votes[msg.sender] > 0) || (p.status != 2))
-        throw;
+      require(p.votes[msg.sender] == 0);
+      require(p.status == 2);
 
       // Add user vote
       if (vote) {
@@ -340,15 +331,15 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
 
     }
 
-    // Execute a proporal, only the owner can make this call, the check of the votes is optional because it can ran out of gas.
+    // Execute a proposal, only the owner can make this call, the check of the votes is optional because it can ran out of gas.
     function executeProposal(uint proposalID) onStatus(4,0) {
 
       // Get the proposal using proposalsIndex
       Proposal p = proposals[proposalID];
 
       // Check proposal age and status
-      if ((p.maxBlock < block.number) || (p.status != 2))
-        throw;
+      require(block.number <= p.maxBlock);
+      require(p.status == 2);
 
       // Calculate the needed votes
       uint proposalAge = block.number.sub(p.creationBlock);
@@ -377,9 +368,8 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
       // Get the proposal using proposalsIndex
       Proposal p = proposals[proposalID];
 
-      // If proposal didnt reach maxBlocksWait throw.
-      if (p.maxBlock > block.number)
-        throw;
+      // require to have reached proposal maxBlock
+      require(block.number > p.maxBlock);
 
       // Change the status of the proposal to declined
       p.status = 0;
