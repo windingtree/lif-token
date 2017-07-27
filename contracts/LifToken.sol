@@ -188,17 +188,19 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
     }
 
     //ERC20 token transfer method
-    function transfer(address to, uint value) {
+    function transfer(address to, uint value) returns (bool) {
 
       balances[msg.sender] = balances[msg.sender].sub(value);
       balances[to] = balances[to].add(value);
       issueVotes(msg.sender, to);
       Transfer(msg.sender, to, value);
 
+      return(true);
+
     }
 
     //ERC20 token transfer method
-    function transferFrom(address from, address to, uint value) {
+    function transferFrom(address from, address to, uint value) returns (bool) {
       require(to != address(this));
 
       uint allowance = allowed[from][msg.sender];
@@ -208,10 +210,12 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
       issueVotes(msg.sender, to);
       Transfer(from, to, value);
 
+      return(true);
+
     }
 
     //ERC20 token approve method
-    function approve(address spender, uint value) {
+    function approve(address spender, uint value) returns (bool) {
 
       require(spender != address(this));
 
@@ -223,6 +227,8 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
 
       allowed[msg.sender][spender] = value;
       Approval(msg.sender, spender, value);
+
+      return(true);
 
     }
 
