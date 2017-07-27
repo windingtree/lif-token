@@ -233,21 +233,19 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
     }
 
     //ERC20 token approve method with data call/log option.
-    function approveData(address spender, uint value, bytes data, bool doCall) {
+    function approveData(address spender, uint value, bytes data) {
 
       require(spender != address(this));
 
       allowed[tx.origin][spender] = value;
 
-      if (doCall && spender.call(data))
-        ApprovalData(tx.origin, spender, value, data);
-      else if (!doCall)
+      if (spender.call(data))
         ApprovalData(tx.origin, spender, value, data);
 
     }
 
     // ERC20 transfer method with data call/log option.
-    function transferData(address to, uint value, bytes data, bool doCall) {
+    function transferData(address to, uint value, bytes data) {
 
       require(to != address(this));
 
@@ -258,15 +256,13 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
         issueVotes(tx.origin, to);
       }
 
-      if (doCall && to.call(data))
-        TransferData(tx.origin, to, value, data);
-      else if (!doCall)
+      if (to.call(data))
         TransferData(tx.origin, to, value, data);
 
     }
 
     // ERC20 transferFrom method with data call/log option.
-    function transferDataFrom(address from, address to, uint value, bytes data, bool doCall) {
+    function transferDataFrom(address from, address to, uint value, bytes data) {
 
       require(to != address(this));
 
@@ -279,9 +275,7 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
         issueVotes(tx.origin, to);
       }
 
-      if (doCall && to.call(data))
-        TransferData(tx.origin, to, value, data);
-      else if (!doCall)
+      if (to.call(data))
         TransferData(tx.origin, to, value, data);
 
     }
