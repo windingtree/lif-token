@@ -56,57 +56,27 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     fromAccount: jsc.nat(accounts.length - 1)
   });
 
-  let commandsGen = jsc.nonshrink(jsc.oneof([
-    waitBlockCommandGen,
-    checkPriceCommandGen,
-    submitBidCommandGen,
-    setStatusCommandGen,
-    checkCrowdsaleCommandGen
-  ]));
-
-  let crowdsaleTestInputGen = jsc.record({
-    commands: jsc.array(commandsGen),
-    crowdsale: jsc.nonshrink(crowdsaleGen)
-  });
-
-  let shouldCommandThrow = function(command, state) {
-    if (command.type == "waitBlock") {
-      return false;
-    } else if (command.type == "checkPrice") {
-      let crowdsale = state.crowdsaleData;
-      let { startBlock, endBlock } = crowdsale;
-      return help.shouldCrowdsaleGetPriceThrow(startBlock, endBlock, crowdsale);
-    } else if (command.type == "submitBid") {
-      let crowdsale = state.crowdsaleData,
-        { startBlock, endBlock, maxCap } = crowdsale,
-        { weiRaised } = state,
-        price = help.getCrowdsaleExpectedPrice(startBlock, endBlock, crowdsale),
-        weiCost = price * command.tokens,
-        soldTokens = _.sumBy(state.bids, (b) => b.tokens);
-
-      return (web3.eth.blockNumber < crowdsale.startBlock) ||
-        (web3.eth.blockNumber > crowdsale.endBlock) ||
-        (state.status != 2) ||
-        (weiCost == 0) ||
-        (weiRaised + weiCost > maxCap) ||
-        (soldTokens + command.tokens > crowdsale.maxTokens);
-    } else if (command.type == "setStatus") {
-      return false;
-    } else if (command.type == "checkCrowdsale") {
-      return state.status != 2 || web3.eth.blockNumber <= state.crowdsaleData.endBlock;
-    } else {
-      assert(false, "unknnow command " + command.type);
-    }
+  let runWaitBlockCommand = async (command, state) => {
+    await help.waitBlocks(1, accounts);
+    return state;
   }
 
-  let runCommand = async function(command, state) {
-    if (command.type == "waitBlock") {
-      await help.waitBlocks(1, accounts);
-      return state;
-    } else if (command.type == "checkPrice") {
-      let expectedPrice = help.getCrowdsaleExpectedPrice(
-        state.crowdsaleData.startBlock, state.crowdsaleData.endBlock, state.crowdsaleData
-      );
+  function ExceptionRunningCommand(e, state, command) {
+    this.error = e;
+    this.state = state;
+    this.command = command;
+  }
+
+  let runCheckPriceCommand = async (command, state) => {
+    let crowdsale = state.crowdsaleData;
+    let { startBlock, endBlock } = crowdsale;
+    let shouldThrow = help.shouldCrowdsaleGetPriceThrow(startBlock, endBlock, crowdsale);
+
+    let expectedPrice = help.getCrowdsaleExpectedPrice(
+      state.crowdsaleData.startBlock, state.crowdsaleData.endBlock, state.crowdsaleData
+    );
+
+    try {
       let price = parseFloat(await state.crowdsaleContract.getPrice());
 
       if (price != 0) {
@@ -116,44 +86,98 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         let maxPriceDiff = 0.000000001;
         assert.equal(true, Math.abs(priceDiffPercent) <= maxPriceDiff,
           "price diff should be less than " + maxPriceDiff + " but it's " + priceDiffPercent);
-      }  else {
+      } else {
         assert.equal(expectedPrice, price,
           "expected price is different! Expected: " + expectedPrice + ", actual: " + price + ". blocks: " + web3.eth.blockNumber + ", start/end: " +
           state.crowdsaleData.startBlock + "/" + state.crowdsaleData.endBlock);
       }
+      assert.equal(false, shouldThrow);
+    } catch(e) {
+      if (!shouldThrow) {
+        throw(new ExceptionRunningCommand(e, state, command));
+      }
+    }
+    return state;
+  }
 
-      return state;
-    } else if (command.type == "submitBid") {
-      let price = help.getCrowdsaleExpectedPrice(
-        state.crowdsaleData.startBlock, state.crowdsaleData.endBlock, state.crowdsaleData
-      );
-      let account = accounts[command.account],
-        weiCost = price * command.tokens;
-      help.debug("submitBid price:", price, "blockNumber:", web3.eth.blockNumber);
+  let runSubmitBidCommand = async (command, state) => {
+    let crowdsale = state.crowdsaleData,
+      { startBlock, endBlock, maxCap } = crowdsale,
+      { weiRaised } = state,
+      price = help.getCrowdsaleExpectedPrice(startBlock, endBlock, crowdsale),
+      weiCost = price * command.tokens,
+      soldTokens = _.sumBy(state.bids, (b) => b.tokens),
+      account = accounts[command.account];
+
+    let shouldThrow = (web3.eth.blockNumber < crowdsale.startBlock) ||
+      (web3.eth.blockNumber > crowdsale.endBlock) ||
+      (state.status != 2) ||
+      (weiCost == 0) ||
+      (weiRaised + weiCost > maxCap) ||
+      (soldTokens + command.tokens > crowdsale.maxTokens);
+
+    help.debug("submitBid price:", price, "blockNumber:", web3.eth.blockNumber);
+    try {
       await state.crowdsaleContract.submitBid({
         value: weiCost,
         from: account
       });
-      state.bids = _.concat(state.bids || [], {tokens: command.tokens, price: price, account: account});
+      assert.equal(false, shouldThrow);
+      state.bids = _.concat(state.bids, {tokens: command.tokens, price: price, account: account});
       state.weiRaised += weiCost;
-      return state;
-    } else if (command.type == "setStatus") {
+    } catch(e) {
+      if (!shouldThrow)
+        throw(new ExceptionRunningCommand(e, state, command));
+    }
+    return state;
+  }
+
+  let runSetStatusCommand = async (command, state) => {
+    let shouldThrow = false;
+    try {
       await state.crowdsaleContract.setStatus(command.status, {from: accounts[command.fromAccount]});
-      if (command.fromAccount == 0) // actually change status when sent from owner only
-        state.status = command.status;
-      return state;
-    } else if (command.type == "checkCrowdsale") {
+      assert.equal(false, shouldThrow);
+      state.status = command.status;
+    } catch(e) {
+      if (!shouldThrow)
+        throw(new ExceptionRunningCommand(e, state, command));
+    }
+    return state;
+  };
+
+  let runCheckCrowdsaleCommand = async (command, state) => {
+    let shouldThrow = (state.status != 2) ||
+      (web3.eth.blockNumber <= state.crowdsaleData.endBlock);
+
+    try {
       await state.crowdsaleContract.checkCrowdsale({from: accounts[command.fromAccount]});
       state.status = 3;
-      return state;
-    } else {
-      throw("Unknown command type " + command.type);
+    } catch (e) {
+      if (!shouldThrow)
+        throw(new ExceptionRunningCommand(e, state, command));   
     }
-  }
+
+    return state;
+  };
+
+  let commands = {
+    waitBlock: {gen: waitBlockCommandGen, run: runWaitBlockCommand},
+    checkPrice: {gen: checkPriceCommandGen, run: runCheckPriceCommand},
+    submitBid: {gen: submitBidCommandGen, run: runSubmitBidCommand},
+    setStatus: {gen: setStatusCommandGen, run: runSetStatusCommand},
+    checkCrowdsale: {gen: checkCrowdsaleCommandGen, run: runCheckCrowdsaleCommand}
+  };
+
+  let commandsGen = jsc.nonshrink(jsc.oneof(_.map(commands, (c) => c.gen)));
+
+  let crowdsaleTestInputGen = jsc.record({
+    commands: jsc.array(commandsGen),
+    crowdsale: jsc.nonshrink(crowdsaleGen)
+  });
 
   let runGeneratedCrowdsaleAndCommands = async function(input) {
     let blocksCount = 5;
-    let startBlock = web3.eth.blockNumber + 5;
+    let startBlock = web3.eth.blockNumber + 10;
     let endBlock = startBlock + blocksCount;
 
     help.debug("crowdsaleTestInput data:\n", input, startBlock, endBlock);
@@ -200,21 +224,26 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         status: 1 // crowdsale status
       };
 
-      for (let command of input.commands) {
-        let shouldThrow = shouldCommandThrow(command, state);
+      let findCommand = (type) => {
+        let command = commands[type];
+        if (command === undefined)
+          throw(new Error("unknown command " + type));
+        return command;
+      };
+
+      for (let commandParams of input.commands) {
+        let command = findCommand(commandParams.type);
         try {
-          state = await runCommand(command, state);
-          assert.equal(false, shouldThrow, "command " + JSON.stringify(command) + " should have thrown but it didn't.\nState: " + state);
+          state = await command.run(commandParams, state);
         }
         catch(error) {
           help.debug("An error occurred, block number: " + web3.eth.blockNumber + "\nError: " + error);
-          if (error instanceof chai.AssertionError) {
+          if (error instanceof ExceptionRunningCommand) {
+            throw("command " + JSON.stringify(commandParams) + " has thrown."
+              + "\nError: " + error);
+              //+ "\nState: " + stateJSON.stringify(state));
+          } else
             throw(error);
-          } else if (/unknown command/.test(String(error).toLowerCase())) {
-            throw(error);
-          } else {
-            assert.equal(true, shouldThrow, "command " + JSON.stringify(command) + " should not have thrown but it did.\nError: " + error + "\nState: " + state);
-          }
         }
       }
 
