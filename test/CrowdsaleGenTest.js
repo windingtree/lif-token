@@ -220,7 +220,6 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
       // check resulting in-memory and contract state
       assert.equal(state.status, parseInt(await crowdsale.status.call()));
-
     } finally {
       eventsWatcher.stopWatching();
     }
