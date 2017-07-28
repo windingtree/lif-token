@@ -227,9 +227,8 @@ contract('LifToken Crowdsale', function(accounts) {
 
     // Add discount of 250000 ethers
     // But first let's transfer the max tokens this discounted amount can buy
-    let minTokenPrice = minCap / maxTokens;
     let discountedAmount = 250000;
-    let maxDiscountTokens = (discountedAmount / minTokenPrice) * (presaleBonusRate + 100) / 100;
+    let maxDiscountTokens = help.getPresalePaymentMaxTokens(minCap, maxTokens, presaleBonusRate, discountedAmount);
     help.debug("Issuing & transferring max discount tokens: ", maxDiscountTokens, ", min token price:", minTokenPrice);
     await token.issueTokens(maxDiscountTokens);
     await token.transferFrom(token.address, crowdsale.address, help.lif2LifWei(maxDiscountTokens), {from: accounts[0]});

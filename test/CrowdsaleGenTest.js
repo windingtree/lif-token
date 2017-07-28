@@ -55,6 +55,13 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     type: jsc.constant("checkCrowdsale"),
     fromAccount: jsc.nat(accounts.length - 1)
   });
+  let addPresalePaymentCommandGen = jsc.record({
+    type: jsc.constant("addPresalePayment"),
+    account: jsc.nat(accounts.length - 1),
+    fromAccount: jsc.nat(accounts.length - 1),
+    amountEth: jsc.number(),
+    addFunding: jsc.bool // issue & transfer the necessary tokens for this payment?
+  });
 
   let runWaitBlockCommand = async (command, state) => {
     await help.waitBlocks(1, accounts);
@@ -161,12 +168,56 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     return state;
   };
 
+  let runAddPresalePaymentCommand = async (command, state) => {
+    let fundingShouldThrow = (state.crowdsaleData.startPriceEth == 0) ||
+      (command.amountEth <= 0) ||
+      (state.crowdsaleData.presaleBonusRate <= 0);
+
+    if (command.addFunding) {
+      let { minCap, presaleBonusRate, maxTokens } = state.crowdsaleData;
+      let minCapEth = web3.fromWei(minCap, 'ether');
+      let presaleMaxTokens = help.getPresalePaymentMaxTokens(minCapEth, maxTokens, presaleBonusRate, command.amountEth);
+      let presaleMaxWei = Math.ceil(help.lif2LifWei(presaleMaxTokens));
+
+      try {
+        await token.issueTokens(Math.ceil(presaleMaxTokens));
+        await token.transferFrom(token.address, state.crowdsaleContract.address, presaleMaxWei, {from: accounts[0]});
+        assert.equal(false, fundingShouldThrow);
+      } catch(e) {
+        if (!fundingShouldThrow)
+          throw(e);
+      }
+    }
+
+    // tweak shouldThrow based on the current blockNumber, right before the addPresalePayment tx
+    let shouldThrow = fundingShouldThrow ||
+      (command.fromAccount != 0) ||
+      !command.addFunding ||
+      (web3.eth.blockNumber >= state.crowdsaleData.startBlock);
+
+    try {
+      await state.crowdsaleContract.addPresalePayment(
+        accounts[command.account],
+        web3.toWei(command.amountEth, 'ether'),
+        {from: accounts[command.fromAccount]}
+      );
+      assert.equal(false, shouldThrow);
+      state.presalePayments = _.concat(state.presalePayments, {amountEth: command.amountEth, account: command.account});
+    } catch (e) {
+      if (!shouldThrow)
+        throw(new ExceptionRunningCommand(e, state, command));   
+    }
+
+    return state;
+  };
+
   let commands = {
     waitBlock: {gen: waitBlockCommandGen, run: runWaitBlockCommand},
     checkPrice: {gen: checkPriceCommandGen, run: runCheckPriceCommand},
     submitBid: {gen: submitBidCommandGen, run: runSubmitBidCommand},
     setStatus: {gen: setStatusCommandGen, run: runSetStatusCommand},
-    checkCrowdsale: {gen: checkCrowdsaleCommandGen, run: runCheckCrowdsaleCommand}
+    checkCrowdsale: {gen: checkCrowdsaleCommandGen, run: runCheckCrowdsaleCommand},
+    addPresalePayment: {gen: addPresalePaymentCommandGen, run: runAddPresalePaymentCommand}
   };
 
   let commandsGen = jsc.nonshrink(jsc.oneof(_.map(commands, (c) => c.gen)));
@@ -221,6 +272,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         crowdsaleData: crowdsaleData,
         crowdsaleContract: crowdsale,
         bids: [],
+        presalePayments: [],
         weiRaised: 0,
         status: 1 // crowdsale status
       };
@@ -304,6 +356,32 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         startPriceEth: 16, changePerBlock: 37, changePriceEth: 45,
         minCapEth: 23, maxCapEth: 32, maxTokens: 40,
         presaleBonusRate: 23, ownerPercentage: 27
+      }
+    };
+
+    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
+  });
+
+  it("runs a test with a presale Payment that should be accepted", async function() {
+    let crowdsaleAndCommands = {
+      commands: [
+        {
+          type: 'addPresalePayment',
+          account: 1,
+          fromAccount: 0,
+          addFunding: true,
+          amountEth: 11 },
+        { type: 'waitBlock' }
+      ],
+      crowdsale: {
+        startPriceEth: 5,
+        changePerBlock: 8,
+        changePriceEth: 1,
+        minCapEth: 4,
+        maxCapEth: 12,
+        maxTokens: 5,
+        presaleBonusRate: 8,
+        ownerPercentage: 12
       }
     };
 

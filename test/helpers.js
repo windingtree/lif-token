@@ -286,5 +286,10 @@ module.exports = {
 
   shouldCrowdsaleGetPriceThrow: function(startBlock, endBlock, crowdsaleData) {
     return this.getCrowdsaleExpectedPrice(startBlock, endBlock, crowdsaleData) < 0;
+  },
+
+  getPresalePaymentMaxTokens: function(minCap, maxTokens, presaleBonusRate, presaleAmountEth) {
+    let minTokenPrice = minCap / maxTokens;
+    return (presaleAmountEth / minTokenPrice) * (presaleBonusRate + 100) / 100;
   }
 };
