@@ -108,6 +108,7 @@ contract LifCrowdsale is Ownable, PullPayment {
     function addPresalePayment(address target, uint amount) external onlyOwner() onStatus(1,2) {
 
       require(presaleBonusRate > 0);
+      require(block.number < startBlock);
 
       totalPresaleWei = totalPresaleWei.add(amount);
       presalePayments[target] = amount;
