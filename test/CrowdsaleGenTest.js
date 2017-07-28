@@ -133,7 +133,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   }
 
   let runSetStatusCommand = async (command, state) => {
-    let shouldThrow = false;
+    let shouldThrow = (command.fromAccount != 0);
     try {
       await state.crowdsaleContract.setStatus(command.status, {from: accounts[command.fromAccount]});
       assert.equal(false, shouldThrow);
