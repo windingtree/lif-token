@@ -207,8 +207,10 @@ contract('LifCrowdsale Property-based test', function(accounts) {
           assert.equal(false, shouldThrow, "command " + JSON.stringify(command) + " should have thrown but it didn't.\nState: " + state);
         }
         catch(error) {
-          help.debug("An error occurred, block number: " + web3.eth.blockNumber);
+          help.debug("An error occurred, block number: " + web3.eth.blockNumber + "\nError: " + error);
           if (error instanceof chai.AssertionError) {
+            throw(error);
+          } else if (/unknown command/.test(String(error).toLowerCase())) {
             throw(error);
           } else {
             assert.equal(true, shouldThrow, "command " + JSON.stringify(command) + " should not have thrown but it did.\nError: " + error + "\nState: " + state);
