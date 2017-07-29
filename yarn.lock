@@ -6365,8 +6365,8 @@ yeast@0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/yeast/-/yeast-0.1.2.tgz#008e06d8094320c372dbc2f8ed76a0ca6c8ac419"
 
-zeppelin-solidity@1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/zeppelin-solidity/-/zeppelin-solidity-1.1.0.tgz#89fc596610dc273698e5580457eeb84add2213d7"
+zeppelin-solidity@1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/zeppelin-solidity/-/zeppelin-solidity-1.2.0.tgz#3a50c991a4da2f14fd79e66a2eb576407a6fb124"
   dependencies:
     truffle-hdwallet-provider "0.0.3"
