@@ -151,6 +151,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     try {
       await state.crowdsaleContract.checkCrowdsale({from: accounts[command.fromAccount]});
+      assert.equal(false, shouldThrow);
       state.status = 3;
     } catch (e) {
       if (!shouldThrow)
