@@ -208,7 +208,7 @@ contract('LifToken Crowdsale', function(accounts) {
     var maxCap = 40000000;
 
     // Add crowdsale stage to sell 7M tokens using dutch auction and the future payments.
-    var crowdsale = await help.createAndFundCrowdsale({
+    let crowdsale = await help.createAndFundCrowdsale({
       token: token, startBlock: startBlock, endBlock: endBlock,
       startPrice: web3.toWei(5, 'ether'),
       changePerBlock: 10, changePrice: web3.toWei(0.4, 'ether'),

@@ -282,8 +282,8 @@ contract LifCrowdsale is Ownable, PullPayment {
 
     // Set new status on the Crowdsale
     function setStatus(uint newStatus) {
-      if ((msg.sender == address(this)) || (msg.sender == owner))
-        status = newStatus;
+      require((msg.sender == address(this)) || (msg.sender == owner));
+      status = newStatus;
     }
 
     // Safe send of ethers to an address, try to use default send function and if dosent succeed it creates an asyncPayment

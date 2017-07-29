@@ -234,7 +234,7 @@ module.exports = {
     return crowdsale;
   },
 
-  simulateCrowdsale: async function(token, total, price, balances, accounts){
+  simulateCrowdsale: async function(token, total, price, balances, accounts) {
     var startBlock = web3.eth.blockNumber;
     var endBlock = web3.eth.blockNumber+10;
     var targetBalance = parseFloat(total*price);
