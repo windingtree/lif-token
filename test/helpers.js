@@ -65,7 +65,7 @@ module.exports = {
         let blocksLeft = blockNumber - web3.eth.blockNumber;
         if ((blocksLeft % 5) == 0)
           debug('Waiting ', blocksLeft, ' blocks..');
-        if (blocksLeft < 0) {
+        if (blocksLeft <= 0) {
           clearInterval(wait);
           resolve(true);
         } else {
