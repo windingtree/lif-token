@@ -97,6 +97,9 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
       mapping (address => uint) votes; // 0 = Vote not done, 1 = Positive, 2 = Negative.
     }
 
+    // Issue tokens event
+    event TokensIssued(uint tokens);
+
     // ERC20 Events
     event Transfer(address indexed from, address indexed to, uint value);
     event Approval(address indexed owner, address indexed spender, uint value);
@@ -158,6 +161,8 @@ contract LifToken is LifInterface, LifDAOInterface, Ownable, PullPayment {
       allowed[address(this)][owner] = allowed[address(this)][owner].add(formatedBalance);
       totalSupply = totalSupply.add(amount);
       maxSupply = maxSupply.add(amount);
+
+      TokensIssued(amount);
     }
 
     // Change contract variable functions
