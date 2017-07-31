@@ -36,7 +36,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   });
 
   let waitBlockCommandGen = jsc.record({
-    type: jsc.constant("waitBlock")
+    type: jsc.constant("waitBlock"),
+    blocks: jsc.nat
   });
   let checkPriceCommandGen = jsc.record({
     type: jsc.constant("checkPrice")
@@ -64,7 +65,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   });
 
   let runWaitBlockCommand = async (command, state) => {
-    await help.waitBlocks(1, accounts);
+    await help.waitBlocks(command.blocks, accounts);
     return state;
   }
 
@@ -354,7 +355,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     // added here to avoid future regressions
     let crowdsaleAndCommands = {
       commands: [
-        {"type":"waitBlock"}, {"type":"waitBlock"}, {"type":"waitBlock"},
+        {"type":"waitBlock","blocks":3},
         {"type":"setStatus","status":3,"fromAccount":0},
         {"type":"checkPrice"}
       ],
@@ -377,7 +378,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
           fromAccount: 0,
           addFunding: true,
           amountEth: 11 },
-        { type: 'waitBlock' }
+        { type: 'waitBlock', blocks: 3 }
       ],
       crowdsale: {
         startPriceEth: 5,
