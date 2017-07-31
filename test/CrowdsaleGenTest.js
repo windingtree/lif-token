@@ -131,6 +131,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       });
       assert.equal(false, shouldThrow);
       state.bids = _.concat(state.bids, {tokens: command.tokens, price: price, account: account});
+      state.lastPrice = price;
       state.weiRaised += weiCost;
     } catch(e) {
       if (!shouldThrow)
@@ -274,6 +275,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         bids: [],
         presalePayments: [],
         weiRaised: 0,
+        lastPrice: 0,
         status: 1 // crowdsale status
       };
 
@@ -302,6 +304,10 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
       // check resulting in-memory and contract state
       assert.equal(state.status, parseInt(await crowdsale.status.call()));
+      assert.equal(state.lastPrice, parseInt(await crowdsale.lastPrice.call()));
+      assert.equal(_.sumBy(state.bids, (b) => b.tokens), parseInt(await crowdsale.tokensSold.call()));
+      let inMemoryPresaleWei = web3.toWei(_.sumBy(state.presalePayments, (p) => p.amountEth), 'ether')
+      assert.equal(inMemoryPresaleWei, parseInt(await crowdsale.totalPresaleWei.call()));
     } finally {
       eventsWatcher.stopWatching();
     }
