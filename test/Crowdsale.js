@@ -285,8 +285,8 @@ contract('LifToken Crowdsale', function(accounts) {
     let submitBid = async function(i) {
       let bid = bids[i];
       price = parseFloat(await crowdsale.getPrice());
-      totalWeiSent += price * bid;
       totalTokensBought += bid;
+      totalWeiSent = price * totalTokensBought;
       help.debug("making bid for ", bid, " tokens at price ", price);
       await crowdsale.submitBid({value: price * bid, from: accounts[i + 1]});
     }
