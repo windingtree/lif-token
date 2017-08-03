@@ -1,3 +1,4 @@
+var advanceToBlock = require('./helpers/advanceToBlock');
 
 var LifToken = artifacts.require("./LifToken.sol");
 var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
@@ -53,26 +54,17 @@ module.exports = {
 
   debug: DEBUG_MODE ? console.log : function() {},
 
-  waitToBlock: function(blockNumber, accounts){
+  waitToBlock: async function(blockNumber, accounts){
     let debug = this.debug;
     let blocksLeft = blockNumber - web3.eth.blockNumber;
 
     if ((blocksLeft % 5) != 0 && blocksLeft > 0)
       debug('Waiting ', blocksLeft, ' blocks..');
 
-    return new Promise(function(resolve, reject) {
-      var wait = setInterval(function() {
-        let blocksLeft = blockNumber - web3.eth.blockNumber;
-        if ((blocksLeft % 5) == 0)
-          debug('Waiting ', blocksLeft, ' blocks..');
-        if (blocksLeft <= 0) {
-          clearInterval(wait);
-          resolve(true);
-        } else {
-          web3.eth.sendTransaction({from: accounts[0], to: accounts[1], value: 1});
-        }
-      }, 10);
-    });
+    if (blockNumber > web3.eth.blockNumber)
+      await advanceToBlock.advanceToBlock(blockNumber);
+    else
+      return false; // no need to wait
   },
 
   checkToken: async function(token, accounts, totalSupply, balances, votes, txsSent, txsReceived) {
