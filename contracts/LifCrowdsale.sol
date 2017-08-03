@@ -205,7 +205,9 @@ contract LifCrowdsale is Ownable, PullPayment {
       // previous bids tokens + presaleTokens + current bid tokens should not exceed totalTokens
       require(tokensSold.add(presaleTokens).add(tokensQty) <= totalTokens);
 
-      if (weiRaised.add(weiCost) > maxCap)
+      weiRaised = tokensSold.add(tokensQty).mul(tokenPrice);
+
+      if (weiRaised > maxCap)
         throw;
 
       //
@@ -219,7 +221,6 @@ contract LifCrowdsale is Ownable, PullPayment {
       lastPrice = tokenPrice;
       weiPayed[msg.sender] = weiCost;
       tokens[msg.sender] = tokensQty;
-      weiRaised = weiRaised.add(weiCost);
       tokensSold = tokensSold.add(tokensQty);
     }
 
