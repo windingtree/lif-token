@@ -1,3 +1,5 @@
+// Extracted from zeppelin-solidity helper in:
+// https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/test/helpers/advanceToBlock.js
 module.exports = {
   advanceBlock: function() {
     return new Promise((resolve, reject) => {
