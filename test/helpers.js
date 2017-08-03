@@ -54,14 +54,17 @@ module.exports = {
 
   debug: DEBUG_MODE ? console.log : function() {},
 
-  waitToBlock: function(blockNumber, accounts){
+  waitToBlock: async function(blockNumber, accounts){
     let debug = this.debug;
     let blocksLeft = blockNumber - web3.eth.blockNumber;
 
     if ((blocksLeft % 5) != 0 && blocksLeft > 0)
       debug('Waiting ', blocksLeft, ' blocks..');
 
-    return advanceToBlock.advanceToBlock(blockNumber);
+    if (blockNumber > web3.eth.blockNumber)
+      await advanceToBlock.advanceToBlock(blockNumber);
+    else
+      return false; // no need to wait
   },
 
   checkToken: async function(token, accounts, totalSupply, balances, votes, txsSent, txsReceived) {
