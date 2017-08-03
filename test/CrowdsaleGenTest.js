@@ -75,6 +75,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     this.command = command;
   }
 
+  ExceptionRunningCommand.prototype = Object.create(Error.prototype);
+  ExceptionRunningCommand.prototype.constructor = ExceptionRunningCommand;
+
   let runCheckPriceCommand = async (command, state) => {
     let crowdsale = state.crowdsaleData;
     let { startBlock, endBlock } = crowdsale;
@@ -295,8 +298,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         catch(error) {
           help.debug("An error occurred, block number: " + web3.eth.blockNumber + "\nError: " + error);
           if (error instanceof ExceptionRunningCommand) {
-            throw("command " + JSON.stringify(commandParams) + " has thrown."
-              + "\nError: " + error);
+            throw(new Error("command " + JSON.stringify(commandParams) + " has thrown."
+              + "\nError: " + error.error));
               //+ "\nState: " + stateJSON.stringify(state));
           } else
             throw(error);
