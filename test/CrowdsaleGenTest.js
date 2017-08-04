@@ -237,6 +237,15 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     crowdsale: jsc.nonshrink(crowdsaleGen)
   });
 
+  let checkCrowdsaleState = async function(state, crowdsaleData, crowdsale) {
+    assert.equal(state.status, parseInt(await crowdsale.status.call()));
+    assert.equal(state.lastPrice, parseInt(await crowdsale.lastPrice.call()));
+    assert.equal(_.sumBy(state.bids, (b) => b.tokens), parseInt(await crowdsale.tokensSold.call()));
+    let inMemoryPresaleWei = web3.toWei(_.sumBy(state.presalePayments, (p) => p.amountEth), 'ether')
+    assert.equal(inMemoryPresaleWei, parseInt(await crowdsale.totalPresaleWei.call()));
+    assert.equal(_.sumBy(state.bids, (b) => state.lastPrice * b.tokens), parseInt(await crowdsale.weiRaised.call()));
+  }
+
   let runGeneratedCrowdsaleAndCommands = async function(input) {
     let blocksCount = 10;
     let startBlock = web3.eth.blockNumber + 10;
@@ -312,12 +321,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       }
 
       // check resulting in-memory and contract state
-      assert.equal(state.status, parseInt(await crowdsale.status.call()));
-      assert.equal(state.lastPrice, parseInt(await crowdsale.lastPrice.call()));
-      assert.equal(_.sumBy(state.bids, (b) => b.tokens), parseInt(await crowdsale.tokensSold.call()));
-      let inMemoryPresaleWei = web3.toWei(_.sumBy(state.presalePayments, (p) => p.amountEth), 'ether')
-      assert.equal(inMemoryPresaleWei, parseInt(await crowdsale.totalPresaleWei.call()));
-      assert.equal(_.sumBy(state.bids, (b) => state.lastPrice * b.tokens), parseInt(await crowdsale.weiRaised.call()));
+      checkCrowdsaleState(state, crowdsaleData, crowdsale);
 
     } finally {
       eventsWatcher.stopWatching();
