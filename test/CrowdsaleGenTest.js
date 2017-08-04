@@ -15,6 +15,10 @@ let GEN_TESTS_QTY = parseInt(process.env.GEN_TESTS_QTY);
 if (isNaN(GEN_TESTS_QTY))
   GEN_TESTS_QTY = 50;
 
+let GEN_TESTS_TIMEOUT = parseInt(process.env.GEN_TESTS_TIMEOUT);
+if (isNaN(GEN_TESTS_TIMEOUT))
+  GEN_TESTS_TIMEOUT = 240;
+
 contract('LifCrowdsale Property-based test', function(accounts) {
   var token;
   var eventsWatcher;
@@ -425,7 +429,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   it("distributes tokens correctly on any combination of bids", async function() {
     // stateful prob based tests can take a long time to finish when shrinking...
-    this.timeout(240 * 1000);
+    this.timeout(GEN_TESTS_TIMEOUT * 1000);
 
     let property = jsc.forall(crowdsaleTestInputGen, async function(crowdsaleAndCommands) {
       return await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
