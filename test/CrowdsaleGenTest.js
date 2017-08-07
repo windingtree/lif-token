@@ -139,7 +139,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         from: account
       });
       assert.equal(false, shouldThrow);
-      state.bids = _.concat(state.bids, {tokens: command.tokens, price: price, account: account});
+      state.bids = _.concat(state.bids, {tokens: command.tokens, price: price, account: command.account});
       state.lastPrice = price;
       state.weiRaised += weiCost;
     } catch(e) {
