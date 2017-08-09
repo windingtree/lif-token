@@ -27,6 +27,11 @@ contract LifCrowdsale is Ownable {
   // amount of raised money in wei
   uint256 public weiRaised;
 
+  //  minimun amount of wei to be raised in order to succed
+  uint256 public minCap;
+
+  mapping(address => uint256) public purchases;
+
   bool public isFinalized = false;
 
   event Finalized();
@@ -41,12 +46,13 @@ contract LifCrowdsale is Ownable {
   event TokenPurchase(address indexed purchaser, address indexed beneficiary, uint256 value, uint256 amount);
 
 
-  function Crowdsale(uint256 _startBlock, uint256 _endBlock1, uint256 _endBlock2, uint256 _rate1, uint256 _rate2, address _foundationWallet, address _marketMaker) {
+  function Crowdsale(uint256 _startBlock, uint256 _endBlock1, uint256 _endBlock2, uint256 _rate1, uint256 _rate2, address _foundationWallet, address _marketMaker, uint256 _minCap) {
     require(_startBlock >= block.number);
     require(_endBlock1 > _startBlock);
     require(_endBlock2 > _endBlock1);
     require(_rate1 > 0);
     require(_rate2 > 0);
+    require(_minCap > 0);
     require(_foundationWallet != 0x0);
     require(_marketMaker != 0x0);
 
@@ -60,18 +66,19 @@ contract LifCrowdsale is Ownable {
     rate2 = _rate2;
     foundationWallet = _foundationWallet;
     marketMaker = _marketMaker;
+    minCap = _minCap;
   }
 
   // returns the current rate or 0 if current block is not within the crowdsale period
   function getRate() public constant returns (uint256) {
     if (block.number < startBlock)
-        return 0;
+      return 0;
     else if (block.number <= endBlock1)
-        return rate1;
+      return rate1;
     else if (block.number <= endBlock2)
-        return rate2;
+      return rate2;
     else
-        return 0;
+      return 0;
   }
 
   // fallback function can be used to buy tokens
@@ -96,6 +103,7 @@ contract LifCrowdsale is Ownable {
 
     // update state
     weiRaised = weiRaised.add(weiAmount);
+    purchases[beneficiary] = weiAmount;
 
     token.mint(beneficiary, tokens);
     TokenPurchase(msg.sender, beneficiary, weiAmount, tokens);
@@ -129,6 +137,19 @@ contract LifCrowdsale is Ownable {
     return block.number > endBlock2;
   }
 
+  // return the eth if the crowdsale didnt reach the minCap
+  function claimEth() public {
+    require(isFinalized);
+    require(hasEnded());
+    require(weiRaised < minCap);
+
+    uint256 toReturn = purchases[msg.sender];
+
+    require(toReturn > 0);
+
+    msg.sender.transfer(toReturn);
+  }
+
   // should be called after crowdsale ends, to do
   // some extra finalization work
   function finalize() public {
@@ -138,16 +159,20 @@ contract LifCrowdsale is Ownable {
     // TODO: transfer an extra 25% of tokens to the foundation, for the team
     // TODO: transfer 13% to founders with a vesting mechanism?
 
-    token.finishMinting();
-    forwardFunds();
-    token.unpause();
+    // foward founds and unpause token only if minCap is reached
+    if (weiRaised >= minCap) {
+      
+      token.finishMinting();
+      forwardFunds();
+      token.unpause();
 
-    token.transferOwnership(owner);
+      token.transferOwnership(owner);
+    
+    }
 
     Finalized();
 
     isFinalized = true;
   }
 
-  // TODO: add a claimEth in case of minCap not reached. Also add minCap :)
 }
