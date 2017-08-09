@@ -135,8 +135,10 @@ contract LifCrowdsale is Ownable {
     require(!isFinalized);
     require(hasEnded());
 
+    // TODO: transfer an extra 25% of tokens to the foundation, for the team
+    // TODO: transfer 13% to founders with a vesting mechanism?
+
     token.finishMinting();
-    // forwardFunds
     forwardFunds();
     token.unpause();
 
@@ -147,4 +149,5 @@ contract LifCrowdsale is Ownable {
     isFinalized = true;
   }
 
+  // TODO: add a claimEth in case of minCap not reached. Also add minCap :)
 }
