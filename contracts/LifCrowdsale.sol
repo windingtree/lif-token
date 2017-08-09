@@ -101,6 +101,14 @@ contract LifCrowdsale is Ownable {
     TokenPurchase(msg.sender, beneficiary, weiAmount, tokens);
   }
 
+  function addPresaleTokens(address beneficiary, uint256 tokens) onlyOwner {
+    require(block.number < startBlock);
+    require(beneficiary != address(0));
+    require(tokens > 0);
+
+    token.mint(beneficiary, tokens);
+  }
+
   // send ether to the fund collection wallet
   function forwardFunds() onlyOwner {
     foundationWallet.transfer(this.balance);
