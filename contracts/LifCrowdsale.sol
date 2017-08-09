@@ -137,11 +137,15 @@ contract LifCrowdsale is Ownable {
     return block.number > endBlock2;
   }
 
+  function funded() public constant returns (bool) {
+    return weiRaised >= minCap;
+  }
+
   // return the eth if the crowdsale didnt reach the minCap
   function claimEth() public {
     require(isFinalized);
     require(hasEnded());
-    require(weiRaised < minCap);
+    require(funded());
 
     uint256 toReturn = purchases[msg.sender];
 
@@ -161,14 +165,14 @@ contract LifCrowdsale is Ownable {
     // TODO: transfer 13% to founders with a vesting mechanism?
 
     // foward founds and unpause token only if minCap is reached
-    if (weiRaised >= minCap) {
-      
+    if (funded()) {
+
       token.finishMinting();
       forwardFunds();
       token.unpause();
 
       token.transferOwnership(owner);
-    
+
     }
 
     Finalized();
