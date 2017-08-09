@@ -131,7 +131,7 @@ contract LifCrowdsale is Ownable {
 
   // should be called after crowdsale ends, to do
   // some extra finalization work
-  function finalize() onlyOwner {
+  function finalize() public {
     require(!isFinalized);
     require(hasEnded());
 
