@@ -26,5 +26,9 @@ contract('LifToken', function(accounts) {
     done();
   });
 
-}
-
+  it("has name, symbol and decimals", async function() {
+    assert.equal("Líf", await token.NAME.call());
+    assert.equal("LIF", await token.SYMBOL.call());
+    assert.equal(18, await token.DECIMALS.call());
+  });
+});

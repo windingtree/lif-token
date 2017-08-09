@@ -1,16 +1,16 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.13;
 
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
-import "zeppelin-solidity/contracts/payment/PullPayment.sol";
+import "zeppelin-solidity/contracts/token/MintableToken.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 
 contract LifToken is MintableToken {
     // Token Name
-    string constant NAME = "Líf";
+    string public constant NAME = "Líf";
 
     // Token Symbol
-    string constant SYMBOL = "LIF";
+    string public constant SYMBOL = "LIF";
 
     // Token decimals
-    uint constant DECIMALS = 18;
+    uint public constant DECIMALS = 18;
 }

@@ -1,5 +1,10 @@
+pragma solidity ^0.4.13;
 
-contract Crowdsale {
+import "zeppelin-solidity/contracts/ownership/Ownable.sol";
+import "zeppelin-solidity/contracts/math/SafeMath.sol";
+import "./LifToken.sol";
+
+contract LifCrowdsale is Ownable {
   using SafeMath for uint256;
 
   // The token being sold
@@ -104,14 +109,14 @@ contract Crowdsale {
   // @return true if the transaction can buy tokens
   function validPurchase() internal constant returns (bool) {
     uint256 current = block.number;
-    bool withinPeriod = current >= startBlock && current <= endBlock;
+    bool withinPeriod = current >= startBlock && current <= endBlock2;
     bool nonZeroPurchase = msg.value != 0;
     return withinPeriod && nonZeroPurchase;
   }
 
   // @return true if crowdsale event has ended
   function hasEnded() public constant returns (bool) {
-    return block.number > endBlock;
+    return block.number > endBlock2;
   }
 
   // should be called after crowdsale ends, to do
