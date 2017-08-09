@@ -140,6 +140,8 @@ contract LifCrowdsale is Ownable {
     forwardFunds();
     token.unpause();
 
+    token.transferOwnership(owner);
+
     Finalized();
 
     isFinalized = true;
