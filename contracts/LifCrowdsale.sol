@@ -146,6 +146,7 @@ contract LifCrowdsale is Ownable {
     uint256 toReturn = purchases[msg.sender];
 
     require(toReturn > 0);
+    purchases[msg.sender] = 0;
 
     msg.sender.transfer(toReturn);
   }
