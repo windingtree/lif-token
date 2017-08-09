@@ -51,6 +51,8 @@ contract LifCrowdsale is Ownable {
     require(_marketMaker != 0x0);
 
     token = new LifToken();
+    token.pause();
+
     startBlock = _startBlock;
     endBlock1 = _endBlock1;
     endBlock2 = _endBlock2;
@@ -128,6 +130,7 @@ contract LifCrowdsale is Ownable {
     token.finishMinting();
     // forwardFunds
     forwardFunds();
+    token.unpause();
 
     Finalized();
 
