@@ -225,54 +225,60 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   });
 
   let runGeneratedCrowdsaleAndCommands = async function(input) {
-    let blocksCount = 10;
+    let blocksCount = 20;
     let startBlock = web3.eth.blockNumber + 10;
-    let endBlock = startBlock + blocksCount;
+    let endBlock1 = startBlock + 10;
+    let endBlock2 = startBlock + blocksCount;
 
-    help.debug("crowdsaleTestInput data:\n", input, startBlock, endBlock);
+    help.debug("crowdsaleTestInput data:\n", input, startBlock, endBlock2);
 
-    token = await LifToken.new(web3.toWei(10, 'ether'), 10000, 2, 3, 5, {from: accounts[0]});
-    eventsWatcher = token.allEvents();
-    eventsWatcher.watch(function(error, log){
-      if (LOG_EVENTS)
-        console.log('Event:', log.event, ':',log.args);
-    });
+    // eventsWatcher = token.allEvents();
+    // eventsWatcher.watch(function(error, log){
+    //   if (LOG_EVENTS)
+    //     console.log('Event:', log.event, ':',log.args);
+    // });
 
     try {
       let crowdsaleData = {
-        token: token,
-        startBlock: startBlock, endBlock: endBlock,
-        startPrice: web3.toWei(input.crowdsale.startPriceEth, 'ether'),
-        changePerBlock: input.crowdsale.changePerBlock, changePrice: web3.toWei(input.crowdsale.changePriceEth, 'ether'),
-        minCap: web3.toWei(input.crowdsale.minCapEth, 'ether'), maxCap: web3.toWei(input.crowdsale.maxCapEth, 'ether'),
-        maxTokens: input.crowdsale.maxTokens,
-        presaleBonusRate: input.crowdsale.presaleBonusRate, ownerPercentage: input.crowdsale.ownerPercentage
+        startBlock: startBlock, endBlock1: endBlock1, endBlock2: endBlock2,
+        rate1: input.crowdsale.rate1,
+        rate2: input.crowdsale.rate2,
+        foundationWallet: accounts[input.crowdsale.foundationWallet],
+        marketMaker: accounts[input.crowdsale.marketMaker],
+        minCap: web3.eth.toWei(input.crowdsale.minCapEth, 'ether')
       };
 
-      let crowdsale = await help.createCrowdsale(crowdsaleData, accounts);
+      let crowdsale = await new LifCrowdsale(
+        crowdsaleData.startBlock,
+        crowdsaleData.endBlock1,
+        crowdsaleData.endBlock2,
+        crowdsaleData.rate1,
+        crowdsaleData.rate2,
+        crowdsaleData.foundationWallet,
+        crowdsaleData.marketMaker,
+        crowdsaleData.minCap
+      );
+
+      let token = LifToken.at(crowdsale.token());
 
       help.debug("created crowdsale at address ", crowdsale.address);
 
-      // Assert price == 0 before start
-      let price = parseFloat(await crowdsale.getPrice());
-      assert.equal(price, web3.toWei(0, 'ether'));
-
-      await help.fundCrowdsale(crowdsaleData, crowdsale, accounts);
+      // Assert rate == 0 before start
+      let rate = parseFloat(await crowdsale.getRate());
+      assert.equal(rate, web3.toWei(0, 'ether'));
 
       // issue & transfer tokens for founders payments
-      let maxFoundersPaymentTokens = crowdsaleData.maxTokens * (crowdsaleData.ownerPercentage / 1000.0) ;
-      // TODO: is there a way to avoid the Math.ceil code? I don't think so, except by always issuing multiples of 1000 tokens...
-      await token.issueTokens(Math.ceil(maxFoundersPaymentTokens));
-      await token.transferFrom(token.address, crowdsale.address, help.lif2LifWei(maxFoundersPaymentTokens), {from: accounts[0]});
-
+      // let maxFoundersPaymentTokens = crowdsaleData.maxTokens * (crowdsaleData.ownerPercentage / 1000.0) ;
+      
       var state = {
         crowdsaleData: crowdsaleData,
         crowdsaleContract: crowdsale,
-        bids: [],
-        presalePayments: [],
+        token: token,
+        purchases: [],
+        presalePurchases: [],
         weiRaised: 0,
-        lastPrice: 0,
-        status: 1 // crowdsale status
+        crowdsalePaused: false,
+        tokenPaused: false
       };
 
       let findCommand = (type) => {
