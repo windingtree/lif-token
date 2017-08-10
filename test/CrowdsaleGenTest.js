@@ -34,8 +34,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     type: jsc.constant("waitBlock"),
     blocks: jsc.nat
   });
-  let checkPriceCommandGen = jsc.record({
-    type: jsc.constant("checkPrice")
+  let checkRateCommandGen = jsc.record({
+    type: jsc.constant("checkRate")
   });
   let buyTokensCommandGen = jsc.record({
     type: jsc.constant("buyTokens"),
@@ -73,36 +73,14 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   ExceptionRunningCommand.prototype = Object.create(Error.prototype);
   ExceptionRunningCommand.prototype.constructor = ExceptionRunningCommand;
 
-  let runCheckPriceCommand = async (command, state) => {
-    let crowdsale = state.crowdsaleData;
-    let { startBlock, endBlock } = crowdsale;
-    let shouldThrow = help.shouldCrowdsaleGetPriceThrow(startBlock, endBlock, crowdsale);
+  let runCheckRateCommand = async (command, state) => {
+    let expectedRate = help.getCrowdsaleExpectedRate(state.crowdsaleData, web3.eth.blockNumber);
+    let rate = parseFloat(await state.crowdsaleContract.getRate());
 
-    let expectedPrice = help.getCrowdsaleExpectedPrice(
-      state.crowdsaleData.startBlock, state.crowdsaleData.endBlock, state.crowdsaleData
-    );
+    assert.equal(expectedRate, rate,
+        "expected rate is different! Expected: " + expectedRate + ", actual: " + rate + ". blocks: " + web3.eth.blockNumber + ", start/end1/end2: " +
+        state.crowdsaleData.startBlock + "/" + state.crowdsaleData.endBlock1 + "/" + state.crowdsaleData.endBlock2);
 
-    try {
-      let price = parseFloat(await state.crowdsaleContract.getPrice());
-
-      if (price != 0) {
-        // all of this is because there is a small rounding difference sometimes.
-        let priceDiffPercent = (expectedPrice - price) / price;
-        help.debug("price", price, " expected price: ", expectedPrice, " diff %: ", priceDiffPercent);
-        let maxPriceDiff = 0.000000001;
-        assert.equal(true, Math.abs(priceDiffPercent) <= maxPriceDiff,
-          "price diff should be less than " + maxPriceDiff + " but it's " + priceDiffPercent);
-      } else {
-        assert.equal(expectedPrice, price,
-          "expected price is different! Expected: " + expectedPrice + ", actual: " + price + ". blocks: " + web3.eth.blockNumber + ", start/end: " +
-          state.crowdsaleData.startBlock + "/" + state.crowdsaleData.endBlock);
-      }
-      assert.equal(false, shouldThrow);
-    } catch(e) {
-      if (!shouldThrow) {
-        throw(new ExceptionRunningCommand(e, state, command));
-      }
-    }
     return state;
   }
 
@@ -110,7 +88,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     let crowdsale = state.crowdsaleData,
       { startBlock, endBlock, maxCap } = crowdsale,
       { weiRaised } = state,
-      price = help.getCrowdsaleExpectedPrice(startBlock, endBlock, crowdsale),
+      price = help.getCrowdsaleExpectedRate(startBlock, endBlock, crowdsale),
       weiCost = price * command.tokens,
       soldTokens = _.sumBy(state.bids, (b) => b.tokens),
       account = accounts[command.account];
@@ -214,8 +192,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   let commands = {
     waitBlock: {gen: waitBlockCommandGen, run: runWaitBlockCommand},
-    checkPrice: {gen: checkPriceCommandGen, run: runCheckPriceCommand},
-    buyTokens: {gen: buyTokensCommandGen, run: runBuyTokensCommand},
+    checkRate: {gen: checkRateCommandGen, run: runCheckRateCommand}
+    // buyTokens: {gen: buyTokensCommandGen, run: runBuyTokensCommand},
     // setStatus: {gen: setStatusCommandGen, run: runSetStatusCommand},
     // checkCrowdsale: {gen: checkCrowdsaleCommandGen, run: runCheckCrowdsaleCommand},
     // addPresalePayment: {gen: addPresalePaymentCommandGen, run: runAddPresalePaymentCommand}
@@ -258,7 +236,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         rate2: input.crowdsale.rate2,
         foundationWallet: accounts[input.crowdsale.foundationWallet],
         marketMaker: accounts[input.crowdsale.marketMaker],
-        minCap: web3.eth.toWei(input.crowdsale.minCapEth, 'ether')
+        minCap: web3.toWei(input.crowdsale.minCapEth, 'ether')
       };
 
       let crowdsale = await new LifCrowdsale(
@@ -276,9 +254,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
       help.debug("created crowdsale at address ", crowdsale.address);
 
-      // Assert rate == 0 before start
+      // Assert price == 0 before start
       let rate = parseFloat(await crowdsale.getRate());
-      assert.equal(rate, web3.toWei(0, 'ether'));
+      assert.equal(rate, 0);
 
       // issue & transfer tokens for founders payments
       // let maxFoundersPaymentTokens = crowdsaleData.maxTokens * (crowdsaleData.ownerPercentage / 1000.0) ;
@@ -321,7 +299,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       checkCrowdsaleState(state, crowdsaleData, crowdsale);
 
     } finally {
-      eventsWatcher.stopWatching();
+      // eventsWatcher.stopWatching();
     }
 
     return true;
@@ -390,7 +368,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       commands: [
         {"type":"waitBlock","blocks":3},
         {"type":"setStatus","status":3,"fromAccount":0},
-        {"type":"checkPrice"}
+        {"type":"checkRate"}
       ],
       crowdsale: {
         startPriceEth: 16, changePerBlock: 37, changePriceEth: 45,
@@ -428,7 +406,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
   });
 
-  it("distributes tokens correctly on any combination of bids", async function() {
+  it.only("distributes tokens correctly on any combination of bids", async function() {
     // stateful prob based tests can take a long time to finish when shrinking...
     this.timeout(GEN_TESTS_TIMEOUT * 1000);
 

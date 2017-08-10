@@ -264,20 +264,15 @@ module.exports = {
     return crowdsale;
   },
 
-  getCrowdsaleExpectedPrice: function(startBlock, endBlock, crowdsale) {
-    if (web3.eth.blockNumber < startBlock || web3.eth.blockNumber > endBlock) {
+  getCrowdsaleExpectedRate: function(crowdsale, blockNumber) {
+    let { startBlock, endBlock1, endBlock2, rate1, rate2 } = crowdsale;
+    if (blockNumber < startBlock || blockNumber > endBlock2) {
       return 0;
-    } else if (crowdsale.changePerBlock == 0) {
-      return -1; // this should throw anyways
-    } else {
-      let blocksCount = ((web3.eth.blockNumber > endBlock) ? endBlock : web3.eth.blockNumber) - startBlock;
-      this.debug("price data: ", crowdsale.startPrice, blocksCount, crowdsale.changePrice, crowdsale.changePerBlock);
-      return crowdsale.startPrice - Math.floor(blocksCount / crowdsale.changePerBlock) * crowdsale.changePrice;
+    } else if (blockNumber <= endBlock1) {
+      return rate1;
+    } else if (blockNumber <= endBlock2) {
+      return rate2;
     }
-  },
-
-  shouldCrowdsaleGetPriceThrow: function(startBlock, endBlock, crowdsaleData) {
-    return this.getCrowdsaleExpectedPrice(startBlock, endBlock, crowdsaleData) < 0;
   },
 
   getPresalePaymentMaxTokens: function(minCap, maxTokens, presaleBonusRate, presaleAmountEth) {

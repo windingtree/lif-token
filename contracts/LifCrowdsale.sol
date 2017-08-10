@@ -46,7 +46,7 @@ contract LifCrowdsale is Ownable {
   event TokenPurchase(address indexed purchaser, address indexed beneficiary, uint256 value, uint256 amount);
 
 
-  function Crowdsale(uint256 _startBlock, uint256 _endBlock1, uint256 _endBlock2, uint256 _rate1, uint256 _rate2, address _foundationWallet, address _marketMaker, uint256 _minCap) {
+  function LifCrowdsale(uint256 _startBlock, uint256 _endBlock1, uint256 _endBlock2, uint256 _rate1, uint256 _rate2, address _foundationWallet, address _marketMaker, uint256 _minCap) {
     require(_startBlock >= block.number);
     require(_endBlock1 > _startBlock);
     require(_endBlock2 > _endBlock1);
