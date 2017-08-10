@@ -7,7 +7,6 @@ var help = require("./helpers");
 
 var LifToken = artifacts.require("./LifToken.sol");
 var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
-var FuturePayment = artifacts.require("./FuturePayment.sol");
 
 const LOG_EVENTS = true;
 
@@ -19,20 +18,12 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   var token;
   var eventsWatcher;
 
-  let crowdsaleRawGen = jsc.record({
-    startPriceEth: jsc.nat,
-    changePerBlock: jsc.nat,
-    changePriceEth: jsc.nonshrink(jsc.nat),
-    minCapEth: jsc.nat,
-    maxCapEth: jsc.nat,
-    maxTokens: jsc.nat,
-    presaleBonusRate: jsc.nonshrink(jsc.nat),
-    ownerPercentage: jsc.nonshrink(jsc.nat)
-  });
-
-  let crowdsaleGen = jsc.suchthat(crowdsaleRawGen, function(c) {
-    return (c.maxCapEth >= c.minCapEth) &&
-      (c.changePerBlock > 0);
+  let crowdsaleGen = jsc.record({
+    rate1: jsc.nat,
+    rate2: jsc.nat,
+    foundationWallet: jsc.nat(accounts.length - 1),
+    marketMaker: jsc.nat(accounts.length - 1),
+    minCapEth: jsc.number
   });
 
   let waitBlockCommandGen = jsc.record({
@@ -42,10 +33,10 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   let checkPriceCommandGen = jsc.record({
     type: jsc.constant("checkPrice")
   });
-  let submitBidCommandGen = jsc.record({
-    type: jsc.constant("submitBid"),
+  let buyTokensCommandGen = jsc.record({
+    type: jsc.constant("buyTokens"),
     account: jsc.nat(accounts.length - 1),
-    tokens: jsc.nat
+    eth: jsc.nat
   });
   let setStatusCommandGen = jsc.record({
     type: jsc.constant("setStatus"),
@@ -111,7 +102,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     return state;
   }
 
-  let runSubmitBidCommand = async (command, state) => {
+  let runBuyTokensCommand = async (command, state) => {
     let crowdsale = state.crowdsaleData,
       { startBlock, endBlock, maxCap } = crowdsale,
       { weiRaised } = state,
@@ -127,10 +118,10 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       (weiRaised + weiCost > maxCap) ||
       (soldTokens + command.tokens > crowdsale.maxTokens);
 
-    help.debug("submitBid price:", price, "blockNumber:", web3.eth.blockNumber);
+    help.debug("buyTokens price:", price, "blockNumber:", web3.eth.blockNumber);
 
     try {
-      await state.crowdsaleContract.submitBid({
+      await state.crowdsaleContract.buyTokens({
         value: weiCost,
         from: account
       });
@@ -220,10 +211,10 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   let commands = {
     waitBlock: {gen: waitBlockCommandGen, run: runWaitBlockCommand},
     checkPrice: {gen: checkPriceCommandGen, run: runCheckPriceCommand},
-    submitBid: {gen: submitBidCommandGen, run: runSubmitBidCommand},
-    setStatus: {gen: setStatusCommandGen, run: runSetStatusCommand},
-    checkCrowdsale: {gen: checkCrowdsaleCommandGen, run: runCheckCrowdsaleCommand},
-    addPresalePayment: {gen: addPresalePaymentCommandGen, run: runAddPresalePaymentCommand}
+    buyTokens: {gen: buyTokensCommandGen, run: runBuyTokensCommand},
+    // setStatus: {gen: setStatusCommandGen, run: runSetStatusCommand},
+    // checkCrowdsale: {gen: checkCrowdsaleCommandGen, run: runCheckCrowdsaleCommand},
+    // addPresalePayment: {gen: addPresalePaymentCommandGen, run: runAddPresalePaymentCommand}
   };
 
   let commandsGen = jsc.nonshrink(jsc.oneof(_.map(commands, (c) => c.gen)));
@@ -322,11 +313,11 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     return true;
   }
 
-  it("should throw when submitBid is for 0 tokens", async function() {
+  it("should throw when buyTokens is for 0 tokens", async function() {
     let crowdsaleAndCommands = {
       commands: [
         {"type":"setStatus","status":2,"fromAccount":0},
-        {"type":"submitBid","account":7,"tokens":0}
+        {"type":"buyTokens","account":7,"tokens":0}
       ],
       crowdsale: {
         startPriceEth: 3, changePerBlock: 1, changePriceEth: 0,
@@ -343,8 +334,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     let crowdsaleAndCommands = {
       commands: [
         {"type":"setStatus","status":2,"fromAccount":0},
-        {"type":"submitBid","account":1,"tokens":2},
-        {"type":"submitBid","account":2,"tokens":2}
+        {"type":"buyTokens","account":1,"tokens":2},
+        {"type":"buyTokens","account":2,"tokens":2}
       ],
       crowdsale: {
         startPriceEth: 5, changePerBlock: 5, changePriceEth: 0,
@@ -362,11 +353,11 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       commands: [
         {"type":"setStatus","status":2,"fromAccount":0},
         {"type":"waitBlock","blocks":4},
-        {"type":"submitBid","account":1,"tokens":2},
+        {"type":"buyTokens","account":1,"tokens":2},
         {"type":"waitBlock","blocks":4},
-        {"type":"submitBid","account":2,"tokens":2},
+        {"type":"buyTokens","account":2,"tokens":2},
         {"type":"waitBlock","blocks":4},
-        {"type":"submitBid","account":2,"tokens":2}
+        {"type":"buyTokens","account":2,"tokens":2}
       ],
       crowdsale: {
         startPriceEth: 5, changePerBlock: 3, changePriceEth: 0.4,
