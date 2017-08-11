@@ -94,8 +94,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     // TODO: use fallback
     // TODO: add beneficiary != account
 
-    let shouldThrow = (web3.eth.blockNumber < startBlock) ||
-      (web3.eth.blockNumber > endBlock2) ||
+    let shouldThrow = (nextBlock < startBlock) ||
+      (nextBlock > endBlock2) ||
       (state.crowdsalePaused) ||
       (weiCost == 0);
 
