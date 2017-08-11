@@ -91,6 +91,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       nextBlock = web3.eth.blockNumber + 1,
       account = accounts[command.account];
 
+    // TODO: use fallback
+    // TODO: add beneficiary != account
 
     let shouldThrow = (web3.eth.blockNumber < startBlock) ||
       (web3.eth.blockNumber > endBlock2) ||
