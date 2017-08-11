@@ -40,6 +40,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   let buyTokensCommandGen = jsc.record({
     type: jsc.constant("buyTokens"),
     account: jsc.nat(accounts.length - 1),
+    beneficiary: jsc.nat(accounts.length - 1),
+    useFallback: jsc.bool,
     eth: jsc.nat
   });
   let setStatusCommandGen = jsc.record({
@@ -89,10 +91,10 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       { startBlock, endBlock2 } = crowdsale,
       weiCost = parseInt(web3.toWei(command.eth, 'ether')),
       nextBlock = web3.eth.blockNumber + 1,
-      account = accounts[command.account];
-
-    // TODO: use fallback
-    // TODO: add beneficiary != account
+      rate = help.getCrowdsaleExpectedRate(crowdsale, nextBlock),
+      tokens = command.eth * rate,
+      account = accounts[command.account],
+      beneficiaryAccount = accounts[command.beneficiary];
 
     let shouldThrow = (nextBlock < startBlock) ||
       (nextBlock > endBlock2) ||
@@ -100,19 +102,17 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       (weiCost == 0);
 
     try {
-      let rate = help.getCrowdsaleExpectedRate(crowdsale, nextBlock),
-        tokens = command.eth * rate;
-
       // help.debug("buyTokens rate:", rate, "eth:", command.eth, "endBlocks:", crowdsale.endBlock1, endBlock2, "blockNumber:", nextBlock);
 
-      await state.crowdsaleContract.buyTokens(account, {
-        value: weiCost,
-        from: account
-      });
+      if (command.useFallback) {
+        await state.crowdsaleContract.sendTransaction({value: weiCost, from: account});
+      } else {
+        await state.crowdsaleContract.buyTokens(beneficiaryAccount, {value: weiCost, from: account});
+      }
 
       assert.equal(false, shouldThrow, "buyTokens should have thrown but it didn't");
       state.purchases = _.concat(state.purchases,
-        {tokens: tokens, rate: rate, wei: weiCost, account: command.account}
+        {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
       );
       state.weiRaised += weiCost;
     } catch(e) {
