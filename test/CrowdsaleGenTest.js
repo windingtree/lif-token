@@ -27,7 +27,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     rate2: jsc.nat,
     foundationWallet: jsc.nat(accounts.length - 1),
     marketMaker: jsc.nat(accounts.length - 1),
-    minCapEth: jsc.number
+    minCapEth: jsc.number(0) // minCap should be >= 0
   });
 
   let waitBlockCommandGen = jsc.record({
@@ -229,6 +229,13 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     //     console.log('Event:', log.event, ':',log.args);
     // });
 
+    let {rate1, rate2, minCapEth} = input.crowdsale;
+    let shouldThrow = (rate1 == 0) ||
+      (rate2 == 0) ||
+      (startBlock >= endBlock1) ||
+      (endBlock1 >= endBlock2) ||
+      (minCapEth == 0);
+
     try {
       let crowdsaleData = {
         startBlock: startBlock, endBlock1: endBlock1, endBlock2: endBlock2,
@@ -249,6 +256,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         crowdsaleData.marketMaker,
         crowdsaleData.minCap
       );
+
+      assert(false, shouldThrow, "create Crowdsale should have thrown but it didn't");
 
       let token = LifToken.at(await crowdsale.token());
 
@@ -298,6 +307,11 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       // check resulting in-memory and contract state
       // checkCrowdsaleState(state, crowdsaleData, crowdsale);
 
+    } catch(e) {
+      if (!shouldThrow) {
+        // only re-throw if we were not expecting this exception
+        throw(e);
+      }
     } finally {
       // eventsWatcher.stopWatching();
     }
