@@ -339,7 +339,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       commands: [ { type: 'checkRate' },
         { type: 'checkRate' },
         { type: 'waitBlock', blocks: 19 },
-        { type: 'buyTokens', account: 2, eth: 12 } ],
+        { type: 'buyTokens', beneficiary: 3, account: 2, eth: 12 } ],
       crowdsale: { rate1: 16,
         rate2: 14,
         foundationWallet: 2,
