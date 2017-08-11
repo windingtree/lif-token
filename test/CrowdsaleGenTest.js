@@ -46,10 +46,10 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     useFallback: jsc.bool,
     eth: jsc.nat
   });
-  let setStatusCommandGen = jsc.record({
-    type: jsc.constant("setStatus"),
-    status: jsc.elements([1,2,3]),
-    fromAccount: jsc.nat(accounts.length - 1)
+  let pauseCrowdsaleCommandGen = jsc.record({
+    type: jsc.constant("pauseCrowdsale"),
+    pause: jsc.bool,
+    fromAccount: accountGen
   });
   let checkCrowdsaleCommandGen = jsc.record({
     type: jsc.constant("checkCrowdsale"),
@@ -124,12 +124,19 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     return state;
   }
 
-  let runSetStatusCommand = async (command, state) => {
-    let shouldThrow = (command.fromAccount != 0);
+  let runPauseCrowdsaleCommand = async (command, state) => {
+    let shouldThrow = (state.crowdsalePaused == command.pause) ||
+      (command.fromAccount != 0);
+
+    help.debug("pausing crowdsale, previous state:", state.crowdsalePaused, "new state:", command.pause);
     try {
-      await state.crowdsaleContract.setStatus(command.status, {from: accounts[command.fromAccount]});
+      if (command.pause) {
+        await state.crowdsaleContract.pause({from: accounts[command.fromAccount]});
+      } else {
+        await state.crowdsaleContract.unpause({from: accounts[command.fromAccount]});
+      }
       assert.equal(false, shouldThrow);
-      state.status = command.status;
+      state.crowdsalePaused = command.pause;
     } catch(e) {
       if (!shouldThrow)
         throw(new ExceptionRunningCommand(e, state, command));
@@ -199,8 +206,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   let commands = {
     waitBlock: {gen: waitBlockCommandGen, run: runWaitBlockCommand},
     checkRate: {gen: checkRateCommandGen, run: runCheckRateCommand},
-    buyTokens: {gen: buyTokensCommandGen, run: runBuyTokensCommand}
-    // setStatus: {gen: setStatusCommandGen, run: runSetStatusCommand},
+    buyTokens: {gen: buyTokensCommandGen, run: runBuyTokensCommand},
+    pauseCrowdsale: {gen: pauseCrowdsaleCommandGen, run: runPauseCrowdsaleCommand}
     // checkCrowdsale: {gen: checkCrowdsaleCommandGen, run: runCheckCrowdsaleCommand},
     // addPresalePayment: {gen: addPresalePaymentCommandGen, run: runAddPresalePaymentCommand}
   };
