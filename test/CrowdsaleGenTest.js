@@ -86,30 +86,32 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   let runBuyTokensCommand = async (command, state) => {
     let crowdsale = state.crowdsaleData,
-      { startBlock, endBlock, maxCap } = crowdsale,
-      { weiRaised } = state,
-      price = help.getCrowdsaleExpectedRate(startBlock, endBlock, crowdsale),
-      weiCost = price * command.tokens,
-      soldTokens = _.sumBy(state.bids, (b) => b.tokens),
+      { startBlock, endBlock2 } = crowdsale,
+      weiCost = parseInt(web3.toWei(command.eth, 'ether')),
+      nextBlock = web3.eth.blockNumber + 1,
       account = accounts[command.account];
 
-    let shouldThrow = (web3.eth.blockNumber < crowdsale.startBlock) ||
-      (web3.eth.blockNumber > crowdsale.endBlock) ||
-      (state.status != 2) ||
-      (weiCost == 0) ||
-      (weiRaised + weiCost > maxCap) ||
-      (soldTokens + command.tokens > crowdsale.maxTokens);
 
-    help.debug("buyTokens price:", price, "blockNumber:", web3.eth.blockNumber);
+    let shouldThrow = (web3.eth.blockNumber < startBlock) ||
+      (web3.eth.blockNumber > endBlock2) ||
+      (state.crowdsalePaused) ||
+      (weiCost == 0);
 
     try {
-      await state.crowdsaleContract.buyTokens({
+      let rate = help.getCrowdsaleExpectedRate(crowdsale, nextBlock),
+        tokens = command.eth * rate;
+
+      // help.debug("buyTokens rate:", rate, "eth:", command.eth, "endBlocks:", crowdsale.endBlock1, endBlock2, "blockNumber:", nextBlock);
+
+      await state.crowdsaleContract.buyTokens(account, {
         value: weiCost,
         from: account
       });
-      assert.equal(false, shouldThrow);
-      state.bids = _.concat(state.bids, {tokens: command.tokens, price: price, account: command.account});
-      state.lastPrice = price;
+
+      assert.equal(false, shouldThrow, "buyTokens should have thrown but it didn't");
+      state.purchases = _.concat(state.purchases,
+        {tokens: tokens, rate: rate, wei: weiCost, account: command.account}
+      );
       state.weiRaised += weiCost;
     } catch(e) {
       if (!shouldThrow)
@@ -192,8 +194,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   let commands = {
     waitBlock: {gen: waitBlockCommandGen, run: runWaitBlockCommand},
-    checkRate: {gen: checkRateCommandGen, run: runCheckRateCommand}
-    // buyTokens: {gen: buyTokensCommandGen, run: runBuyTokensCommand},
+    checkRate: {gen: checkRateCommandGen, run: runCheckRateCommand},
+    buyTokens: {gen: buyTokensCommandGen, run: runBuyTokensCommand}
     // setStatus: {gen: setStatusCommandGen, run: runSetStatusCommand},
     // checkCrowdsale: {gen: checkCrowdsaleCommandGen, run: runCheckCrowdsaleCommand},
     // addPresalePayment: {gen: addPresalePaymentCommandGen, run: runAddPresalePaymentCommand}
@@ -207,12 +209,14 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   });
 
   let checkCrowdsaleState = async function(state, crowdsaleData, crowdsale) {
-    assert.equal(state.status, parseInt(await crowdsale.status.call()));
-    assert.equal(state.lastPrice, parseInt(await crowdsale.lastPrice.call()));
-    assert.equal(_.sumBy(state.bids, (b) => b.tokens), parseInt(await crowdsale.tokensSold.call()));
+    assert.equal(state.crowdsalePaused, await crowdsale.paused.call());
+    assert.equal(_.sumBy(state.purchases, (b) => b.tokens), help.lifWei2Lif(parseFloat(await crowdsale.tokensSold.call())));
+    /*
     let inMemoryPresaleWei = web3.toWei(_.sumBy(state.presalePayments, (p) => p.amountEth), 'ether')
     assert.equal(inMemoryPresaleWei, parseInt(await crowdsale.totalPresaleWei.call()));
-    assert.equal(_.sumBy(state.bids, (b) => state.lastPrice * b.tokens), parseInt(await crowdsale.weiRaised.call()));
+    */
+    help.debug("checking purchases total wei, purchases:", JSON.stringify(state.purchases));
+    assert.equal(_.sumBy(state.purchases, (b) => b.wei), parseInt(await crowdsale.weiRaised.call()));
   }
 
   let runGeneratedCrowdsaleAndCommands = async function(input) {
@@ -261,15 +265,12 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
       let token = LifToken.at(await crowdsale.token());
 
-      help.debug("created crowdsale at address ", crowdsale.address);
 
-      // Assert price == 0 before start
-      let rate = parseFloat(await crowdsale.getRate());
-      assert.equal(rate, 0);
+      help.debug("created crowdsale at address ", crowdsale.address);
 
       // issue & transfer tokens for founders payments
       // let maxFoundersPaymentTokens = crowdsaleData.maxTokens * (crowdsaleData.ownerPercentage / 1000.0) ;
-      
+
       var state = {
         crowdsaleData: crowdsaleData,
         crowdsaleContract: crowdsale,
@@ -305,7 +306,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       }
 
       // check resulting in-memory and contract state
-      // checkCrowdsaleState(state, crowdsaleData, crowdsale);
+      await checkCrowdsaleState(state, crowdsaleData, crowdsale);
 
     } catch(e) {
       if (!shouldThrow) {
@@ -416,6 +417,21 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         ownerPercentage: 12
       }
     };
+
+    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
+  });
+
+  it("calculates correct rate on the boundaries between endBlock1 and endBlock2", async function() {
+    let crowdsaleAndCommands = {
+      commands: [ { type: 'checkRate' },
+        { type: 'checkRate' },
+        { type: 'waitBlock', blocks: 19 },
+        { type: 'buyTokens', account: 2, eth: 12 } ],
+      crowdsale: { rate1: 16,
+        rate2: 14,
+        foundationWallet: 2,
+        marketMaker: 8,
+        minCapEth: 72.68016394227743 } };
 
     await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
   });
