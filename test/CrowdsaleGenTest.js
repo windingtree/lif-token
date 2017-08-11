@@ -257,7 +257,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         crowdsaleData.minCap
       );
 
-      assert(false, shouldThrow, "create Crowdsale should have thrown but it didn't");
+      assert.equal(false, shouldThrow, "create Crowdsale should have thrown but it didn't");
 
       let token = LifToken.at(await crowdsale.token());
 
