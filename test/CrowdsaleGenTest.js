@@ -229,18 +229,14 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     help.debug("crowdsaleTestInput data:\n", input, startBlock, endBlock2);
 
-    // eventsWatcher = token.allEvents();
-    // eventsWatcher.watch(function(error, log){
-    //   if (LOG_EVENTS)
-    //     console.log('Event:', log.event, ':',log.args);
-    // });
-
     let {rate1, rate2, minCapEth} = input.crowdsale;
     let shouldThrow = (rate1 == 0) ||
       (rate2 == 0) ||
       (startBlock >= endBlock1) ||
       (endBlock1 >= endBlock2) ||
       (minCapEth == 0);
+
+    var eventsWatcher;
 
     try {
       let crowdsaleData = {
@@ -267,6 +263,11 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
       let token = LifToken.at(await crowdsale.token());
 
+      eventsWatcher = crowdsale.allEvents();
+      eventsWatcher.watch(function(error, log){
+        if (LOG_EVENTS)
+          console.log('Event:', log.event, ':',log.args);
+      });
 
       help.debug("created crowdsale at address ", crowdsale.address);
 
@@ -316,7 +317,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         throw(e);
       }
     } finally {
-      // eventsWatcher.stopWatching();
+      if (eventsWatcher) {
+        eventsWatcher.stopWatching();
+      }
     }
 
     return true;
