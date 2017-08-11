@@ -27,7 +27,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     rate2: jsc.nat,
     foundationWallet: jsc.nat(accounts.length - 1),
     marketMaker: jsc.nat(accounts.length - 1),
-    minCapEth: jsc.number(0, 9999999999)
+    minCapEth: jsc.number(0, 200)
   });
 
   let waitBlockCommandGen = jsc.record({
