@@ -325,107 +325,6 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     return true;
   }
 
-  it("should throw when buyTokens is for 0 tokens", async function() {
-    let crowdsaleAndCommands = {
-      commands: [
-        {"type":"setStatus","status":2,"fromAccount":0},
-        {"type":"buyTokens","account":7,"tokens":0}
-      ],
-      crowdsale: {
-        startPriceEth: 3, changePerBlock: 1, changePriceEth: 0,
-        minCapEth: 20, maxCapEth: 33, maxTokens: 16,
-        presaleBonusRate: 32, ownerPercentage: 0
-      }
-    };
-
-    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
-  });
-
-  it("should raise when sum of bids exceed total tokens to be sold", async function() {
-
-    let crowdsaleAndCommands = {
-      commands: [
-        {"type":"setStatus","status":2,"fromAccount":0},
-        {"type":"buyTokens","account":1,"tokens":2},
-        {"type":"buyTokens","account":2,"tokens":2}
-      ],
-      crowdsale: {
-        startPriceEth: 5, changePerBlock: 5, changePriceEth: 0,
-        minCapEth: 1, maxCapEth: 2, maxTokens: 3,
-        presaleBonusRate: 5, ownerPercentage: 3
-      }
-    };
-
-    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
-  });
-
-  it("should work ok when there are multiple bids with different prices", async function() {
-
-    let crowdsaleAndCommands = {
-      commands: [
-        {"type":"setStatus","status":2,"fromAccount":0},
-        {"type":"waitBlock","blocks":4},
-        {"type":"buyTokens","account":1,"tokens":2},
-        {"type":"waitBlock","blocks":4},
-        {"type":"buyTokens","account":2,"tokens":2},
-        {"type":"waitBlock","blocks":4},
-        {"type":"buyTokens","account":2,"tokens":2}
-      ],
-      crowdsale: {
-        startPriceEth: 5, changePerBlock: 3, changePriceEth: 0.4,
-        minCapEth: 1, maxCapEth: 70, maxTokens: 10,
-        presaleBonusRate: 5, ownerPercentage: 3
-      }
-    };
-
-    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
-  });
-
-  it("should consider endBlock part of the crowdsale", async function() {
-    // this case found by the generative test, it was a bug on the getPrice function
-    // added here to avoid future regressions
-    let crowdsaleAndCommands = {
-      commands: [
-        {"type":"waitBlock","blocks":3},
-        {"type":"setStatus","status":3,"fromAccount":0},
-        {"type":"checkRate"}
-      ],
-      crowdsale: {
-        startPriceEth: 16, changePerBlock: 37, changePriceEth: 45,
-        minCapEth: 23, maxCapEth: 32, maxTokens: 40,
-        presaleBonusRate: 23, ownerPercentage: 27
-      }
-    };
-
-    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
-  });
-
-  it("runs a test with a presale Payment that should be accepted", async function() {
-    let crowdsaleAndCommands = {
-      commands: [
-        {
-          type: 'addPresalePayment',
-          account: 1,
-          fromAccount: 0,
-          addFunding: true,
-          amountEth: 11 },
-        { type: 'waitBlock', blocks: 3 }
-      ],
-      crowdsale: {
-        startPriceEth: 5,
-        changePerBlock: 8,
-        changePriceEth: 1,
-        minCapEth: 4,
-        maxCapEth: 12,
-        maxTokens: 5,
-        presaleBonusRate: 8,
-        ownerPercentage: 12
-      }
-    };
-
-    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
-  });
-
   it("calculates correct rate on the boundaries between endBlock1 and endBlock2", async function() {
     let crowdsaleAndCommands = {
       commands: [ { type: 'checkRate' },
@@ -441,7 +340,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
   });
 
-  it.only("distributes tokens correctly on any combination of bids", async function() {
+  it("distributes tokens correctly on any combination of bids", async function() {
     // stateful prob based tests can take a long time to finish when shrinking...
     this.timeout(GEN_TESTS_TIMEOUT * 1000);
 
