@@ -1,10 +1,11 @@
 pragma solidity ^0.4.13;
 
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
+import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "./LifToken.sol";
 
-contract LifCrowdsale is Ownable {
+contract LifCrowdsale is Ownable, Pausable {
   using SafeMath for uint256;
 
   // The token being sold
