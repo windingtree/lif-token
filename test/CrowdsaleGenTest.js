@@ -22,11 +22,13 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   var token;
   var eventsWatcher;
 
+  let accountGen = jsc.nat(accounts.length - 1);
+
   let crowdsaleGen = jsc.record({
     rate1: jsc.nat,
     rate2: jsc.nat,
-    foundationWallet: jsc.nat(accounts.length - 1),
-    marketMaker: jsc.nat(accounts.length - 1),
+    foundationWallet: accountGen,
+    marketMaker: accountGen,
     minCapEth: jsc.number(0, 200)
   });
 
@@ -39,8 +41,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   });
   let buyTokensCommandGen = jsc.record({
     type: jsc.constant("buyTokens"),
-    account: jsc.nat(accounts.length - 1),
-    beneficiary: jsc.nat(accounts.length - 1),
+    account: accountGen,
+    beneficiary: accountGen,
     useFallback: jsc.bool,
     eth: jsc.nat
   });
@@ -51,12 +53,12 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   });
   let checkCrowdsaleCommandGen = jsc.record({
     type: jsc.constant("checkCrowdsale"),
-    fromAccount: jsc.nat(accounts.length - 1)
+    fromAccount: accountGen
   });
   let addPresalePaymentCommandGen = jsc.record({
     type: jsc.constant("addPresalePayment"),
-    account: jsc.nat(accounts.length - 1),
-    fromAccount: jsc.nat(accounts.length - 1),
+    account: accountGen,
+    fromAccount: accountGen,
     amountEth: jsc.number(),
     addFunding: jsc.bool // issue & transfer the necessary tokens for this payment?
   });
