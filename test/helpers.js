@@ -6,7 +6,7 @@ var abiDecoder = require('abi-decoder');
 abiDecoder.addABI(LifToken._json.abi);
 abiDecoder.addABI(LifCrowdsale._json.abi);
 
-const TOKEN_DECIMALS = 8;
+const TOKEN_DECIMALS = 18;
 const DEBUG_MODE = (process.env.WT_DEBUG == "true") || false;
 
 module.exports = {
