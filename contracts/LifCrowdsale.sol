@@ -28,6 +28,8 @@ contract LifCrowdsale is Ownable, Pausable {
   // amount of raised money in wei
   uint256 public weiRaised;
 
+  uint256 public tokensSold;
+
   //  minimun amount of wei to be raised in order to succed
   uint256 public minCap;
 
@@ -118,6 +120,7 @@ contract LifCrowdsale is Ownable, Pausable {
     // update state
     weiRaised = weiRaised.add(weiAmount);
     purchases[beneficiary] = weiAmount;
+    tokensSold = tokensSold.add(tokens);
 
     token.mint(beneficiary, tokens);
     TokenPurchase(msg.sender, beneficiary, weiAmount, tokens);
