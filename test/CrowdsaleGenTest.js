@@ -111,7 +111,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       (nextBlock > endBlock2) ||
       (state.crowdsalePaused) ||
       (state.crowdsaleFinalized) ||
-      (weiCost == 0);
+      (command.eth == 0);
 
     try {
       // help.debug("buyTokens rate:", rate, "eth:", command.eth, "endBlocks:", crowdsale.endBlock1, endBlock2, "blockNumber:", nextBlock);
