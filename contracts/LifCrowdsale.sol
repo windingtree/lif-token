@@ -20,6 +20,9 @@ contract LifCrowdsale is Ownable, Pausable {
   address public foundationWallet;
   address public marketMaker;
 
+  // how much wei a token unit costs to a buyer, during the private presale stage
+  uint256 public privatePresaleRate;
+
   // how much wei a token unit costs to a buyer, during the first half of the crowdsale
   uint256 public rate1;
   // how much wei a token unit costs to a buyer, during the second half of the crowdsale
@@ -29,6 +32,10 @@ contract LifCrowdsale is Ownable, Pausable {
   uint256 public weiRaised;
 
   uint256 public tokensSold;
+
+  uint256 public totalPresaleWei;
+
+  uint256 public maxPresaleWei;
 
   //  minimun amount of wei to be raised in order to succed
   uint256 public minCap;
@@ -59,9 +66,11 @@ contract LifCrowdsale is Ownable, Pausable {
     uint256 _endBlock2,
     uint256 _rate1,
     uint256 _rate2,
+    uint256 _privatePresaleRate,
     address _foundationWallet,
     address _marketMaker,
-    uint256 _minCap
+    uint256 _minCap,
+    uint256 _maxPresaleWei
   ) {
     require(_startBlock >= block.number);
     require(_endBlock1 > _startBlock);
@@ -80,9 +89,11 @@ contract LifCrowdsale is Ownable, Pausable {
     endBlock2 = _endBlock2;
     rate1 = _rate1;
     rate2 = _rate2;
+    privatePresaleRate = _privatePresaleRate;
     foundationWallet = _foundationWallet;
     marketMaker = _marketMaker;
     minCap = _minCap;
+    maxPresaleWei = _maxPresaleWei;
   }
 
   // returns the current rate or 0 if current block is not within the crowdsale period
@@ -126,10 +137,17 @@ contract LifCrowdsale is Ownable, Pausable {
     TokenPurchase(msg.sender, beneficiary, weiAmount, tokens);
   }
 
-  function addPresaleTokens(address beneficiary, uint256 tokens) onlyOwner {
+  function addPrivatePresaleTokens(address beneficiary, uint256 totalWei) onlyOwner {
     require(block.number < startBlock);
     require(beneficiary != address(0));
-    require(tokens > 0);
+    require(totalWei > 0);
+
+    uint256 tokens = totalWei.mul(privatePresaleRate);
+
+    uint256 presaleWei = totalPresaleWei;
+    require(presaleWei.add(totalWei) <= maxPresaleWei);
+
+    totalPresaleWei.add(tokens);
 
     token.mint(beneficiary, tokens);
   }
