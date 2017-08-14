@@ -51,6 +51,10 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     pause: jsc.bool,
     fromAccount: accountGen
   });
+  let finalizeCrowdsaleCommandGen = jsc.record({
+    type: jsc.constant("finalizeCrowdsale"),
+    fromAccount: accountGen
+  });
   let checkCrowdsaleCommandGen = jsc.record({
     type: jsc.constant("checkCrowdsale"),
     fromAccount: accountGen
@@ -160,6 +164,24 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     return state;
   };
 
+  let runFinalizeCrowdsaleCommand = async (command, state) => {
+    let shouldThrow = (state.crowdsalePaused == command.pause) ||
+      (command.fromAccount != 0) ||
+      !state.crowdsaleContract.isFinalized ||
+      !(await state.crowdsaleContract.hasEnded());
+
+    help.debug("finishing crowdsale, from address:", accounts[command.fromAccount]);
+    try {
+      await state.crowdsaleContract.finalize({from: accounts[command.fromAccount]});
+      assert.equal(false, shouldThrow);
+      state.crowdsaleEnded = true;
+    } catch(e) {
+      if (!shouldThrow)
+        throw(new ExceptionRunningCommand(e, state, command));
+    }
+    return state;
+  };
+
   let runAddPresalePaymentCommand = async (command, state) => {
     let fundingShouldThrow = (state.crowdsaleData.startPriceEth == 0) ||
       (command.amountEth <= 0) ||
@@ -207,7 +229,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     waitBlock: {gen: waitBlockCommandGen, run: runWaitBlockCommand},
     checkRate: {gen: checkRateCommandGen, run: runCheckRateCommand},
     buyTokens: {gen: buyTokensCommandGen, run: runBuyTokensCommand},
-    pauseCrowdsale: {gen: pauseCrowdsaleCommandGen, run: runPauseCrowdsaleCommand}
+    pauseCrowdsale: {gen: pauseCrowdsaleCommandGen, run: runPauseCrowdsaleCommand},
+    finalizeCrowdsale: {gen: finalizeCrowdsaleCommandGen, run: runFinalizeCrowdsaleCommand}
     // checkCrowdsale: {gen: checkCrowdsaleCommandGen, run: runCheckCrowdsaleCommand},
     // addPresalePayment: {gen: addPresalePaymentCommandGen, run: runAddPresalePaymentCommand}
   };
@@ -291,7 +314,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         presalePurchases: [],
         weiRaised: 0,
         crowdsalePaused: false,
-        tokenPaused: false
+        tokenPaused: false,
+        crowdsaleEnded: false
       };
 
       let findCommand = (type) => {
