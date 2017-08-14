@@ -105,6 +105,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     let shouldThrow = (nextBlock < startBlock) ||
       (nextBlock > endBlock2) ||
       (state.crowdsalePaused) ||
+      (state.crowdsaleFinalized) ||
       (weiCost == 0);
 
     try {
@@ -158,23 +159,21 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       state.status = 3;
     } catch (e) {
       if (!shouldThrow)
-        throw(new ExceptionRunningCommand(e, state, command));   
+        throw(new ExceptionRunningCommand(e, state, command));
     }
 
     return state;
   };
 
   let runFinalizeCrowdsaleCommand = async (command, state) => {
-    let shouldThrow = (state.crowdsalePaused == command.pause) ||
-      (command.fromAccount != 0) ||
-      !state.crowdsaleContract.isFinalized ||
-      !(await state.crowdsaleContract.hasEnded());
+    let shouldThrow = state.crowdsaleFinalized || state.crowdsalePaused ||
+      (web3.eth.blockNumber <= state.crowdsaleData.endBlock2);
 
     help.debug("finishing crowdsale, from address:", accounts[command.fromAccount]);
     try {
       await state.crowdsaleContract.finalize({from: accounts[command.fromAccount]});
       assert.equal(false, shouldThrow);
-      state.crowdsaleEnded = true;
+      state.crowdsaleFinalized = true;
     } catch(e) {
       if (!shouldThrow)
         throw(new ExceptionRunningCommand(e, state, command));
@@ -315,7 +314,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         weiRaised: 0,
         crowdsalePaused: false,
         tokenPaused: false,
-        crowdsaleEnded: false
+        crowdsaleFinalized: false
       };
 
       let findCommand = (type) => {
