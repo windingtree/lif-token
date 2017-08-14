@@ -166,7 +166,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   };
 
   let runFinalizeCrowdsaleCommand = async (command, state) => {
-    let shouldThrow = state.crowdsaleFinalized || state.crowdsalePaused ||
+    let shouldThrow = state.crowdsaleFinalized ||
+      state.crowdsalePaused ||
       (web3.eth.blockNumber <= state.crowdsaleData.endBlock2);
 
     help.debug("finishing crowdsale, from address:", accounts[command.fromAccount]);
