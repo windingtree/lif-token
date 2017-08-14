@@ -15,6 +15,10 @@ let GEN_TESTS_QTY = parseInt(process.env.GEN_TESTS_QTY);
 if (isNaN(GEN_TESTS_QTY))
   GEN_TESTS_QTY = 50;
 
+let GEN_TESTS_TIMEOUT = parseInt(process.env.GEN_TESTS_TIMEOUT);
+if (isNaN(GEN_TESTS_TIMEOUT))
+  GEN_TESTS_TIMEOUT = 240;
+
 contract('LifCrowdsale Property-based test', function(accounts) {
   var token;
   var eventsWatcher;
@@ -135,7 +139,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         from: account
       });
       assert.equal(false, shouldThrow);
-      state.bids = _.concat(state.bids, {tokens: command.tokens, price: price, account: account});
+      state.bids = _.concat(state.bids, {tokens: command.tokens, price: price, account: command.account});
       state.lastPrice = price;
       state.weiRaised += weiCost;
     } catch(e) {
@@ -233,6 +237,15 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     crowdsale: jsc.nonshrink(crowdsaleGen)
   });
 
+  let checkCrowdsaleState = async function(state, crowdsaleData, crowdsale) {
+    assert.equal(state.status, parseInt(await crowdsale.status.call()));
+    assert.equal(state.lastPrice, parseInt(await crowdsale.lastPrice.call()));
+    assert.equal(_.sumBy(state.bids, (b) => b.tokens), parseInt(await crowdsale.tokensSold.call()));
+    let inMemoryPresaleWei = web3.toWei(_.sumBy(state.presalePayments, (p) => p.amountEth), 'ether')
+    assert.equal(inMemoryPresaleWei, parseInt(await crowdsale.totalPresaleWei.call()));
+    assert.equal(_.sumBy(state.bids, (b) => state.lastPrice * b.tokens), parseInt(await crowdsale.weiRaised.call()));
+  }
+
   let runGeneratedCrowdsaleAndCommands = async function(input) {
     let blocksCount = 10;
     let startBlock = web3.eth.blockNumber + 10;
@@ -308,12 +321,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       }
 
       // check resulting in-memory and contract state
-      assert.equal(state.status, parseInt(await crowdsale.status.call()));
-      assert.equal(state.lastPrice, parseInt(await crowdsale.lastPrice.call()));
-      assert.equal(_.sumBy(state.bids, (b) => b.tokens), parseInt(await crowdsale.tokensSold.call()));
-      let inMemoryPresaleWei = web3.toWei(_.sumBy(state.presalePayments, (p) => p.amountEth), 'ether')
-      assert.equal(inMemoryPresaleWei, parseInt(await crowdsale.totalPresaleWei.call()));
-      assert.equal(_.sumBy(state.bids, (b) => state.lastPrice * b.tokens), parseInt(await crowdsale.weiRaised.call()));
+      checkCrowdsaleState(state, crowdsaleData, crowdsale);
 
     } finally {
       eventsWatcher.stopWatching();
@@ -425,7 +433,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   it("distributes tokens correctly on any combination of bids", async function() {
     // stateful prob based tests can take a long time to finish when shrinking...
-    this.timeout(240 * 1000);
+    this.timeout(GEN_TESTS_TIMEOUT * 1000);
 
     let property = jsc.forall(crowdsaleTestInputGen, async function(crowdsaleAndCommands) {
       return await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
