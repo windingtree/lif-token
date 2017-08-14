@@ -1,10 +1,11 @@
 pragma solidity ^0.4.13;
 
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
+import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "./LifToken.sol";
 
-contract LifCrowdsale is Ownable {
+contract LifCrowdsale is Ownable, Pausable {
   using SafeMath for uint256;
 
   // The token being sold
@@ -27,6 +28,8 @@ contract LifCrowdsale is Ownable {
   // amount of raised money in wei
   uint256 public weiRaised;
 
+  uint256 public tokensSold;
+
   //  minimun amount of wei to be raised in order to succed
   uint256 public minCap;
 
@@ -43,10 +46,23 @@ contract LifCrowdsale is Ownable {
    * @param value weis paid for purchase
    * @param amount amount of tokens purchased
    */
-  event TokenPurchase(address indexed purchaser, address indexed beneficiary, uint256 value, uint256 amount);
+  event TokenPurchase(
+    address indexed purchaser,
+    address indexed beneficiary,
+    uint256 value,
+    uint256 amount
+  );
 
-
-  function Crowdsale(uint256 _startBlock, uint256 _endBlock1, uint256 _endBlock2, uint256 _rate1, uint256 _rate2, address _foundationWallet, address _marketMaker, uint256 _minCap) {
+  function LifCrowdsale(
+    uint256 _startBlock,
+    uint256 _endBlock1,
+    uint256 _endBlock2,
+    uint256 _rate1,
+    uint256 _rate2,
+    address _foundationWallet,
+    address _marketMaker,
+    uint256 _minCap
+  ) {
     require(_startBlock >= block.number);
     require(_endBlock1 > _startBlock);
     require(_endBlock2 > _endBlock1);
@@ -104,6 +120,7 @@ contract LifCrowdsale is Ownable {
     // update state
     weiRaised = weiRaised.add(weiAmount);
     purchases[beneficiary] = weiAmount;
+    tokensSold = tokensSold.add(tokens);
 
     token.mint(beneficiary, tokens);
     TokenPurchase(msg.sender, beneficiary, weiAmount, tokens);

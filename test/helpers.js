@@ -6,7 +6,7 @@ var abiDecoder = require('abi-decoder');
 abiDecoder.addABI(LifToken._json.abi);
 abiDecoder.addABI(LifCrowdsale._json.abi);
 
-const TOKEN_DECIMALS = 8;
+const TOKEN_DECIMALS = 18;
 const DEBUG_MODE = (process.env.WT_DEBUG == "true") || false;
 
 module.exports = {
@@ -189,95 +189,15 @@ module.exports = {
     console.log('['+parsedProposal.id+'] To: '+parsedProposal.target+', Value: '+parsedProposal.value +', MaxBlock: '+parsedProposal.maxBlock+', Desc: '+parsedProposal.description+', Status: '+parsedProposal.status, ', Votes: ',parsedProposal.totalVotes,'/',parsedProposal.votesNeeded);
   },
 
-  createCrowdsale: async function(params) {
-    return await LifCrowdsale.new(params.token.address, params.startBlock, params.endBlock, params.startPrice, params.changePerBlock,
-      params.changePrice, params.minCap, params.maxCap, params.maxTokens, params.presaleBonusRate, params.ownerPercentage)
-  },
-
-  fundCrowdsale: async function(params, crowdsale, accounts) {
-    let token = params.token;
-
-    let oldTokenBalance = parseFloat(await token.balanceOf(token.contract.address));
-
-    // issue the tokens and transfer to the crowdsale
-    await token.issueTokens(params.maxTokens);
-
-    assert.equal(this.lifWei2Lif(parseFloat(await token.balanceOf(token.contract.address))), oldTokenBalance + params.maxTokens);
-
-    // transfer the tokens
-    await token.transferFrom(token.address, crowdsale.address, this.lif2LifWei(params.maxTokens), {from: accounts[0]});
-
-    assert.equal(await token.balanceOf(crowdsale.contract.address), this.lif2LifWei(params.maxTokens));
-    assert.equal(parseFloat(await token.balanceOf(token.contract.address)), oldTokenBalance);
-
-    assert.equal(parseFloat(await crowdsale.startPrice()), params.startPrice);
-    assert.equal(parseFloat(await crowdsale.changePerBlock()), params.changePerBlock);
-    assert.equal(parseFloat(await crowdsale.changePrice()), params.changePrice);
-    assert.equal(parseFloat(await crowdsale.minCap()), params.minCap);
-  },
-
-  createAndFundCrowdsale: async function(params, accounts) {
-    let self = this;
-    let token = params.token;
-    var crowdsale = await self.createCrowdsale(params);
-
-    await self.fundCrowdsale(params, crowdsale, accounts);
-
-    return crowdsale;
-  },
-
-  simulateCrowdsale: async function(token, total, price, balances, accounts) {
-    var startBlock = web3.eth.blockNumber;
-    var endBlock = web3.eth.blockNumber+10;
-    var targetBalance = parseFloat(total*price);
-    var crowdsale = await LifCrowdsale.new(
-      token.address, startBlock, endBlock, price, 10, web3.toWei(0.1, 'ether'), 1, targetBalance, total, 0, 0
-    );
-    await token.issueTokens(total);
-    await token.transferFrom(token.contract.address, crowdsale.contract.address, this.lif2LifWei(total), {from: accounts[0]});
-    assert.equal(await token.balanceOf(crowdsale.contract.address), this.lif2LifWei(total));
-    await crowdsale.setStatus(2);
-    await this.waitToBlock(startBlock+1, accounts);
-    if (balances[0] > 0)
-      await crowdsale.submitBid({ value: balances[0]*price, from: accounts[1] });
-    if (balances[1] > 0)
-      await crowdsale.submitBid({ value: balances[1]*price, from: accounts[2] });
-    if (balances[2] > 0)
-      await crowdsale.submitBid({ value: balances[2]*price, from: accounts[3] });
-    if (balances[3] > 0)
-      await crowdsale.submitBid({ value: balances[3]*price, from: accounts[4] });
-    if (balances[4] > 0)
-      await crowdsale.submitBid({ value: balances[4]*price, from: accounts[5] });
-    await this.waitToBlock(endBlock+1, accounts);
-    await crowdsale.checkCrowdsale(0);
-    if (balances[0] > 0)
-      await crowdsale.distributeTokens(accounts[1], false);
-    if (balances[1] > 0)
-      await crowdsale.distributeTokens(accounts[2], false);
-    if (balances[2] > 0)
-      await crowdsale.distributeTokens(accounts[3], false);
-    if (balances[3] > 0)
-      await crowdsale.distributeTokens(accounts[4], false);
-    if (balances[4] > 0)
-      await crowdsale.distributeTokens(accounts[5], false);
-    await crowdsale.transferVotes();
-    return crowdsale;
-  },
-
-  getCrowdsaleExpectedPrice: function(startBlock, endBlock, crowdsale) {
-    if (web3.eth.blockNumber < startBlock || web3.eth.blockNumber > endBlock) {
+  getCrowdsaleExpectedRate: function(crowdsale, blockNumber) {
+    let { startBlock, endBlock1, endBlock2, rate1, rate2 } = crowdsale;
+    if (blockNumber < startBlock || blockNumber > endBlock2) {
       return 0;
-    } else if (crowdsale.changePerBlock == 0) {
-      return -1; // this should throw anyways
-    } else {
-      let blocksCount = ((web3.eth.blockNumber > endBlock) ? endBlock : web3.eth.blockNumber) - startBlock;
-      this.debug("price data: ", crowdsale.startPrice, blocksCount, crowdsale.changePrice, crowdsale.changePerBlock);
-      return crowdsale.startPrice - Math.floor(blocksCount / crowdsale.changePerBlock) * crowdsale.changePrice;
+    } else if (blockNumber <= endBlock1) {
+      return rate1;
+    } else if (blockNumber <= endBlock2) {
+      return rate2;
     }
-  },
-
-  shouldCrowdsaleGetPriceThrow: function(startBlock, endBlock, crowdsaleData) {
-    return this.getCrowdsaleExpectedPrice(startBlock, endBlock, crowdsaleData) < 0;
   },
 
   getPresalePaymentMaxTokens: function(minCap, maxTokens, presaleBonusRate, presaleAmountEth) {

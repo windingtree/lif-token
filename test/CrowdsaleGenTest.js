@@ -7,7 +7,6 @@ var help = require("./helpers");
 
 var LifToken = artifacts.require("./LifToken.sol");
 var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
-var FuturePayment = artifacts.require("./FuturePayment.sol");
 
 const LOG_EVENTS = true;
 
@@ -15,51 +14,51 @@ let GEN_TESTS_QTY = parseInt(process.env.GEN_TESTS_QTY);
 if (isNaN(GEN_TESTS_QTY))
   GEN_TESTS_QTY = 50;
 
+let GEN_TESTS_TIMEOUT = parseInt(process.env.GEN_TESTS_TIMEOUT);
+if (isNaN(GEN_TESTS_TIMEOUT))
+  GEN_TESTS_TIMEOUT = 240;
+
 contract('LifCrowdsale Property-based test', function(accounts) {
   var token;
   var eventsWatcher;
 
-  let crowdsaleRawGen = jsc.record({
-    startPriceEth: jsc.nat,
-    changePerBlock: jsc.nat,
-    changePriceEth: jsc.nonshrink(jsc.nat),
-    minCapEth: jsc.nat,
-    maxCapEth: jsc.nat,
-    maxTokens: jsc.nat,
-    presaleBonusRate: jsc.nonshrink(jsc.nat),
-    ownerPercentage: jsc.nonshrink(jsc.nat)
-  });
+  let accountGen = jsc.nat(accounts.length - 1);
 
-  let crowdsaleGen = jsc.suchthat(crowdsaleRawGen, function(c) {
-    return (c.maxCapEth >= c.minCapEth) &&
-      (c.changePerBlock > 0);
+  let crowdsaleGen = jsc.record({
+    rate1: jsc.nat,
+    rate2: jsc.nat,
+    foundationWallet: accountGen,
+    marketMaker: accountGen,
+    minCapEth: jsc.number(0, 200)
   });
 
   let waitBlockCommandGen = jsc.record({
     type: jsc.constant("waitBlock"),
     blocks: jsc.nat
   });
-  let checkPriceCommandGen = jsc.record({
-    type: jsc.constant("checkPrice")
+  let checkRateCommandGen = jsc.record({
+    type: jsc.constant("checkRate")
   });
-  let submitBidCommandGen = jsc.record({
-    type: jsc.constant("submitBid"),
-    account: jsc.nat(accounts.length - 1),
-    tokens: jsc.nat
+  let buyTokensCommandGen = jsc.record({
+    type: jsc.constant("buyTokens"),
+    account: accountGen,
+    beneficiary: accountGen,
+    useFallback: jsc.bool,
+    eth: jsc.nat
   });
-  let setStatusCommandGen = jsc.record({
-    type: jsc.constant("setStatus"),
-    status: jsc.elements([1,2,3]),
-    fromAccount: jsc.nat(accounts.length - 1)
+  let pauseCrowdsaleCommandGen = jsc.record({
+    type: jsc.constant("pauseCrowdsale"),
+    pause: jsc.bool,
+    fromAccount: accountGen
   });
   let checkCrowdsaleCommandGen = jsc.record({
     type: jsc.constant("checkCrowdsale"),
-    fromAccount: jsc.nat(accounts.length - 1)
+    fromAccount: accountGen
   });
   let addPresalePaymentCommandGen = jsc.record({
     type: jsc.constant("addPresalePayment"),
-    account: jsc.nat(accounts.length - 1),
-    fromAccount: jsc.nat(accounts.length - 1),
+    account: accountGen,
+    fromAccount: accountGen,
     amountEth: jsc.number(),
     addFunding: jsc.bool // issue & transfer the necessary tokens for this payment?
   });
@@ -78,65 +77,45 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   ExceptionRunningCommand.prototype = Object.create(Error.prototype);
   ExceptionRunningCommand.prototype.constructor = ExceptionRunningCommand;
 
-  let runCheckPriceCommand = async (command, state) => {
-    let crowdsale = state.crowdsaleData;
-    let { startBlock, endBlock } = crowdsale;
-    let shouldThrow = help.shouldCrowdsaleGetPriceThrow(startBlock, endBlock, crowdsale);
+  let runCheckRateCommand = async (command, state) => {
+    let expectedRate = help.getCrowdsaleExpectedRate(state.crowdsaleData, web3.eth.blockNumber);
+    let rate = parseFloat(await state.crowdsaleContract.getRate());
 
-    let expectedPrice = help.getCrowdsaleExpectedPrice(
-      state.crowdsaleData.startBlock, state.crowdsaleData.endBlock, state.crowdsaleData
-    );
+    assert.equal(expectedRate, rate,
+        "expected rate is different! Expected: " + expectedRate + ", actual: " + rate + ". blocks: " + web3.eth.blockNumber + ", start/end1/end2: " +
+        state.crowdsaleData.startBlock + "/" + state.crowdsaleData.endBlock1 + "/" + state.crowdsaleData.endBlock2);
 
-    try {
-      let price = parseFloat(await state.crowdsaleContract.getPrice());
-
-      if (price != 0) {
-        // all of this is because there is a small rounding difference sometimes.
-        let priceDiffPercent = (expectedPrice - price) / price;
-        help.debug("price", price, " expected price: ", expectedPrice, " diff %: ", priceDiffPercent);
-        let maxPriceDiff = 0.000000001;
-        assert.equal(true, Math.abs(priceDiffPercent) <= maxPriceDiff,
-          "price diff should be less than " + maxPriceDiff + " but it's " + priceDiffPercent);
-      } else {
-        assert.equal(expectedPrice, price,
-          "expected price is different! Expected: " + expectedPrice + ", actual: " + price + ". blocks: " + web3.eth.blockNumber + ", start/end: " +
-          state.crowdsaleData.startBlock + "/" + state.crowdsaleData.endBlock);
-      }
-      assert.equal(false, shouldThrow);
-    } catch(e) {
-      if (!shouldThrow) {
-        throw(new ExceptionRunningCommand(e, state, command));
-      }
-    }
     return state;
   }
 
-  let runSubmitBidCommand = async (command, state) => {
+  let runBuyTokensCommand = async (command, state) => {
     let crowdsale = state.crowdsaleData,
-      { startBlock, endBlock, maxCap } = crowdsale,
-      { weiRaised } = state,
-      price = help.getCrowdsaleExpectedPrice(startBlock, endBlock, crowdsale),
-      weiCost = price * command.tokens,
-      soldTokens = _.sumBy(state.bids, (b) => b.tokens),
-      account = accounts[command.account];
+      { startBlock, endBlock2 } = crowdsale,
+      weiCost = parseInt(web3.toWei(command.eth, 'ether')),
+      nextBlock = web3.eth.blockNumber + 1,
+      rate = help.getCrowdsaleExpectedRate(crowdsale, nextBlock),
+      tokens = command.eth * rate,
+      account = accounts[command.account],
+      beneficiaryAccount = accounts[command.beneficiary];
 
-    let shouldThrow = (web3.eth.blockNumber < crowdsale.startBlock) ||
-      (web3.eth.blockNumber > crowdsale.endBlock) ||
-      (state.status != 2) ||
-      (weiCost == 0) ||
-      (weiRaised + weiCost > maxCap) ||
-      (soldTokens + command.tokens > crowdsale.maxTokens);
-
-    help.debug("submitBid price:", price, "blockNumber:", web3.eth.blockNumber);
+    let shouldThrow = (nextBlock < startBlock) ||
+      (nextBlock > endBlock2) ||
+      (state.crowdsalePaused) ||
+      (weiCost == 0);
 
     try {
-      await state.crowdsaleContract.submitBid({
-        value: weiCost,
-        from: account
-      });
-      assert.equal(false, shouldThrow);
-      state.bids = _.concat(state.bids, {tokens: command.tokens, price: price, account: account});
-      state.lastPrice = price;
+      // help.debug("buyTokens rate:", rate, "eth:", command.eth, "endBlocks:", crowdsale.endBlock1, endBlock2, "blockNumber:", nextBlock);
+
+      if (command.useFallback) {
+        await state.crowdsaleContract.sendTransaction({value: weiCost, from: account});
+      } else {
+        await state.crowdsaleContract.buyTokens(beneficiaryAccount, {value: weiCost, from: account});
+      }
+
+      assert.equal(false, shouldThrow, "buyTokens should have thrown but it didn't");
+      state.purchases = _.concat(state.purchases,
+        {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
+      );
       state.weiRaised += weiCost;
     } catch(e) {
       if (!shouldThrow)
@@ -145,12 +124,19 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     return state;
   }
 
-  let runSetStatusCommand = async (command, state) => {
-    let shouldThrow = (command.fromAccount != 0);
+  let runPauseCrowdsaleCommand = async (command, state) => {
+    let shouldThrow = (state.crowdsalePaused == command.pause) ||
+      (command.fromAccount != 0);
+
+    help.debug("pausing crowdsale, previous state:", state.crowdsalePaused, "new state:", command.pause);
     try {
-      await state.crowdsaleContract.setStatus(command.status, {from: accounts[command.fromAccount]});
+      if (command.pause) {
+        await state.crowdsaleContract.pause({from: accounts[command.fromAccount]});
+      } else {
+        await state.crowdsaleContract.unpause({from: accounts[command.fromAccount]});
+      }
       assert.equal(false, shouldThrow);
-      state.status = command.status;
+      state.crowdsalePaused = command.pause;
     } catch(e) {
       if (!shouldThrow)
         throw(new ExceptionRunningCommand(e, state, command));
@@ -219,11 +205,11 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   let commands = {
     waitBlock: {gen: waitBlockCommandGen, run: runWaitBlockCommand},
-    checkPrice: {gen: checkPriceCommandGen, run: runCheckPriceCommand},
-    submitBid: {gen: submitBidCommandGen, run: runSubmitBidCommand},
-    setStatus: {gen: setStatusCommandGen, run: runSetStatusCommand},
-    checkCrowdsale: {gen: checkCrowdsaleCommandGen, run: runCheckCrowdsaleCommand},
-    addPresalePayment: {gen: addPresalePaymentCommandGen, run: runAddPresalePaymentCommand}
+    checkRate: {gen: checkRateCommandGen, run: runCheckRateCommand},
+    buyTokens: {gen: buyTokensCommandGen, run: runBuyTokensCommand},
+    pauseCrowdsale: {gen: pauseCrowdsaleCommandGen, run: runPauseCrowdsaleCommand}
+    // checkCrowdsale: {gen: checkCrowdsaleCommandGen, run: runCheckCrowdsaleCommand},
+    // addPresalePayment: {gen: addPresalePaymentCommandGen, run: runAddPresalePaymentCommand}
   };
 
   let commandsGen = jsc.nonshrink(jsc.oneof(_.map(commands, (c) => c.gen)));
@@ -233,55 +219,79 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     crowdsale: jsc.nonshrink(crowdsaleGen)
   });
 
+  let checkCrowdsaleState = async function(state, crowdsaleData, crowdsale) {
+    assert.equal(state.crowdsalePaused, await crowdsale.paused.call());
+    assert.equal(_.sumBy(state.purchases, (b) => b.tokens), help.lifWei2Lif(parseFloat(await crowdsale.tokensSold.call())));
+    /*
+    let inMemoryPresaleWei = web3.toWei(_.sumBy(state.presalePayments, (p) => p.amountEth), 'ether')
+    assert.equal(inMemoryPresaleWei, parseInt(await crowdsale.totalPresaleWei.call()));
+    */
+    help.debug("checking purchases total wei, purchases:", JSON.stringify(state.purchases));
+    assert.equal(_.sumBy(state.purchases, (b) => b.wei), parseInt(await crowdsale.weiRaised.call()));
+  }
+
   let runGeneratedCrowdsaleAndCommands = async function(input) {
-    let blocksCount = 10;
+    let blocksCount = 20;
     let startBlock = web3.eth.blockNumber + 10;
-    let endBlock = startBlock + blocksCount;
+    let endBlock1 = startBlock + 10;
+    let endBlock2 = startBlock + blocksCount;
 
-    help.debug("crowdsaleTestInput data:\n", input, startBlock, endBlock);
+    help.debug("crowdsaleTestInput data:\n", input, startBlock, endBlock2);
 
-    token = await LifToken.new(web3.toWei(10, 'ether'), 10000, 2, 3, 5, {from: accounts[0]});
-    eventsWatcher = token.allEvents();
-    eventsWatcher.watch(function(error, log){
-      if (LOG_EVENTS)
-        console.log('Event:', log.event, ':',log.args);
-    });
+    let {rate1, rate2, minCapEth} = input.crowdsale;
+    let shouldThrow = (rate1 == 0) ||
+      (rate2 == 0) ||
+      (startBlock >= endBlock1) ||
+      (endBlock1 >= endBlock2) ||
+      (minCapEth == 0);
+
+    var eventsWatcher;
 
     try {
       let crowdsaleData = {
-        token: token,
-        startBlock: startBlock, endBlock: endBlock,
-        startPrice: web3.toWei(input.crowdsale.startPriceEth, 'ether'),
-        changePerBlock: input.crowdsale.changePerBlock, changePrice: web3.toWei(input.crowdsale.changePriceEth, 'ether'),
-        minCap: web3.toWei(input.crowdsale.minCapEth, 'ether'), maxCap: web3.toWei(input.crowdsale.maxCapEth, 'ether'),
-        maxTokens: input.crowdsale.maxTokens,
-        presaleBonusRate: input.crowdsale.presaleBonusRate, ownerPercentage: input.crowdsale.ownerPercentage
+        startBlock: startBlock, endBlock1: endBlock1, endBlock2: endBlock2,
+        rate1: input.crowdsale.rate1,
+        rate2: input.crowdsale.rate2,
+        foundationWallet: accounts[input.crowdsale.foundationWallet],
+        marketMaker: accounts[input.crowdsale.marketMaker],
+        minCap: web3.toWei(input.crowdsale.minCapEth, 'ether')
       };
 
-      let crowdsale = await help.createCrowdsale(crowdsaleData, accounts);
+      let crowdsale = await LifCrowdsale.new(
+        crowdsaleData.startBlock,
+        crowdsaleData.endBlock1,
+        crowdsaleData.endBlock2,
+        crowdsaleData.rate1,
+        crowdsaleData.rate2,
+        crowdsaleData.foundationWallet,
+        crowdsaleData.marketMaker,
+        crowdsaleData.minCap
+      );
+
+      assert.equal(false, shouldThrow, "create Crowdsale should have thrown but it didn't");
+
+      let token = LifToken.at(await crowdsale.token());
+
+      eventsWatcher = crowdsale.allEvents();
+      eventsWatcher.watch(function(error, log){
+        if (LOG_EVENTS)
+          console.log('Event:', log.event, ':',log.args);
+      });
 
       help.debug("created crowdsale at address ", crowdsale.address);
 
-      // Assert price == 0 before start
-      let price = parseFloat(await crowdsale.getPrice());
-      assert.equal(price, web3.toWei(0, 'ether'));
-
-      await help.fundCrowdsale(crowdsaleData, crowdsale, accounts);
-
       // issue & transfer tokens for founders payments
-      let maxFoundersPaymentTokens = crowdsaleData.maxTokens * (crowdsaleData.ownerPercentage / 1000.0) ;
-      // TODO: is there a way to avoid the Math.ceil code? I don't think so, except by always issuing multiples of 1000 tokens...
-      await token.issueTokens(Math.ceil(maxFoundersPaymentTokens));
-      await token.transferFrom(token.address, crowdsale.address, help.lif2LifWei(maxFoundersPaymentTokens), {from: accounts[0]});
+      // let maxFoundersPaymentTokens = crowdsaleData.maxTokens * (crowdsaleData.ownerPercentage / 1000.0) ;
 
       var state = {
         crowdsaleData: crowdsaleData,
         crowdsaleContract: crowdsale,
-        bids: [],
-        presalePayments: [],
+        token: token,
+        purchases: [],
+        presalePurchases: [],
         weiRaised: 0,
-        lastPrice: 0,
-        status: 1 // crowdsale status
+        crowdsalePaused: false,
+        tokenPaused: false
       };
 
       let findCommand = (type) => {
@@ -308,124 +318,40 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       }
 
       // check resulting in-memory and contract state
-      assert.equal(state.status, parseInt(await crowdsale.status.call()));
-      assert.equal(state.lastPrice, parseInt(await crowdsale.lastPrice.call()));
-      assert.equal(_.sumBy(state.bids, (b) => b.tokens), parseInt(await crowdsale.tokensSold.call()));
-      let inMemoryPresaleWei = web3.toWei(_.sumBy(state.presalePayments, (p) => p.amountEth), 'ether')
-      assert.equal(inMemoryPresaleWei, parseInt(await crowdsale.totalPresaleWei.call()));
-      assert.equal(_.sumBy(state.bids, (b) => state.lastPrice * b.tokens), parseInt(await crowdsale.weiRaised.call()));
+      await checkCrowdsaleState(state, crowdsaleData, crowdsale);
 
+    } catch(e) {
+      if (!shouldThrow) {
+        // only re-throw if we were not expecting this exception
+        throw(e);
+      }
     } finally {
-      eventsWatcher.stopWatching();
+      if (eventsWatcher) {
+        eventsWatcher.stopWatching();
+      }
     }
 
     return true;
   }
 
-  it("should throw when submitBid is for 0 tokens", async function() {
+  it("calculates correct rate on the boundaries between endBlock1 and endBlock2", async function() {
     let crowdsaleAndCommands = {
-      commands: [
-        {"type":"setStatus","status":2,"fromAccount":0},
-        {"type":"submitBid","account":7,"tokens":0}
-      ],
-      crowdsale: {
-        startPriceEth: 3, changePerBlock: 1, changePriceEth: 0,
-        minCapEth: 20, maxCapEth: 33, maxTokens: 16,
-        presaleBonusRate: 32, ownerPercentage: 0
-      }
-    };
-
-    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
-  });
-
-  it("should raise when sum of bids exceed total tokens to be sold", async function() {
-
-    let crowdsaleAndCommands = {
-      commands: [
-        {"type":"setStatus","status":2,"fromAccount":0},
-        {"type":"submitBid","account":1,"tokens":2},
-        {"type":"submitBid","account":2,"tokens":2}
-      ],
-      crowdsale: {
-        startPriceEth: 5, changePerBlock: 5, changePriceEth: 0,
-        minCapEth: 1, maxCapEth: 2, maxTokens: 3,
-        presaleBonusRate: 5, ownerPercentage: 3
-      }
-    };
-
-    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
-  });
-
-  it("should work ok when there are multiple bids with different prices", async function() {
-
-    let crowdsaleAndCommands = {
-      commands: [
-        {"type":"setStatus","status":2,"fromAccount":0},
-        {"type":"waitBlock","blocks":4},
-        {"type":"submitBid","account":1,"tokens":2},
-        {"type":"waitBlock","blocks":4},
-        {"type":"submitBid","account":2,"tokens":2},
-        {"type":"waitBlock","blocks":4},
-        {"type":"submitBid","account":2,"tokens":2}
-      ],
-      crowdsale: {
-        startPriceEth: 5, changePerBlock: 3, changePriceEth: 0.4,
-        minCapEth: 1, maxCapEth: 70, maxTokens: 10,
-        presaleBonusRate: 5, ownerPercentage: 3
-      }
-    };
-
-    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
-  });
-
-  it("should consider endBlock part of the crowdsale", async function() {
-    // this case found by the generative test, it was a bug on the getPrice function
-    // added here to avoid future regressions
-    let crowdsaleAndCommands = {
-      commands: [
-        {"type":"waitBlock","blocks":3},
-        {"type":"setStatus","status":3,"fromAccount":0},
-        {"type":"checkPrice"}
-      ],
-      crowdsale: {
-        startPriceEth: 16, changePerBlock: 37, changePriceEth: 45,
-        minCapEth: 23, maxCapEth: 32, maxTokens: 40,
-        presaleBonusRate: 23, ownerPercentage: 27
-      }
-    };
-
-    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
-  });
-
-  it("runs a test with a presale Payment that should be accepted", async function() {
-    let crowdsaleAndCommands = {
-      commands: [
-        {
-          type: 'addPresalePayment',
-          account: 1,
-          fromAccount: 0,
-          addFunding: true,
-          amountEth: 11 },
-        { type: 'waitBlock', blocks: 3 }
-      ],
-      crowdsale: {
-        startPriceEth: 5,
-        changePerBlock: 8,
-        changePriceEth: 1,
-        minCapEth: 4,
-        maxCapEth: 12,
-        maxTokens: 5,
-        presaleBonusRate: 8,
-        ownerPercentage: 12
-      }
-    };
+      commands: [ { type: 'checkRate' },
+        { type: 'checkRate' },
+        { type: 'waitBlock', blocks: 19 },
+        { type: 'buyTokens', beneficiary: 3, account: 2, eth: 12 } ],
+      crowdsale: { rate1: 16,
+        rate2: 14,
+        foundationWallet: 2,
+        marketMaker: 8,
+        minCapEth: 72.68016394227743 } };
 
     await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
   });
 
   it("distributes tokens correctly on any combination of bids", async function() {
     // stateful prob based tests can take a long time to finish when shrinking...
-    this.timeout(240 * 1000);
+    this.timeout(GEN_TESTS_TIMEOUT * 1000);
 
     let property = jsc.forall(crowdsaleTestInputGen, async function(crowdsaleAndCommands) {
       return await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
