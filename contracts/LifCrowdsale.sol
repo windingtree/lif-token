@@ -137,15 +137,15 @@ contract LifCrowdsale is Ownable, Pausable {
     TokenPurchase(msg.sender, beneficiary, weiAmount, tokens);
   }
 
-  function addPrivatePresaleTokens(address beneficiary, uint256 totalWei) onlyOwner {
+  function addPrivatePresaleTokens(address beneficiary, uint256 weiSent) onlyOwner {
     require(block.number < startBlock);
     require(beneficiary != address(0));
-    require(totalWei > 0);
+    require(weiSent > 0);
 
-    uint256 tokens = totalWei.mul(privatePresaleRate);
+    uint256 tokens = weiSent.mul(privatePresaleRate);
 
     uint256 presaleWei = totalPresaleWei;
-    require(presaleWei.add(totalWei) <= maxPresaleWei);
+    require(presaleWei.add(weiSent) <= maxPresaleWei);
 
     totalPresaleWei.add(tokens);
 
