@@ -18,9 +18,10 @@ contract('LifToken Crowdsale', function(accounts) {
 
     let crowdsale = await LifCrowdsale.new(
       startBlock, endBlock1, endBlock2,
-      100, 110,
+      100, 110, 130,
       accounts[0], accounts[1],
-      100000000
+      100000000,
+      20000000
     );
 
     assert.equal(startBlock, parseInt(await crowdsale.startBlock.call()));
