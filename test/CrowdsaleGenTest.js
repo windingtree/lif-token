@@ -215,7 +215,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       { startBlock, endBlock2, maxPresaleWei, privatePresaleRate } = crowdsale,
       nextBlock = web3.eth.blockNumber + 1,
       tokens = command.tokens,
-      totalWei = web3.toWei( tokens * ( 1 / privatePresaleRate)),
+      weiToSend = web3.toWei( tokens * ( 1 / privatePresaleRate)),
       account = accounts[command.fromAccount],
       beneficiary = accounts[command.beneficiaryAccount];
 
@@ -224,7 +224,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       (account != accounts[0]) ||
       (state.crowdsaleFinalized) ||
       (tokens == 0) ||
-      ((state.totalPresaleWei + totalWei) > maxPresaleWei);
+      ((state.totalPresaleWei + weiToSend) > maxPresaleWei);
 
     try {
       help.debug("Adding presale private tokens for account:", command.beneficiaryAccount, "tokens:", tokens, "fromAccount:", command.fromAccount, "blockNumber:", nextBlock);
@@ -233,7 +233,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
       assert.equal(false, shouldThrow, "buyTokens should have thrown but it didn't");
 
-      state.totalPresaleWei += totalWei;
+      state.totalPresaleWei += weiToSend;
     } catch(e) {
       if (!shouldThrow)
         throw(new ExceptionRunningCommand(e, state, command));
