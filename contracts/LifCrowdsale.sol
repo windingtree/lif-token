@@ -104,7 +104,6 @@ contract LifCrowdsale is Ownable, Pausable {
 
   // low level token purchase function
   function buyTokens(address beneficiary) payable {
-    require(!isFinalized);
     require(beneficiary != 0x0);
     require(validPurchase());
 
