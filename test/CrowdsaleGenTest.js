@@ -315,7 +315,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         crowdsaleData.rate2,
         crowdsaleData.foundationWallet,
         crowdsaleData.marketMaker,
-        crowdsaleData.minCap
+        crowdsaleData.minCap,
+        {from: accounts[0]}
       );
 
       assert.equal(false, shouldThrow, "create Crowdsale should have thrown but it didn't");
