@@ -127,7 +127,6 @@ contract LifCrowdsale is Ownable, Pausable {
   }
 
   function addPresaleTokens(address beneficiary, uint256 tokens) onlyOwner {
-    require(!isFinalized);
     require(block.number < startBlock);
     require(beneficiary != address(0));
     require(tokens > 0);
