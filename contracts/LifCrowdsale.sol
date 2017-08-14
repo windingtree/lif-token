@@ -31,10 +31,13 @@ contract LifCrowdsale is Ownable, Pausable {
   // amount of raised money in wei
   uint256 public weiRaised;
 
+  // total amount of tokens sold on the ICO
   uint256 public tokensSold;
 
+  // total amount of wei received as presale payments (both private and public)
   uint256 public totalPresaleWei;
 
+  // maximun amount of ether that can be raised using presale payments in wei unit
   uint256 public maxPresaleWei;
 
   //  minimun amount of wei to be raised in order to succed
