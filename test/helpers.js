@@ -103,32 +103,6 @@ module.exports = {
     }
   },
 
-  simulateCrowdsale: async function(rate, balances, accounts) {
-    var startBlock = web3.eth.blockNumber;
-    var endBlock = web3.eth.blockNumber+11;
-    var crowdsale = await LifCrowdsale.new(
-      startBlock+1, startBlock+10, endBlock,
-      rate, rate+10, rate+20,
-      accounts[0], accounts[1],
-      1,
-      1
-    );
-    await this.waitToBlock(startBlock+1, accounts);
-    if (balances[0] > 0)
-      await crowdsale.sendTransaction({ value: web3.toWei(balances[0]/rate, 'ether'), from: accounts[1] });
-    if (balances[1] > 0)
-      await crowdsale.sendTransaction({ value: web3.toWei(balances[1]/rate, 'ether'), from: accounts[2] });
-    if (balances[2] > 0)
-      await crowdsale.sendTransaction({ value: web3.toWei(balances[2]/rate, 'ether'), from: accounts[3] });
-    if (balances[3] > 0)
-      await crowdsale.sendTransaction({ value: web3.toWei(balances[3]/rate, 'ether'), from: accounts[4] });
-    if (balances[4] > 0)
-      await crowdsale.sendTransaction({ value: web3.toWei(balances[4]/rate, 'ether'), from: accounts[5] });
-    await this.waitToBlock(endBlock+1, accounts);
-    await crowdsale.finalize();
-    return LifToken.at( await crowdsale.token() );
-  },
-
   getCrowdsaleExpectedRate: function(crowdsale, blockNumber) {
     let { startBlock, endBlock1, endBlock2, rate1, rate2 } = crowdsale;
     if (blockNumber < startBlock || blockNumber > endBlock2) {
