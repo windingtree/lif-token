@@ -15,13 +15,12 @@ contract('LifToken', function(accounts) {
     var startBlock = web3.eth.blockNumber;
     var endBlock = web3.eth.blockNumber+11;
     var crowdsale = await LifCrowdsale.new(
-      startBlock+1, startBlock+10, endBlock,
-      rate, rate+10, rate+20,
-      accounts[0], accounts[1],
-      1,
-      1
+      startBlock+1, startBlock+2,
+      startBlock+3, startBlock+10, endBlock,
+      rate-1, rate, rate+10, rate+20,
+      accounts[0], accounts[1], 1, 1
     );
-    await help.waitToBlock(startBlock+1, accounts);
+    await help.waitToBlock(startBlock+3, accounts);
     if (balances[0] > 0)
       await crowdsale.sendTransaction({ value: web3.toWei(balances[0]/rate, 'ether'), from: accounts[1] });
     if (balances[1] > 0)
@@ -56,7 +55,6 @@ contract('LifToken', function(accounts) {
     assert.equal("LIF", await token.SYMBOL.call());
     assert.equal(18, await token.DECIMALS.call());
   });
-
 
   it("should return the correct allowance amount after approval", async function() {
     await token.approve(accounts[2], help.lif2LifWei(10),{ from: accounts[1] });
