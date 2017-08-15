@@ -404,13 +404,19 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     let crowdsaleAndCommands = {
       commands: [ { type: 'checkRate' },
         { type: 'checkRate' },
-        { type: 'waitBlock', blocks: 19 },
+        { type: 'waitBlock', blocks: 29 },
         { type: 'buyTokens', beneficiary: 3, account: 2, eth: 12 } ],
-      crowdsale: { rate1: 16,
+      crowdsale: {
+        ratePublicPresale: 20,
+        rate1: 16,
         rate2: 14,
+        privatePresaleRate: 14,
         foundationWallet: 2,
         marketMaker: 8,
-        minCapEth: 72.68016394227743 } };
+        minCapEth: 72.68016394227743,
+        maxPresaleEth: 24.53689146786928
+      }
+    };
 
     await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
   });
@@ -425,7 +431,14 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         }
       ],
       crowdsale: {
-        rate1: 37, rate2: 31, foundationWallet: 4, marketMaker: 1, minCapEth: 144.9816832318902
+        ratePublicPresale: 20,
+        rate1: 6,
+        rate2: 5,
+        privatePresaleRate: 14,
+        foundationWallet: 10,
+        marketMaker: 6,
+        minCapEth: 120.9007621742785,
+        maxPresaleEth: 24.53689146786928
       }
     };
 
