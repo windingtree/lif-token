@@ -120,7 +120,7 @@ contract LifCrowdsale is Ownable, Pausable {
       return 0;
     else if (block.number <= endPublicPresaleBlock)
       return ratePublicPresale;
-    else if (block.number <= startBlock)
+    else if (block.number < startBlock)
       return 0;
     else if (block.number <= endBlock1)
       return rate1;
