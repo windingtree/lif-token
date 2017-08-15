@@ -13,11 +13,11 @@ contract LifToken is MintableToken, Pausable {
   // Token decimals
   uint public constant DECIMALS = 18;
 
-  // Edit of the ERC20 token events to support data argument
+  // Extra events based on ERC20 events
   event TransferData(address indexed from, address indexed to, uint value, bytes data);
   event ApprovalData(address indexed from, address indexed spender, uint value, bytes data);
 
-  //ERC20 token approve method with data call.
+  // approveData is an addition to ERC20 token methods. It allows approving the transference of value and execute a data call on the approval transaction
   function approveData(address spender, uint value, bytes data) {
 
     require(spender != address(this));
@@ -29,7 +29,7 @@ contract LifToken is MintableToken, Pausable {
 
   }
 
-  // ERC20 transfer method with data call.
+  // transferData is an addition to ERC20 token methods. It allows to transfer value and data on each transaction
   function transferData(address to, uint value, bytes data) {
 
     require(to != address(this));
@@ -45,7 +45,7 @@ contract LifToken is MintableToken, Pausable {
 
   }
 
-  // ERC20 transferFrom method with data call.
+  // transferDataFrom is an addition to ERC20 token methods. It allows to transfer approved value and data on each transaction
   function transferDataFrom(address from, address to, uint value, bytes data) {
 
     require(to != address(this));
