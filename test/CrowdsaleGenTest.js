@@ -1,4 +1,3 @@
-var protobuf = require("protobufjs");
 var _ = require('lodash');
 var jsc = require("jsverify");
 var chai = require("chai");

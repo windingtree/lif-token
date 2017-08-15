@@ -1,5 +1,4 @@
 
-var protobuf = require("protobufjs");
 var _ = require('lodash');
 
 var help = require("./helpers");
