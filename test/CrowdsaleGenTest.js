@@ -24,7 +24,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   let accountGen = jsc.nat(accounts.length - 1);
 
   let crowdsaleGen = jsc.record({
-    ratePublicPresale: jsc.nat,
+    publicPresaleRate: jsc.nat,
     rate1: jsc.nat,
     rate2: jsc.nat,
     privatePresaleRate: jsc.nat,
@@ -101,7 +101,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   let runBuyTokensCommand = async (command, state) => {
     let crowdsale = state.crowdsaleData,
-      { startPublicPresaleBlock, endPublicPresaleBlock, startBlock, endBlock2, ratePublicPresale, rate1, rate2, maxPresaleWei } = crowdsale,
+      { startPublicPresaleBlock, endPublicPresaleBlock, startBlock, endBlock2, publicPresaleRate, rate1, rate2, maxPresaleWei } = crowdsale,
       weiCost = parseInt(web3.toWei(command.eth, 'ether')),
       nextBlock = web3.eth.blockNumber + 1,
       rate = help.getCrowdsaleExpectedRate(crowdsale, nextBlock),
@@ -132,7 +132,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
           {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
         );
         state.weiRaised += weiCost;
-      } else if (rate == ratePublicPresale) {
+      } else if (rate == publicPresaleRate) {
         state.totalPresaleWei += weiCost;
       }
     } catch(e) {
@@ -289,8 +289,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     help.debug("crowdsaleTestInput data:\n", input, startPublicPresaleBlock, endPublicPresaleBlock, startBlock, endBlock1, endBlock2);
 
-    let {ratePublicPresale, rate1, rate2, minCapEth} = input.crowdsale;
-    let shouldThrow = (ratePublicPresale == 0) ||
+    let {publicPresaleRate, rate1, rate2, minCapEth} = input.crowdsale;
+    let shouldThrow = (publicPresaleRate == 0) ||
       (rate1 == 0) ||
       (rate2 == 0) ||
       (startPublicPresaleBlock >= endPublicPresaleBlock) ||
@@ -305,7 +305,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       let crowdsaleData = {
         startPublicPresaleBlock: startPublicPresaleBlock, endPublicPresaleBlock: endPublicPresaleBlock,
         startBlock: startBlock, endBlock1: endBlock1, endBlock2: endBlock2,
-        ratePublicPresale: input.crowdsale.ratePublicPresale,
+        publicPresaleRate: input.crowdsale.publicPresaleRate,
         rate1: input.crowdsale.rate1,
         rate2: input.crowdsale.rate2,
         privatePresaleRate: input.crowdsale.privatePresaleRate,
@@ -321,7 +321,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         crowdsaleData.startBlock,
         crowdsaleData.endBlock1,
         crowdsaleData.endBlock2,
-        crowdsaleData.ratePublicPresale,
+        crowdsaleData.publicPresaleRate,
         crowdsaleData.rate1,
         crowdsaleData.rate2,
         crowdsaleData.privatePresaleRate,
@@ -407,7 +407,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         { type: 'waitBlock', blocks: 29 },
         { type: 'buyTokens', beneficiary: 3, account: 2, eth: 12 } ],
       crowdsale: {
-        ratePublicPresale: 20,
+        publicPresaleRate: 20,
         rate1: 16,
         rate2: 14,
         privatePresaleRate: 14,
@@ -431,7 +431,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         }
       ],
       crowdsale: {
-        ratePublicPresale: 20,
+        publicPresaleRate: 20,
         rate1: 6,
         rate2: 5,
         privatePresaleRate: 14,

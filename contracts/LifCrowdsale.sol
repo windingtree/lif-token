@@ -28,7 +28,7 @@ contract LifCrowdsale is Ownable, Pausable {
   uint256 public privatePresaleRate;
 
   // how much wei a token unit costs to a buyer, during the public presale
-  uint256 public ratePublicPresale;
+  uint256 public publicPresaleRate;
   // how much wei a token unit costs to a buyer, during the first half of the crowdsale
   uint256 public rate1;
   // how much wei a token unit costs to a buyer, during the second half of the crowdsale
@@ -75,7 +75,7 @@ contract LifCrowdsale is Ownable, Pausable {
     uint256 _startBlock,
     uint256 _endBlock1,
     uint256 _endBlock2,
-    uint256 _ratePublicPresale,
+    uint256 _publicPresaleRate,
     uint256 _rate1,
     uint256 _rate2,
     uint256 _privatePresaleRate,
@@ -89,7 +89,7 @@ contract LifCrowdsale is Ownable, Pausable {
     require(_startBlock > _endPublicPresaleBlock);
     require(_endBlock1 > _startBlock);
     require(_endBlock2 > _endBlock1);
-    require(_ratePublicPresale > 0);
+    require(_publicPresaleRate > 0);
     require(_rate1 > 0);
     require(_rate2 > 0);
     require(_minCap > 0);
@@ -104,7 +104,7 @@ contract LifCrowdsale is Ownable, Pausable {
     startBlock = _startBlock;
     endBlock1 = _endBlock1;
     endBlock2 = _endBlock2;
-    ratePublicPresale = _ratePublicPresale;
+    publicPresaleRate = _publicPresaleRate;
     rate1 = _rate1;
     rate2 = _rate2;
     privatePresaleRate = _privatePresaleRate;
@@ -119,7 +119,7 @@ contract LifCrowdsale is Ownable, Pausable {
     if (block.number < startPublicPresaleBlock)
       return 0;
     else if (block.number <= endPublicPresaleBlock)
-      return ratePublicPresale;
+      return publicPresaleRate;
     else if (block.number < startBlock)
       return 0;
     else if (block.number <= endBlock1)
@@ -151,7 +151,7 @@ contract LifCrowdsale is Ownable, Pausable {
     uint256 tokens = weiAmount.mul(rate);
 
     // check if we are in the public presale block range
-    if (rate == ratePublicPresale) {
+    if (rate == publicPresaleRate) {
       // store how much wei did we receive in presale
       totalPresaleWei = totalPresaleWei.add(weiAmount);
     } else {
