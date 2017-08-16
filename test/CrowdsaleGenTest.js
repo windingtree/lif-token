@@ -93,7 +93,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     assert.equal(expectedRate, rate,
         "expected rate is different! Expected: " + expectedRate + ", actual: " + rate + ". blocks: " + web3.eth.blockNumber +
-        ", public presale start/end: " + state.crowdsaleData.startPublicPresaleBlock + "/" + state.crowdsaleData.endPublicPresaleBlock +
+        ", public presale start/end: " + state.crowdsaleData.publicPresaleStartBlock + "/" + state.crowdsaleData.publicPresaleEndBlock +
         ", start/end1/end2: " + state.crowdsaleData.startBlock + "/" + state.crowdsaleData.endBlock1 + "/" + state.crowdsaleData.endBlock2);
 
     return state;
@@ -101,7 +101,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   let runBuyTokensCommand = async (command, state) => {
     let crowdsale = state.crowdsaleData,
-      { startPublicPresaleBlock, endPublicPresaleBlock, startBlock, endBlock2, publicPresaleRate, rate1, rate2, maxPresaleWei } = crowdsale,
+      { publicPresaleStartBlock, publicPresaleEndBlock, startBlock, endBlock2, publicPresaleRate, rate1, rate2, maxPresaleWei } = crowdsale,
       weiCost = parseInt(web3.toWei(command.eth, 'ether')),
       nextBlock = web3.eth.blockNumber + 1,
       rate = help.getCrowdsaleExpectedRate(crowdsale, nextBlock),
@@ -109,9 +109,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       account = accounts[command.account],
       beneficiaryAccount = accounts[command.beneficiary];
 
-    let shouldThrow = (nextBlock < startPublicPresaleBlock) ||
-      (nextBlock > endPublicPresaleBlock && nextBlock < startBlock) ||
-      (nextBlock <= endPublicPresaleBlock && nextBlock >= startPublicPresaleBlock && ((state.totalPresaleWei + weiCost) > maxPresaleWei)) ||
+    let shouldThrow = (nextBlock < publicPresaleStartBlock) ||
+      (nextBlock > publicPresaleEndBlock && nextBlock < startBlock) ||
+      (nextBlock <= publicPresaleEndBlock && nextBlock >= publicPresaleStartBlock && ((state.totalPresaleWei + weiCost) > maxPresaleWei)) ||
       (nextBlock > endBlock2) ||
       (state.crowdsalePaused) ||
       (state.crowdsaleFinalized) ||
@@ -219,13 +219,13 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   let runAddPrivatePresalePaymentCommand = async (command, state) => {
 
     let crowdsale = state.crowdsaleData,
-      { startPublicPresaleBlock, maxPresaleWei, privatePresaleRate } = crowdsale,
+      { publicPresaleStartBlock, maxPresaleWei, privatePresaleRate } = crowdsale,
       nextBlock = web3.eth.blockNumber + 1,
       weiToSend = web3.toWei(command.eth, 'ether'),
       account = accounts[command.fromAccount],
       beneficiary = accounts[command.beneficiaryAccount];
 
-    let shouldThrow = (nextBlock >= startPublicPresaleBlock) ||
+    let shouldThrow = (nextBlock >= publicPresaleStartBlock) ||
       (state.crowdsalePaused) ||
       (account != accounts[0]) ||
       (state.crowdsaleFinalized) ||
@@ -281,20 +281,20 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   }
 
   let runGeneratedCrowdsaleAndCommands = async function(input) {
-    let startPublicPresaleBlock = web3.eth.blockNumber + 10;
-    let endPublicPresaleBlock = startPublicPresaleBlock + 10;
-    let startBlock = endPublicPresaleBlock + 10;
+    let publicPresaleStartBlock = web3.eth.blockNumber + 10;
+    let publicPresaleEndBlock = publicPresaleStartBlock + 10;
+    let startBlock = publicPresaleEndBlock + 10;
     let endBlock1 = startBlock + 10;
     let endBlock2 = endBlock1 + 10;
 
-    help.debug("crowdsaleTestInput data:\n", input, startPublicPresaleBlock, endPublicPresaleBlock, startBlock, endBlock1, endBlock2);
+    help.debug("crowdsaleTestInput data:\n", input, publicPresaleStartBlock, publicPresaleEndBlock, startBlock, endBlock1, endBlock2);
 
     let {publicPresaleRate, rate1, rate2, minCapEth} = input.crowdsale;
     let shouldThrow = (publicPresaleRate == 0) ||
       (rate1 == 0) ||
       (rate2 == 0) ||
-      (startPublicPresaleBlock >= endPublicPresaleBlock) ||
-      (endPublicPresaleBlock >= startBlock) ||
+      (publicPresaleStartBlock >= publicPresaleEndBlock) ||
+      (publicPresaleEndBlock >= startBlock) ||
       (startBlock >= endBlock1) ||
       (endBlock1 >= endBlock2) ||
       (minCapEth == 0);
@@ -303,7 +303,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     try {
       let crowdsaleData = {
-        startPublicPresaleBlock: startPublicPresaleBlock, endPublicPresaleBlock: endPublicPresaleBlock,
+        publicPresaleStartBlock: publicPresaleStartBlock, publicPresaleEndBlock: publicPresaleEndBlock,
         startBlock: startBlock, endBlock1: endBlock1, endBlock2: endBlock2,
         publicPresaleRate: input.crowdsale.publicPresaleRate,
         rate1: input.crowdsale.rate1,
@@ -316,8 +316,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       };
 
       let crowdsale = await LifCrowdsale.new(
-        crowdsaleData.startPublicPresaleBlock,
-        crowdsaleData.endPublicPresaleBlock,
+        crowdsaleData.publicPresaleStartBlock,
+        crowdsaleData.publicPresaleEndBlock,
         crowdsaleData.startBlock,
         crowdsaleData.endBlock1,
         crowdsaleData.endBlock2,

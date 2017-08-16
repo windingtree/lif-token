@@ -12,8 +12,8 @@ contract LifCrowdsale is Ownable, Pausable {
   LifToken public token;
 
   // start and end of the public presale
-  uint256 public startPublicPresaleBlock;
-  uint256 public endPublicPresaleBlock;
+  uint256 public publicPresaleStartBlock;
+  uint256 public publicPresaleEndBlock;
 
   // start and end block where investments are allowed (both inclusive)
   uint256 public startBlock;
@@ -70,8 +70,8 @@ contract LifCrowdsale is Ownable, Pausable {
   );
 
   function LifCrowdsale(
-    uint256 _startPublicPresaleBlock,
-    uint256 _endPublicPresaleBlock,
+    uint256 _publicPresaleStartBlock,
+    uint256 _publicPresaleEndBlock,
     uint256 _startBlock,
     uint256 _endBlock1,
     uint256 _endBlock2,
@@ -84,9 +84,9 @@ contract LifCrowdsale is Ownable, Pausable {
     uint256 _minCap,
     uint256 _maxPresaleWei
   ) {
-    require(_startPublicPresaleBlock >= block.number);
-    require(_endPublicPresaleBlock > _startPublicPresaleBlock);
-    require(_startBlock > _endPublicPresaleBlock);
+    require(_publicPresaleStartBlock >= block.number);
+    require(_publicPresaleEndBlock > _publicPresaleStartBlock);
+    require(_startBlock > _publicPresaleEndBlock);
     require(_endBlock1 > _startBlock);
     require(_endBlock2 > _endBlock1);
     require(_publicPresaleRate > 0);
@@ -99,8 +99,8 @@ contract LifCrowdsale is Ownable, Pausable {
     token = new LifToken();
     token.pause();
 
-    startPublicPresaleBlock = _startPublicPresaleBlock;
-    endPublicPresaleBlock = _endPublicPresaleBlock;
+    publicPresaleStartBlock = _publicPresaleStartBlock;
+    publicPresaleEndBlock = _publicPresaleEndBlock;
     startBlock = _startBlock;
     endBlock1 = _endBlock1;
     endBlock2 = _endBlock2;
@@ -116,9 +116,9 @@ contract LifCrowdsale is Ownable, Pausable {
 
   // returns the current rate or 0 if current block is not within the crowdsale period
   function getRate() public constant returns (uint256) {
-    if (block.number < startPublicPresaleBlock)
+    if (block.number < publicPresaleStartBlock)
       return 0;
-    else if (block.number <= endPublicPresaleBlock)
+    else if (block.number <= publicPresaleEndBlock)
       return publicPresaleRate;
     else if (block.number < startBlock)
       return 0;
@@ -166,7 +166,7 @@ contract LifCrowdsale is Ownable, Pausable {
   }
 
   function addPrivatePresaleTokens(address beneficiary, uint256 weiSent) onlyOwner {
-    require(block.number < startPublicPresaleBlock);
+    require(block.number < publicPresaleStartBlock);
     require(beneficiary != address(0));
     require(weiSent > 0);
 
@@ -189,7 +189,7 @@ contract LifCrowdsale is Ownable, Pausable {
   // @return true if the transaction can buy tokens
   function validPurchase() internal constant returns (bool) {
     uint256 current = block.number;
-    bool withinPublicPresalePeriod = current >= startPublicPresaleBlock && current <= endPublicPresaleBlock;
+    bool withinPublicPresalePeriod = current >= publicPresaleStartBlock && current <= publicPresaleEndBlock;
     bool maxPresaleNotReached = totalPresaleWei.add(msg.value) <= maxPresaleWei;
     bool withinPeriod = current >= startBlock && current <= endBlock2;
     bool nonZeroPurchase = msg.value != 0;

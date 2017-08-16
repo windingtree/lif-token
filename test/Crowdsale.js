@@ -11,14 +11,14 @@ const LOG_EVENTS = true;
 contract('LifToken Crowdsale', function(accounts) {
 
   it("can create a Crowndsale", async function() {
-    const startPublicPresale = web3.eth.blockNumber + 10,
-      endPublicPresale = startPublicPresale + 10,
+    const publicPresaleStartBlock = web3.eth.blockNumber + 10,
+      endPublicPresale = publicPresaleStartBlock + 10,
       startBlock = endPublicPresale + 10,
       endBlock1 = startBlock + 15,
       endBlock2 = startBlock + 20;
 
     let crowdsale = await LifCrowdsale.new(
-      startPublicPresale, endPublicPresale,
+      publicPresaleStartBlock, endPublicPresale,
       startBlock, endBlock1, endBlock2,
       130, 100, 110, 150,
       accounts[0], accounts[1],
@@ -26,8 +26,8 @@ contract('LifToken Crowdsale', function(accounts) {
       20000000
     );
 
-    assert.equal(startPublicPresale, parseInt(await crowdsale.startPublicPresaleBlock.call()));
-    assert.equal(endPublicPresale, parseInt(await crowdsale.endPublicPresaleBlock.call()));
+    assert.equal(publicPresaleStartBlock, parseInt(await crowdsale.publicPresaleStartBlock.call()));
+    assert.equal(endPublicPresale, parseInt(await crowdsale.publicPresaleEndBlock.call()));
     assert.equal(startBlock, parseInt(await crowdsale.startBlock.call()));
     assert.equal(endBlock1, parseInt(await crowdsale.endBlock1.call()));
     assert.equal(endBlock2, parseInt(await crowdsale.endBlock2.call()));
