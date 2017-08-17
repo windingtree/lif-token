@@ -141,7 +141,7 @@ contract LifCrowdsale is Ownable, Pausable {
   // low level token purchase function for ICO
   function buyTokens(address beneficiary) payable {
     require(beneficiary != 0x0);
-    require(validPurchase(false));
+    require(validPurchase());
 
     uint256 weiAmount = msg.value;
 
@@ -165,7 +165,7 @@ contract LifCrowdsale is Ownable, Pausable {
   // low level token purchase function for presale
   function buyPresaleTokens(address beneficiary) payable {
     require(beneficiary != 0x0);
-    require(validPurchase(true));
+    require(validPresalePurchase());
 
     uint256 weiAmount = msg.value;
 
@@ -205,17 +205,21 @@ contract LifCrowdsale is Ownable, Pausable {
     // marketMaker.transfer(marketMakerPercentage * this.balance);
   }
 
-  // @return true if the transaction can buy tokens
-  function validPurchase(bool fromPresaleBuy) internal constant returns (bool) {
+  // @return true if the transaction can buy tokens on ICO
+  function validPurchase() internal constant returns (bool) {
+    uint256 current = block.number;
+    bool withinPeriod = current >= startBlock && current <= endBlock2;
+    bool nonZeroPurchase = msg.value != 0;
+    return (withinPeriod && nonZeroPurchase);
+  }
+
+  // @return true if the transaction can buy tokens on presale
+  function validPresalePurchase() internal constant returns (bool) {
     uint256 current = block.number;
     bool withinPublicPresalePeriod = current >= publicPresaleStartBlock && current <= publicPresaleEndBlock;
     bool maxPresaleNotReached = totalPresaleWei.add(msg.value) <= maxPresaleWei;
-    bool withinPeriod = current >= startBlock && current <= endBlock2;
     bool nonZeroPurchase = msg.value != 0;
-    return (
-      (withinPublicPresalePeriod && maxPresaleNotReached && nonZeroPurchase && fromPresaleBuy)
-      || (withinPeriod && nonZeroPurchase && !fromPresaleBuy)
-    );
+    return (withinPublicPresalePeriod && maxPresaleNotReached && nonZeroPurchase);
   }
 
   // @return true if crowdsale event has ended
