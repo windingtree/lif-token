@@ -53,6 +53,12 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     beneficiary: accountGen,
     eth: jsc.nat
   });
+  let sendTransactionCommandGen = jsc.record({
+    type: jsc.constant("sendTransaction"),
+    account: accountGen,
+    beneficiary: accountGen,
+    eth: jsc.nat
+  });
   let pauseCrowdsaleCommandGen = jsc.record({
     type: jsc.constant("pauseCrowdsale"),
     pause: jsc.bool,
@@ -172,6 +178,46 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     return state;
   }
 
+
+  let runSendTransactionCommand = async (command, state) => {
+    let crowdsale = state.crowdsaleData,
+      { publicPresaleStartBlock, publicPresaleEndBlock, startBlock, endBlock2, publicPresaleRate, rate1, rate2, maxPresaleWei } = crowdsale,
+      weiCost = parseInt(web3.toWei(command.eth, 'ether')),
+      nextBlock = web3.eth.blockNumber + 1,
+      rate = help.getCrowdsaleExpectedRate(crowdsale, nextBlock),
+      tokens = command.eth * rate,
+      account = accounts[command.account],
+      beneficiaryAccount = accounts[command.beneficiary];
+
+    let shouldThrow = (nextBlock < publicPresaleStartBlock) ||
+      (nextBlock > publicPresaleEndBlock && nextBlock < startBlock) ||
+      (nextBlock <= publicPresaleEndBlock && nextBlock >= publicPresaleStartBlock && ((state.totalPresaleWei + weiCost) > maxPresaleWei)) ||
+      (nextBlock > endBlock2) ||
+      (state.crowdsalePaused) ||
+      (state.crowdsaleFinalized) ||
+      (command.eth == 0);
+
+    try {
+      // help.debug("buyTokens rate:", rate, "eth:", command.eth, "endBlocks:", crowdsale.endBlock1, endBlock2, "blockNumber:", nextBlock);
+
+      await state.crowdsaleContract.sendTransaction({value: weiCost, from: account});
+
+      assert.equal(false, shouldThrow, "buyTokens should have thrown but it didn't");
+      if (rate == rate1 || rate == rate2) {
+        state.purchases = _.concat(state.purchases,
+          {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
+        );
+        state.weiRaised += weiCost;
+      } else if (rate == publicPresaleRate) {
+        state.totalPresaleWei += weiCost;
+      }
+    } catch(e) {
+      if (!shouldThrow)
+        throw(new ExceptionRunningCommand(e, state, command));
+    }
+    return state;
+  }
+
   let runPauseCrowdsaleCommand = async (command, state) => {
     let shouldThrow = (state.crowdsalePaused == command.pause) ||
       (command.fromAccount != 0);
@@ -280,6 +326,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   let commands = {
     waitBlock: {gen: waitBlockCommandGen, run: runWaitBlockCommand},
     checkRate: {gen: checkRateCommandGen, run: runCheckRateCommand},
+    sendTransaction: {gen: sendTransactionCommandGen, run: runSendTransactionCommand},
     buyTokens: {gen: buyTokensCommandGen, run: runBuyTokensCommand},
     buyPresaleTokens: {gen: buyPresaleTokensCommandGen, run: runBuyPresaleTokensCommand},
     pauseCrowdsale: {gen: pauseCrowdsaleCommandGen, run: runPauseCrowdsaleCommand},
