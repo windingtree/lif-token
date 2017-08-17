@@ -132,13 +132,16 @@ contract LifCrowdsale is Ownable, Pausable {
 
   // fallback function can be used to buy tokens
   function () payable {
-    buyTokens(msg.sender);
+    if (block.number >= startBlock)
+      buyTokens(msg.sender);
+    else
+      buyPresaleTokens(msg.sender);
   }
 
-  // low level token purchase function
+  // low level token purchase function for ICO
   function buyTokens(address beneficiary) payable {
     require(beneficiary != 0x0);
-    require(validPurchase());
+    require(validPurchase(false));
 
     uint256 weiAmount = msg.value;
 
@@ -150,16 +153,32 @@ contract LifCrowdsale is Ownable, Pausable {
     // calculate token amount to be created
     uint256 tokens = weiAmount.mul(rate);
 
-    // check if we are in the public presale block range
-    if (rate == publicPresaleRate) {
-      // store how much wei did we receive in presale
-      totalPresaleWei = totalPresaleWei.add(weiAmount);
-    } else {
-      // store wei amount in case of ICO min cap not reached
-      weiRaised = weiRaised.add(weiAmount);
-      purchases[beneficiary] = weiAmount;
-      tokensSold = tokensSold.add(tokens);
-    }
+    // store wei amount in case of ICO min cap not reached
+    weiRaised = weiRaised.add(weiAmount);
+    purchases[beneficiary] = weiAmount;
+    tokensSold = tokensSold.add(tokens);
+
+    token.mint(beneficiary, tokens);
+    TokenPurchase(msg.sender, beneficiary, weiAmount, tokens);
+  }
+
+  // low level token purchase function for presale
+  function buyPresaleTokens(address beneficiary) payable {
+    require(beneficiary != 0x0);
+    require(validPurchase(true));
+
+    uint256 weiAmount = msg.value;
+
+    // get current price (it depends on current block number)
+    uint256 rate = getRate();
+
+    assert(rate > 0);
+
+    // calculate token amount to be created
+    uint256 tokens = weiAmount.mul(rate);
+
+    // store how much wei did we receive in presale
+    totalPresaleWei = totalPresaleWei.add(weiAmount);
 
     token.mint(beneficiary, tokens);
     TokenPurchase(msg.sender, beneficiary, weiAmount, tokens);
@@ -187,13 +206,16 @@ contract LifCrowdsale is Ownable, Pausable {
   }
 
   // @return true if the transaction can buy tokens
-  function validPurchase() internal constant returns (bool) {
+  function validPurchase(bool fromPresaleBuy) internal constant returns (bool) {
     uint256 current = block.number;
     bool withinPublicPresalePeriod = current >= publicPresaleStartBlock && current <= publicPresaleEndBlock;
     bool maxPresaleNotReached = totalPresaleWei.add(msg.value) <= maxPresaleWei;
     bool withinPeriod = current >= startBlock && current <= endBlock2;
     bool nonZeroPurchase = msg.value != 0;
-    return (withinPublicPresalePeriod && maxPresaleNotReached && nonZeroPurchase) || (withinPeriod && nonZeroPurchase);
+    return (
+      (withinPublicPresalePeriod && maxPresaleNotReached && nonZeroPurchase && fromPresaleBuy)
+      || (withinPeriod && nonZeroPurchase && !fromPresaleBuy)
+    );
   }
 
   // @return true if crowdsale event has ended
