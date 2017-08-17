@@ -11,6 +11,10 @@ contract LifCrowdsale is Ownable, Pausable {
   // The token being sold
   LifToken public token;
 
+  // start and end of the public presale
+  uint256 public publicPresaleStartBlock;
+  uint256 public publicPresaleEndBlock;
+
   // start and end block where investments are allowed (both inclusive)
   uint256 public startBlock;
   uint256 public endBlock1;
@@ -23,6 +27,8 @@ contract LifCrowdsale is Ownable, Pausable {
   // how much wei a token unit costs to a buyer, during the private presale stage
   uint256 public privatePresaleRate;
 
+  // how much wei a token unit costs to a buyer, during the public presale
+  uint256 public publicPresaleRate;
   // how much wei a token unit costs to a buyer, during the first half of the crowdsale
   uint256 public rate1;
   // how much wei a token unit costs to a buyer, during the second half of the crowdsale
@@ -64,9 +70,12 @@ contract LifCrowdsale is Ownable, Pausable {
   );
 
   function LifCrowdsale(
+    uint256 _publicPresaleStartBlock,
+    uint256 _publicPresaleEndBlock,
     uint256 _startBlock,
     uint256 _endBlock1,
     uint256 _endBlock2,
+    uint256 _publicPresaleRate,
     uint256 _rate1,
     uint256 _rate2,
     uint256 _privatePresaleRate,
@@ -75,9 +84,12 @@ contract LifCrowdsale is Ownable, Pausable {
     uint256 _minCap,
     uint256 _maxPresaleWei
   ) {
-    require(_startBlock >= block.number);
+    require(_publicPresaleStartBlock >= block.number);
+    require(_publicPresaleEndBlock > _publicPresaleStartBlock);
+    require(_startBlock > _publicPresaleEndBlock);
     require(_endBlock1 > _startBlock);
     require(_endBlock2 > _endBlock1);
+    require(_publicPresaleRate > 0);
     require(_rate1 > 0);
     require(_rate2 > 0);
     require(_minCap > 0);
@@ -87,9 +99,12 @@ contract LifCrowdsale is Ownable, Pausable {
     token = new LifToken();
     token.pause();
 
+    publicPresaleStartBlock = _publicPresaleStartBlock;
+    publicPresaleEndBlock = _publicPresaleEndBlock;
     startBlock = _startBlock;
     endBlock1 = _endBlock1;
     endBlock2 = _endBlock2;
+    publicPresaleRate = _publicPresaleRate;
     rate1 = _rate1;
     rate2 = _rate2;
     privatePresaleRate = _privatePresaleRate;
@@ -101,7 +116,11 @@ contract LifCrowdsale is Ownable, Pausable {
 
   // returns the current rate or 0 if current block is not within the crowdsale period
   function getRate() public constant returns (uint256) {
-    if (block.number < startBlock)
+    if (block.number < publicPresaleStartBlock)
+      return 0;
+    else if (block.number <= publicPresaleEndBlock)
+      return publicPresaleRate;
+    else if (block.number < startBlock)
       return 0;
     else if (block.number <= endBlock1)
       return rate1;
@@ -113,10 +132,13 @@ contract LifCrowdsale is Ownable, Pausable {
 
   // fallback function can be used to buy tokens
   function () payable {
-    buyTokens(msg.sender);
+    if (block.number >= startBlock)
+      buyTokens(msg.sender);
+    else
+      buyPresaleTokens(msg.sender);
   }
 
-  // low level token purchase function
+  // low level token purchase function for ICO
   function buyTokens(address beneficiary) payable {
     require(beneficiary != 0x0);
     require(validPurchase());
@@ -131,7 +153,7 @@ contract LifCrowdsale is Ownable, Pausable {
     // calculate token amount to be created
     uint256 tokens = weiAmount.mul(rate);
 
-    // update state
+    // store wei amount in case of ICO min cap not reached
     weiRaised = weiRaised.add(weiAmount);
     purchases[beneficiary] = weiAmount;
     tokensSold = tokensSold.add(tokens);
@@ -140,8 +162,30 @@ contract LifCrowdsale is Ownable, Pausable {
     TokenPurchase(msg.sender, beneficiary, weiAmount, tokens);
   }
 
+  // low level token purchase function for presale
+  function buyPresaleTokens(address beneficiary) payable {
+    require(beneficiary != 0x0);
+    require(validPresalePurchase());
+
+    uint256 weiAmount = msg.value;
+
+    // get current price (it depends on current block number)
+    uint256 rate = getRate();
+
+    assert(rate > 0);
+
+    // calculate token amount to be created
+    uint256 tokens = weiAmount.mul(rate);
+
+    // store how much wei did we receive in presale
+    totalPresaleWei = totalPresaleWei.add(weiAmount);
+
+    token.mint(beneficiary, tokens);
+    TokenPurchase(msg.sender, beneficiary, weiAmount, tokens);
+  }
+
   function addPrivatePresaleTokens(address beneficiary, uint256 weiSent) onlyOwner {
-    require(block.number < startBlock);
+    require(block.number < publicPresaleStartBlock);
     require(beneficiary != address(0));
     require(weiSent > 0);
 
@@ -161,12 +205,21 @@ contract LifCrowdsale is Ownable, Pausable {
     // marketMaker.transfer(marketMakerPercentage * this.balance);
   }
 
-  // @return true if the transaction can buy tokens
+  // @return true if the transaction can buy tokens on ICO
   function validPurchase() internal constant returns (bool) {
     uint256 current = block.number;
     bool withinPeriod = current >= startBlock && current <= endBlock2;
     bool nonZeroPurchase = msg.value != 0;
-    return withinPeriod && nonZeroPurchase;
+    return (withinPeriod && nonZeroPurchase);
+  }
+
+  // @return true if the transaction can buy tokens on presale
+  function validPresalePurchase() internal constant returns (bool) {
+    uint256 current = block.number;
+    bool withinPublicPresalePeriod = current >= publicPresaleStartBlock && current <= publicPresaleEndBlock;
+    bool maxPresaleNotReached = totalPresaleWei.add(msg.value) <= maxPresaleWei;
+    bool nonZeroPurchase = msg.value != 0;
+    return (withinPublicPresalePeriod && maxPresaleNotReached && nonZeroPurchase);
   }
 
   // @return true if crowdsale event has ended

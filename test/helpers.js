@@ -104,13 +104,20 @@ module.exports = {
   },
 
   getCrowdsaleExpectedRate: function(crowdsale, blockNumber) {
-    let { startBlock, endBlock1, endBlock2, rate1, rate2 } = crowdsale;
-    if (blockNumber < startBlock || blockNumber > endBlock2) {
+    let { publicPresaleStartBlock, publicPresaleEndBlock, startBlock, endBlock1, endBlock2, publicPresaleRate, rate1, rate2 } = crowdsale;
+
+    if (blockNumber < publicPresaleStartBlock) {
+      return 0;
+    } else if (blockNumber <= publicPresaleEndBlock) {
+      return publicPresaleRate;
+    } else if (blockNumber < startBlock) {
       return 0;
     } else if (blockNumber <= endBlock1) {
       return rate1;
     } else if (blockNumber <= endBlock2) {
       return rate2;
+    } else {
+      return 0;
     }
   },
 
