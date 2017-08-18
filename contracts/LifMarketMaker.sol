@@ -25,6 +25,15 @@ contract LifMarketMaker is Ownable {
   // Last period where the foundation claimed we from the MM
   uint256 public claimableUpdatedMonth = 0;
 
+  // The total amount of wei gained on buying/selling tokens
+  uint256 public totalWeiProfit = 0;
+
+  // The total amount of wei that was claimed by the foundation
+  uint256 public totalWeiClaimed = 0;
+
+  // The initial price at which the market maker buys tokens
+  uint256 public initialBuyPrice = 0;
+
   struct DistributionPeriod {
     uint256 startBlock;
     uint256 endBlock;
@@ -46,6 +55,7 @@ contract LifMarketMaker is Ownable {
     calculateDistributionPeriods(_startBlock, _totalPeriods, _blocksPerPeriod);
     foundationAddr = _foundationAddr;
     initialWei = msg.value;
+    initialBuyPrice = initialWei.div(lifToken.totalSupply());
   }
 
   function calculateDistributionPeriods(
@@ -119,7 +129,6 @@ contract LifMarketMaker is Ownable {
 
     return 1;
   }
-
 
   // Get the total amount of wei tat the foundation can claim in the current distribution period
 
