@@ -4,81 +4,97 @@ import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "zeppelin-solidity/contracts/token/ERC20.sol";
 
-contract LifMarketMaker is Ownable{
+contract LifMarketMaker is Ownable {
   using SafeMath for uint256;
 
   // The Lif token contract
   ERC20 public lifToken;
 
-  // The address of teh foundation taht can claim the ETH
+  // The address of teh foundation that can claim the ETH
   address public foundationAddr;
 
-  // The wei gained by buying/selling lif
-  uint256 weiRaised;
-
   // The starting wei that the market maker receives
-  uint256 marketMakerWei;
+  uint256 initialWei;
 
   // Start and end block variables
   uint256 public startBlock;
-  uint256 public endBlock;
-
-  // Total amount of blocks that the mm will run
-  uint256 public totalBlocks;
 
   // Amount of blocks that every period will last
   uint256 public blocksPerPeriod;
 
-  bool public isFinalized = false;
+  // Last period where the foundation claimed we from the MM
+  uint256 public claimableUpdatedMonth = 0;
 
-  struct BlockPeriod {
+  struct DistributionPeriod {
     uint256 startBlock;
     uint256 endBlock;
-    uint256 buyRate;
-    uint256 weiToClaim;
+    uint256 deltaDistribution; // This is % of the initialWei that can be claimed by the foundation from this period
   }
 
-  BlockPeriod[] blockPeriods;
-
-  event Finalized();
+  DistributionPeriod[] public distributionPeriods;
 
   function LifMarketMaker(
-    address lifAddr,
-    uint256 _startBlock,
-    uint256 _endBlock,
-    uint256 totalPeriods,
-    address _foundationAddr
+    address lifAddr, uint256 _startBlock, uint256 _blocksPerPeriod,
+    uint8 _totalPeriods, address _foundationAddr
   ) payable {
+
+    assert(_totalPeriods == 24 || _totalPeriods == 48);
+
     lifToken = ERC20(lifAddr);
     startBlock = _startBlock;
-    endBlock = _endBlock;
-    totalBlocks = _endBlock.sub(startBlock);
-    blocksPerPeriod = totalBlocks.div(totalPeriods);
+    blocksPerPeriod = _blocksPerPeriod;
+    calculateDistributionPeriods(_startBlock, _totalPeriods, _blocksPerPeriod);
     foundationAddr = _foundationAddr;
-    marketMakerWei = msg.value;
+    initialWei = msg.value;
   }
 
-  modifier notFinalized() {
-    if (!isFinalized)
-      _;
+  function calculateDistributionPeriods(
+    uint256 startBlock, uint8 totalPeriods, uint256 blocksPerPeriod
+  ) internal {
+    assert(totalPeriods == 24 || totalPeriods == 48);
+    require(startBlock >= block.number);
+    require(blocksPerPeriod > 0);
+
+    uint256[24] memory deltas24 = [
+      uint256(0), 18, 99, 234, 416, 640,
+      902, 1202, 1536, 1905, 2305, 2738,
+      3201, 3693, 4215, 4766, 5345, 5951,
+      6583, 7243, 7929, 8640, 9377, 10138
+    ];
+
+    uint256[48] memory deltas48 = [
+      uint256(0), 3, 15, 36, 63, 97,
+      137, 183, 233, 289, 350, 416,
+      486, 561, 641, 724, 812, 904,
+      1000, 1101, 1205, 1313, 1425, 1541,
+      1660, 1783, 1910, 2041, 2175, 2312,
+      2454, 2598, 2746, 2898, 3053, 3211,
+      3373, 3537, 3706, 3877, 4052, 4229,
+      4410, 4595, 4782, 4972, 5166, 5363
+    ];
+
+    for (uint8 i = 0; i < totalPeriods; i++) {
+      uint256 distributionDelta;
+      if (totalPeriods == 24) {
+        distributionDelta = deltas24[i];
+      } else {
+        distributionDelta = deltas48[i];
+      }
+      uint256 endBlockPeriod = startBlock.add(blocksPerPeriod).sub(1);
+
+      uint256 maxClaimableWei = initialWei
+      .div(100000)
+      .mul(distributionPeriods[blockPeriodIndex].deltaDistribution);
+
+      distributionPeriods.push(DistributionPeriod(
+        startBlock, endBlockPeriod, maxClaimableWei
+      ));
+      startBlock = startBlock.add(blocksPerPeriod);
+    }
+
   }
 
-  function addBlockPeriod(uint256 startBlock, uint256 endBlock, uint256 buyRate, uint256 weiToClaim) onlyOwner {
-
-    require(block.number < startBlock);
-
-    // Verify that period not exist and the start and end block are corrects
-
-    BlockPeriod newPeriod;
-    newPeriod.startBlock = startBlock;
-    newPeriod.endBlock= endBlock;
-    newPeriod.buyRate = buyRate;
-    newPeriod.weiToClaim = weiToClaim;
-
-    blockPeriods.push(newPeriod);
-  }
-
-  function getBlockPeriodIndex() constant public returns(uint256) {
+  function getDistributionPeriodIndex() constant public returns(uint256) {
     uint256 blocksAfterStart = block.number.sub(startBlock);
     return blocksAfterStart.div(blocksPerPeriod);
   }
@@ -87,42 +103,45 @@ contract LifMarketMaker is Ownable{
 
     uint256 foundationWei = getFoundationWei();
 
-    uint256 ActualMarketMakerWei = this.balance.sub(foundationWei);
-
-    uint256 foundationTokens = lifToken.balanceOf(foundationAddr);
+    uint256 currentMarketMakerWei = this.balance.sub(foundationWei);
 
     uint256 sellRate = lifToken.totalSupply()
-      .sub(foundationTokens)
-      .div(ActualMarketMakerWei);
+      .div(currentMarketMakerWei);
 
     return sellRate;
   }
 
   function getBuyRate() public constant returns (uint256 rate) {
 
-    uint256 blockPeriodIndex = getBlockPeriodIndex();
+    uint256 blockPeriodIndex = getDistributionPeriodIndex();
 
-    uint256 buyRate = blockPeriods[blockPeriodIndex].buyRate;
+    // uint256 buyRate = distributionPeriods[blockPeriodIndex].buyRate;
 
-    return buyRate;
+    return 1;
   }
 
-  function getFoundationWei() internal returns (uint256) {
 
-    uint256 blockPeriodIndex = getBlockPeriodIndex();
+  // Get the total amount of wei tat the foundation can claim in the current distribution period
 
-    uint256 foundationWei = marketMakerWei
-      .mul(10000)
-      .div(blockPeriods[blockPeriodIndex].weiToClaim);
+  // TODO Calculate the total amount of wei that the foundation can withdraw, not only of current period
+  function getFoundationWei() constant public returns (uint256) {
+
+    uint256 currentPeriodIndex = getDistributionPeriodIndex();
+
+    uint256 foundationWei = 0;
 
     uint256 weiRaied = this.balance
       .sub(foundationWei)
-      .sub(marketMakerWei);
+      .sub(initialWei);
 
     return foundationWei.add(weiRaied);
   }
 
-  function buyLif() notFinalized payable {
+  function() payable {
+    buyLif();
+  }
+
+  function buyLif() payable {
 
     require(msg.value > 0);
 
@@ -138,7 +157,7 @@ contract LifMarketMaker is Ownable{
 
   }
 
-  function sellLif(uint256 amount) notFinalized {
+  function sellLif(uint256 amount) {
 
     uint256 allowance = lifToken.allowance(msg.sender, address(this));
 
@@ -163,24 +182,17 @@ contract LifMarketMaker is Ownable{
 
     foundationAddr.transfer(amountToClaim);
 
-    uint256 blockPeriodIndex = getBlockPeriodIndex();
+    uint256 blockPeriodIndex = getDistributionPeriodIndex();
 
-    blockPeriods[ blockPeriodIndex ].weiToClaim.sub(amountToClaim);
-  }
+    distributionPeriods[ blockPeriodIndex ].deltaDistribution.sub(amountToClaim);
 
-  function finalize() {
+    // require(block.number > endBlock);
 
-    require(block.number > endBlock);
+    // uint256 lifBalance = lifToken.balanceOf(address(this));
 
-    uint256 lifBalance = lifToken.balanceOf(address(this));
+    // lifToken.approve(foundationAddr, lifBalance);
 
-    lifToken.approve(foundationAddr, lifBalance);
-
-    foundationAddr.transfer(this.balance);
-
-    isFinalized = true;
-
-    Finalized();
+    // foundationAddr.transfer(this.balance);
   }
 
 }
