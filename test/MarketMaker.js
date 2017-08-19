@@ -1,10 +1,18 @@
 var help = require("./helpers");
 
+var BigNumber = web3.BigNumber;
+
+const should = require('chai')
+  .use(require('chai-bignumber')(BigNumber))
+  .should();
+
 var LifMarketMaker = artifacts.require("./LifMarketMaker.sol");
 var LifToken = artifacts.require("./LifToken.sol");
 var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
 
 const LOG_EVENTS = true;
+
+const gasPrice = new BigNumber(100000000000);
 
 contract('marketMaker', function(accounts) {
 
@@ -173,23 +181,6 @@ contract('marketMaker', function(accounts) {
     assert.equal(4, parseInt(await mm.getCurrentPeriodIndex()) );
   });
 
-  var checkScenarioProperties = async function(data, mm, customer) {
-    assert.equal(data.totalProfit, mm.totalProfit());
-    assert.equal(data.marketMakerEthBalance, web3.eth.getBalance(mm.address));
-    assert.equal(data.marketMakerLifBalance, lifToken.balanceOf(mm.address));
-    assert.equal(data.customerEthBalance, web3.eth.getBalance(customer));
-    assert.equal(data.customerLifBalance, lifToken.balanceOf(customer));
-    assert.equal(data.marketMakerSellPrice, mm.getSellPrice());
-    assert.equal(data.marketMakerBuyPrice, mm.getBuyPrice());
-    assert.equal(data.claimablePercentage, mm.getAccumulatedDistributedPercentage());
-    assert.equal(data.maxClaimableEth, mm.getMaxClaimableWei());
-    assert.equal(data.totalClaimedEth, mm.totalClaimedWei());
-  };
-
-  let waitForMonth = async function(numberOfMonth, startBlock, blocksPerPeriod) {
-    await help.waitToBlock(startBlock+blocksPerPeriod*numberOfMonth, accounts);
-  };
-
   it("Should return the correct sellPrice on every period with 873750 tokens total supply and 3285 ETH in MM", async function() {
     token = await simulateCrowdsale(100, [873750,0,0,0,0], accounts);
 
@@ -245,148 +236,191 @@ contract('marketMaker', function(accounts) {
     }
   });
 
+  var checkScenarioProperties = async function(data, mm, customer) {
+    help.debug("checking scenario", JSON.stringify(data));
+
+    data.totalProfit.should.be.bignumber.equal(await mm.totalWeiProfit());
+    data.marketMakerEthBalance.should.be.bignumber.equal(web3.eth.getBalance(mm.address));
+    data.marketMakerLifBalance.should.be.bignumber.equal(await token.balanceOf(mm.address));
+    data.marketMakerSellPrice.should.be.bignumber.equal(await mm.getSellPrice());
+    web3.eth.getBalance(customer).should.be.bignumber.equal(data.customerEthBalance);
+
+    data.customerLifBalance.should.be.bignumber.equal(await token.balanceOf(customer));
+    data.marketMakerBuyPrice.should.be.bignumber.equal(await mm.getBuyPrice());
+
+    assert.equal(data.claimablePercentage, parseInt(await mm.getAccumulatedDistributionPercentage()));
+    // TODO: Check the precision here is too low.
+    data.maxClaimableEth.should.be.bignumber.equal(await mm.getMaxClaimableWeiAmount());
+
+    data.totalClaimedEth.should.be.bignumber.equal(await mm.totalWeiClaimed());
+  };
+
   it("should go through scenario with some claims and sells on the Market Maker", async function() {
     // Create MM with balance of 200 ETH and 100 tokens in circulation,
     // starting sell price of 2100 mETH/Lif, increment coefficient 0.01
-    const startingMMBalance = web3.toWei(200, 'ether');
     const tokenTotalSupply = 100;
-    const startingSellPrice = 2100;
     const sellPriceIncrement = 1.01;
+    const initialPriceSpread = 1.05
+
+    token = await simulateCrowdsale(tokenTotalSupply, [tokenTotalSupply], accounts);
+
+    let customer = accounts[1];
+    const priceFactor = 100000;
+    let startingMMBalance = new BigNumber(web3.toWei(200, 'ether'));
+    const initialSellPrice = startingMMBalance.dividedBy(help.lif2LifWei(tokenTotalSupply)).mul(priceFactor).mul(initialPriceSpread);
+    const initialBuyPrice = startingMMBalance.dividedBy(help.lif2LifWei(tokenTotalSupply));
+
+    let state = {
+      marketMakerEthBalance: startingMMBalance,
+      marketMakerLifBalance: new BigNumber(0),
+      totalProfit: new BigNumber(0),
+      customerEthBalance: web3.eth.getBalance(customer),
+      customerLifBalance: await token.balanceOf(customer),
+      marketMakerSellPrice: initialSellPrice,
+      marketMakerBuyPrice: startingMMBalance.dividedBy(help.lif2LifWei(tokenTotalSupply)).mul(priceFactor),
+      claimablePercentage: 0, maxClaimableEth: new BigNumber(0), totalClaimedEth: new BigNumber(0)
+    };
 
     const startBlock = web3.eth.blockNumber + 10;
-    const blocksPerPeriod = 100;
+    const blocksPerPeriod = 30;
 
-    var customer = accounts[2];
-    token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
-    mm = await LifMarketMaker.new(token.address, startBlock, blocksPerPeriod, 24,
-      accounts[1], {from: accounts[0]});
+    const foundationWallet = accounts[9];
 
-    await mm.fund({value: web3.toWei(8, 'ether'), from: accounts[0]});
+    mm = await LifMarketMaker.new(token.address, startBlock, blocksPerPeriod, 24, foundationWallet,
+      priceFactor * initialPriceSpread, {from: accounts[0]});
+
+    await mm.fund({value: state.marketMakerEthBalance, from: accounts[0]});
+    await mm.calculateDistributionPeriods({from: accounts[0]});
+    await mm.calculateSellPricePeriods({from: accounts[6]});
+
+    let distributionDeltas = [
+      0, 18, 99, 234, 416, 640,
+      902, 1202, 1536, 1905, 2305, 2738,
+      3201, 3693, 4215, 4766, 5345, 5951,
+      6583, 7243, 7929, 8640, 9377, 10138
+    ];
+
+    let getMaxClaimableEth = function(state) {
+      return startingMMBalance.
+        mul(state.claimablePercentage).dividedBy(priceFactor).
+        mul(tokenTotalSupply - help.lifWei2Lif(state.marketMakerLifBalance)).
+        dividedBy(tokenTotalSupply).plus(state.totalProfit);
+    }
+
+    let waitForMonth = async function(month, startBlock, blocksPerPeriod) {
+      await help.waitToBlock(startBlock+blocksPerPeriod*month, accounts);
+
+      state.claimablePercentage = _.sumBy(_.take(distributionDeltas, month + 1), (x) => x);
+      state.marketMakerSellPrice = initialSellPrice.mul(sellPriceIncrement ** month).round();
+      state.marketMakerBuyPrice = startingMMBalance.
+        mul(priceFactor - state.claimablePercentage).
+        dividedBy(help.lif2LifWei(tokenTotalSupply));
+      state.maxClaimableEth = getMaxClaimableEth(state);
+
+      await checkScenarioProperties(state, mm, customer);
+    };
 
     // Month 0
     await waitForMonth(0, startBlock, blocksPerPeriod);
-    // MMETH = 200,   TP = 0,    MMT = 0,   TC = 100, SP = 2100 mETH/Lif, BP = 2000, CL 0%,  maxClaimable = 0,   claimed = 0
-    checkScenarioProperties({
-      marketMakerEthBalance: 200, marketMakerLifBalance: 0, totalProfit: 0,
-      customerEthBalance: 500, customerLifBalance: 100,
-      marketMakerSellPrice: 2100, marketMakerBuyPrice: 2000,
-      claimablePercentage: 0, maxClaimableEth: 0, totalClaimedEth: 0
-    }, mm, customer);
+
+    let sendTokens = async (tokens) => {
+      let lifWei = help.lif2LifWei(tokens);
+      let lifBuyPrice = state.marketMakerBuyPrice.div(priceFactor);
+      let tokensCost = new BigNumber(lifWei).mul(lifBuyPrice);
+
+      let tx1 = await token.approve(mm.address, lifWei, {from: customer});
+      let tx2 = await mm.sendTokens(lifWei, {from: customer});
+      let gas = tx1.receipt.gasUsed + tx2.receipt.gasUsed;
+
+      help.debug('Selling ',tokens, ' tokens in exchange of ', web3.fromWei(tokensCost, 'ether'), 'eth');
+      state.customerEthBalance = state.customerEthBalance.plus(tokensCost).minus(gasPrice.mul(gas));
+      state.marketMakerEthBalance = state.marketMakerEthBalance.minus(tokensCost);
+      state.marketMakerLifBalance = state.marketMakerLifBalance.plus(lifWei);
+      state.customerLifBalance = state.customerLifBalance.minus(lifWei);
+      state.totalProfit = state.totalProfit.plus(initialBuyPrice.sub(lifBuyPrice).mul(lifWei));
+      state.maxClaimableEth = getMaxClaimableEth(state);
+
+      await checkScenarioProperties(state, mm, customer);
+    }
+
+    let getTokens = async (tokens) => {
+      let lifWei = help.lif2LifWei(tokens);
+      let lifSellPrice = state.marketMakerSellPrice.div(priceFactor);
+      let weiCost = new BigNumber(lifWei).mul(lifSellPrice);
+
+      let tx1 = await mm.getTokens({ value: weiCost, from: customer});
+      let gas = tx1.receipt.gasUsed;
+
+      help.debug('Buying ',tokens, ' tokens at a cost of ', web3.fromWei(weiCost, 'ether'), 'eth');
+      state.customerEthBalance = state.customerEthBalance.minus(weiCost).minus(gasPrice.mul(gas));
+      state.marketMakerEthBalance = state.marketMakerEthBalance.plus(weiCost);
+      state.marketMakerLifBalance = state.marketMakerLifBalance.minus(lifWei);
+      state.customerLifBalance = state.customerLifBalance.plus(lifWei);
+      let getTokensProfit = lifSellPrice.sub(initialBuyPrice).mul(lifWei);
+      state.totalProfit = state.totalProfit.plus(getTokensProfit);
+      state.maxClaimableEth = getMaxClaimableEth(state);
+
+      await checkScenarioProperties(state, mm, customer);
+    }
+
+    let claimEth = async (eth) => {
+      let weiToClaim = web3.toWei(new BigNumber(eth));
+      help.debug('Claiming ', weiToClaim.toString(), 'wei (', eth, "eth)");
+      await mm.claimEth(weiToClaim, {from: foundationWallet});
+
+      state.totalClaimedEth = state.totalClaimedEth.plus(weiToClaim);
+      state.marketMakerEthBalance = state.marketMakerEthBalance.minus(weiToClaim);
+
+      await checkScenarioProperties(state, mm, customer);
+    }
 
     // Sell 10 tokens to the MM
-    await token.approve(mm.address, 10);
-    await mm.sendTokens(10, {from: customer});
-    // MMETH = 180,   TP = 0,    MMT = 10,  TC = 90,  SP = 2100 mETH/Lif, BP = 2000, CL 0%,  maxClaimable = 0,   claimed = 0
-    checkScenarioProperties({
-      marketMakerEthBalance: 180, marketMakerLifBalance: 10, totalProfit: 0,
-      customerEthBalance: 520, customerLifBalance: 90,
-      marketMakerSellPrice: 2100, marketMakerBuyPrice: 2000,
-      claimablePercentage: 0, maxClaimableEth: 0, totalClaimedEth: 0
-    }, mm, customer);
+    await sendTokens(10);
 
     // Sell 20 tokens to the MM
-    await token.approve(mm.address, 20);
-    await mm.sendTokens(20, {from: customer});
-    // MMETH = 140,   TP = 0,    MMT = 30,  TC = 70,  SP = 2100 mETH/Lif, BP = 2000, CL 0%,  maxClaimable = 0,   claimed = 0
-    checkScenarioProperties({
-      marketMakerEthBalance: 140, marketMakerLifBalance: 30, totalProfit: 0,
-      customerEthBalance: 560, customerLifBalance: 70,
-      marketMakerSellPrice: 2100, marketMakerBuyPrice: 2000,
-      claimablePercentage: 0, maxClaimableEth: 0, totalClaimedEth: 0
-    }, mm, customer);
+    await sendTokens(20);
 
     // Month 1
     await waitForMonth(1, startBlock, blocksPerPeriod);
-    // MMETH = 140,   TP = 0,    MMT = 30,  TC = 70,  SP = 2121 mETH/Lif, BP = 1800, CL 10%, maxClaimable = 14,  claimed = 0
-    checkScenarioProperties({
-      marketMakerEthBalance: 140, marketMakerLifBalance: 30, totalProfit: 0,
-      customerEthBalance: 560, customerLifBalance: 70,
-      marketMakerSellPrice: 2121, marketMakerBuyPrice: 1800,
-      claimablePercentage: 10, maxClaimableEth: 14, totalClaimedEth: 0
-    }, mm, customer);
 
     // Sell 10 tokens to the MM
-    await token.approve(mm.address, 10);
-    await mm.sendTokens(10, {from: customer});
-    // MMETH = 122,   TP = 2,    MMT = 40,  TC = 60,  SP = 2121 mETH/Lif, BP = 1800, CL 10%, maxClaimable = 12,  claimed = 0
-    checkScenarioProperties({
-      marketMakerEthBalance: 122, marketMakerLifBalance: 40, totalProfit: 2,
-      customerEthBalance: 578, customerLifBalance: 60,
-      marketMakerSellPrice: 2121, marketMakerBuyPrice: 1800,
-      claimablePercentage: 10, maxClaimableEth: 12, totalClaimedEth: 0
-    }, mm, customer);
+    await sendTokens(10);
 
-    // Claim 12
-    await mm.claimEth(12);
-    // MMETH = 110,   TP = 2,    MMT = 40,  TC = 60,  SP = 2121 mETH/Lif, BP = 1800, CL 10%, maxClaimable = 12,  claimed = 12
-    checkScenarioProperties({
-      marketMakerEthBalance: 110, marketMakerLifBalance: 40, totalProfit: 2,
-      customerEthBalance: 578, customerLifBalance: 60,
-      marketMakerSellPrice: 2121, marketMakerBuyPrice: 1800,
-      claimablePercentage: 10, maxClaimableEth: 12, totalClaimedEth: 12
-    }, mm, customer);
+    // try to claim more than the max claimable and it should fail
+    try {
+      await claimEth(state.maxClaimableEth + 1);
+      throw(new Error("claimEth should have failed"));
+    } catch(e) {} // all good
+    try {
+      await claimEth(0.03);
+      throw(new Error("claimEth should have failed"));
+    } catch(e) {} // all good
+
+    // Claim 0.012 eth
+    await claimEth(0.012);
 
     // Month 2
+    help.debug("heading to month 2");
     await waitForMonth(2, startBlock, blocksPerPeriod);
-    // MMETH = 110,   TP = 2,    MMT = 40,  TC = 60,  SP = 2142 mETH/Lif, BP = 1400, CL 30%, maxClaimable = 36,  claimed = 12
-    checkScenarioProperties({
-      marketMakerEthBalance: 110, marketMakerLifBalance: 40, totalProfit: 2,
-      customerEthBalance: 578, customerLifBalance: 60,
-      marketMakerSellPrice: 2142, marketMakerBuyPrice: 1400,
-      claimablePercentage: 30, maxClaimableEth: 36, totalClaimedEth: 12
-    }, mm, customer);
 
     // Sell 10 tokens to the MM
-    await token.approve(mm.address, 10);
-    await mm.sendTokens(10, {from: customer});
-    // MMETH = 96,    TP = 8,    MMT = 50,  TC = 50,  SP = 2142 mETH/Lif, BP = 1400, CL 30%, maxClaimable = 30,  claimed = 12
-    checkScenarioProperties({
-      marketMakerEthBalance: 96, marketMakerLifBalance: 50, totalProfit: 8,
-      customerEthBalance: 592, customerLifBalance: 50,
-      marketMakerSellPrice: 2142, marketMakerBuyPrice: 1400,
-      claimablePercentage: 30, maxClaimableEth: 30, totalClaimedEth: 12
-    }, mm, customer);
+    await sendTokens(10);
 
     // Claim 18 ETH
-    await mm.claimEth(18);
-    // MMETH = 78,    TP = 8,    MMT = 50,  TC = 50,  SP = 2142 mETH/Lif, BP = 1400, CL 30%, maxClaimable = 30,  claimed = 30
-    checkScenarioProperties({
-      marketMakerEthBalance: 78, marketMakerLifBalance: 50, totalProfit: 8,
-      customerEthBalance: 592, customerLifBalance: 50,
-      marketMakerSellPrice: 2142, marketMakerBuyPrice: 1400,
-      claimablePercentage: 30, maxClaimableEth: 30, totalClaimedEth: 30
-    }, mm, customer);
+    await claimEth(0.03);
 
     // Month 3
     await waitForMonth(3, startBlock, blocksPerPeriod);
-    // MMETH = 78,    TP = 8,    MMT = 50,  TC = 50,  SP = 2163 mETH/Lif, BP = 800,  CL 60%, maxClaimable = 60,  claimed = 30
-    checkScenarioProperties({
-      marketMakerEthBalance: 78, marketMakerLifBalance: 50, totalProfit: 8,
-      customerEthBalance: 592, customerLifBalance: 50,
-      marketMakerSellPrice: 2163, marketMakerBuyPrice: 800,
-      claimablePercentage: 60, maxClaimableEth: 60, totalClaimedEth: 30
-    }, mm, customer);
 
     // Sell 50 tokens to the MM
-    await token.approve(mm.address, 50);
-    await mm.sendTokens(50, {from: customer});
-    // MMETH = 38,    TP = 68,   MMT = 100, TC = 0,   SP = 2163 mETH/Lif, BP = 800,  CL 60%, maxClaimable = 0,   claimed = 30
-    checkScenarioProperties({
-      marketMakerEthBalance: 38, marketMakerLifBalance: 100, totalProfit: 68,
-      customerEthBalance: 632, customerLifBalance: 0,
-      marketMakerSellPrice: 2163, marketMakerBuyPrice: 800,
-      claimablePercentage: 60, maxClaimableEth: 0, totalClaimedEth: 30
-    }, mm, customer);
+    await sendTokens(50);
 
     // Buy 100 tokens
-    await mm.getTokens(100, {from: customer});
+    help.debug("buying 60 tokens");
+    await getTokens(60);
+
     // MMETH = 254.3, TP = 84.3, MMT = 0,   TC = 100, SP = 2163 mETH/Lif, BP = 800,  CL 60%, maxClaimable = 120, claimed = 30
-    checkScenarioProperties({
-      marketMakerEthBalance: 254.3, marketMakerLifBalance: 0, totalProfit: 84.3,
-      customerEthBalance: 415.7, customerLifBalance: 100,
-      marketMakerSellPrice: 2163, marketMakerBuyPrice: 800,
-      claimablePercentage: 60, maxClaimableEth: 120, totalClaimedEth: 30
-    }, mm, customer);
+    // await checkScenarioProperties(state, mm, customer);
 
   });
 

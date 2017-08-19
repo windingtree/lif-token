@@ -29,6 +29,7 @@
     "zeppelin-solidity": "1.2.0"
   },
   "devDependencies": {
+    "chai-bignumber": "^2.0.1",
     "ethereumjs-testrpc": "3.0.3",
     "truffle": "3.4.6"
   },
