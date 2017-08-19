@@ -57,7 +57,7 @@ contract LifMarketMaker is Ownable {
 
   function LifMarketMaker(
     address lifAddr, uint256 _startBlock, uint256 _blocksPerPeriod,
-    uint8 _totalPeriods, address _foundationAddr
+    uint8 _totalPeriods, address _foundationAddr, uint256 initialPriceSpread
   ) payable {
 
     assert(_totalPeriods == 24 || _totalPeriods == 48);
@@ -68,7 +68,10 @@ contract LifMarketMaker is Ownable {
     totalPeriods = _totalPeriods;
     foundationAddr = _foundationAddr;
     initialWei = msg.value;
-    initialBuyPrice = initialWei.div(lifToken.totalSupply());
+    initialBuyPrice = initialWei
+      .div(lifToken.totalSupply().div(PRICE_FACTOR))
+      .mul(PRICE_FACTOR);
+    initialSellPrice = initialBuyPrice.div(PRICE_FACTOR).mul(initialPriceSpread);
   }
 
   function calculateDistributionPeriods() onlyOwner {
