@@ -171,146 +171,46 @@ contract('marketMaker', function(accounts) {
     assert.equal( 4, parseInt(await mm.getCurrentPeriodIndex()) );
   });
 
-  // const startingMMBalance = web3.toWei(200, 'ether');
-  // const tokenTotalSupply = 100;
-  // var mmTokens = 0;
-  // const BPIncrement = 0.01;
-  // const BPFirstIncrement = 0.05;
-  // var TotalProfit = 0,
-  //   maxClaimable = 0,
-  //   claimed = 0,
-  //   cumulativeClaimableDelta = 0;
+  it("should go through scenario with some claims and sells on the Market Maker", async function() {
+    // Create MM with balance of 200 ETH and 100 tokens in circulation,
+    // starting sell price of 2100 mETH/Lif, increment coefficient 0.01
 
-  // Create MM with 200 ETH, and 100 tokens in circulation, starting buy price of 2.1
-  // BPIncrement = 0.01
+    // Month 0
+    // MMETH = 200,   TP = 0,    MMT = 0,   TC = 100, SP = 2100 mETH/Lif, BP = 2000, CL 0%,  maxClaimable = 0,   claimed = 0
 
-  // MONTH 0
-  // MMETH = 200, MMT = 0, TC = 100, SP = 2.1 ETH/Lif, BP = 2, CL 0%, maxClaimable = 0, claimed = 0
+    // Sell 10 tokens to the MM
+    // MMETH = 180,   TP = 0,    MMT = 10,  TC = 90,  SP = 2100 mETH/Lif, BP = 2000, CL 0%,  maxClaimable = 0,   claimed = 0
 
-  // Sell 10 tokens to the MM
-  // MMETH = 180, TP = 0, MMT = 10, TC = 90, SP = 2.1 ETH/Lif, BP = 2, CL 0%, maxClaimable = 0, claimed = 0
+    // Sell 20 tokens to the MM
+    // MMETH = 140,   TP = 0,    MMT = 30,  TC = 70,  SP = 2100 mETH/Lif, BP = 2000, CL 0%,  maxClaimable = 0,   claimed = 0
 
-  // let initialAccountLifBalance = lifToken.balanceOf(accounts[2]);
-  // await lifToken.approve(mm.address, 10);
-  // await mm.sendTokens(10, {from: accounts[2]});
-  // assert.equal(20, web3.eth.getBalance(accounts[2]));
-  // assert.equal(180, web3.eth.getBalance(mm.address));
-  // assert.equal(10, lifToken.balanceOf(mm.address));
-  // assert.equal(initialAccountLifBalance-10, lifToken.balanceOf(accounts[2]));
-  // assert.equal(21000, mm.getSellPrice());
-  // assert.equal(20000, mm.getBuyPrice());
-  // assert.equal(0, mm.getAccumulatedDistributedPercentage());
-  // assert.equal(0, mm.getMaxClaimableWei());
-  // assert.equal(0, mm.totalClaimedWei());
-  // assert.equal(0, mm.totalProfit());
-  // assert.equal(0, mm.getCurrentPeriodIndex());
+    // Month 1
+    // MMETH = 140,   TP = 0,    MMT = 30,  TC = 70,  SP = 2121 mETH/Lif, BP = 1800, CL 10%, maxClaimable = 14,  claimed = 0
 
-  // Sell 20 tokens to the MM
-  // MMETH = 140, TP = 0, MMT = 30, TC = 70, SP = 2.1 ETH/Lif, BP = 2, CL 0%, maxClaimable = 0, claimed = 0
+    // Sell 10 tokens to the MM
+    // MMETH = 122,   TP = 2,    MMT = 40,  TC = 60,  SP = 2121 mETH/Lif, BP = 1800, CL 10%, maxClaimable = 12,  claimed = 0
 
-  // await lifToken.approve(mm.address, 20);
-  // await mm.sendTokens(20, {from: accounts[2]});
-  // assert.equal(60, web3.eth.getBalance(accounts[2]));
-  // assert.equal(140, web3.eth.getBalance(mm.address));
-  // assert.equal(30, lifToken.balanceOf(mm.address));
-  // assert.equal(initialAccountLifBalance-30, lifToken.balanceOf(accounts[2]));
-  // assert.equal(21000, mm.getSellPrice());
-  // assert.equal(20000, mm.getBuyPrice());
-  // assert.equal(0, mm.getAccumulatedDistributedPercentage());
-  // assert.equal(0, mm.getMaxClaimableWei());
-  // assert.equal(0, mm.totalClaimedWei());
-  // assert.equal(0, mm.totalProfit());
-  // assert.equal(0, mm.getCurrentPeriodIndex());
+    // Claim 12
+    // MMETH = 110,   TP = 2,    MMT = 40,  TC = 60,  SP = 2121 mETH/Lif, BP = 1800, CL 10%, maxClaimable = 12,  claimed = 12
 
-  // MONTH 1
-  // MMETH = 140, TP = 0, MMT = 30, TC = 70, SP = 2.121 ETH/Lif, BP = 1.8, CL 10%, maxClaimable = 14, claimed = 0
+    // Month 2
+    // MMETH = 110,   TP = 2,    MMT = 40,  TC = 60,  SP = 2142 mETH/Lif, BP = 1400, CL 30%, maxClaimable = 36,  claimed = 12
 
-  // let nextPeriodBlock = startBlock + blocksPerPeriod;
-  // await help.waitToBlock(nextPeriodBlock);
+    // Sell 10 tokens to the MM
+    // MMETH = 96,    TP = 8,    MMT = 50,  TC = 50,  SP = 2142 mETH/Lif, BP = 1400, CL 30%, maxClaimable = 30,  claimed = 12
 
-  // assert.equal(140, web3.eth.getBalance(mm.address));
-  // assert.equal(30, lifToken.balanceOf(mm.address));
-  // assert.equal(2121, mm.getSellPrice());
-  // assert.equal(1800, mm.getBuyPrice());
-  // assert.equal(1000, mm.getAccumulatedDistributedPercentage());
-  // assert.equal(14, mm.getMaxClaimableWei());
-  // assert.equal(0, mm.totalClaimedWei());
-  // assert.equal(0, mm.totalProfit());
-  // assert.equal(1, mm.getCurrentPeriodIndex());
+    // Claim 18 ETH
+    // MMETH = 78,    TP = 8,    MMT = 50,  TC = 50,  SP = 2142 mETH/Lif, BP = 1400, CL 30%, maxClaimable = 30,  claimed = 30
 
-  // Sell 10 tokens to the MM
-  // MMETH = 122, TP = 2, MMT = 40, TC = 60, SP = 2.121 ETH/Lif, BP = 1.8, CL 10%, maxClaimable = 12, claimed = 0
+    // Month 3
+    // MMETH = 78,    TP = 8,    MMT = 50,  TC = 50,  SP = 2163 mETH/Lif, BP = 800,  CL 60%, maxClaimable = 60,  claimed = 30
 
-  // await lifToken.approve(mm.address, 10);
-  // await mm.sendTokens(10, {from: accounts[2]});
-  // assert.equal(78, web3.eth.getBalance(accounts[2]));
-  // assert.equal(122, web3.eth.getBalance(mm.address));
-  // assert.equal(40, lifToken.balanceOf(mm.address));
-  // assert.equal(initialAccountLifBalance-40, lifToken.balanceOf(accounts[2]));
-  // assert.equal(2121, mm.getSellPrice());
-  // assert.equal(1800, mm.getBuyPrice());
-  // assert.equal(1000, mm.getAccumulatedDistributedPercentage());
-  // assert.equal(12, mm.getMaxClaimableWei());
-  // assert.equal(0, mm.totalClaimedWei());
-  // assert.equal(2, mm.totalProfit());
-  // assert.equal(1, mm.getCurrentPeriodIndex());
+    // Sell 50 tokens to the MM
+    // MMETH = 38,    TP = 68,   MMT = 100, TC = 0,   SP = 2163 mETH/Lif, BP = 800,  CL 60%, maxClaimable = 0,   claimed = 30
 
-  // Claim 12
-  // MMETH = 110, TP = 2, MMT = 40, TC = 60, SP = 2.121 ETH/Lif, BP = 1.8, CL 10%, maxClaimable = 12, claimed = 12
+    // Buy 100 tokens
+    // MMETH = 254.3, TP = 92.3, MMT = 0,   TC = 100, SP = 2163 mETH/Lif, BP = 800,  CL 60%, maxClaimable = 120, claimed = 30
 
-  // assert.equal(110, web3.eth.getBalance(mm.address));
-  // assert.equal(40, lifToken.balanceOf(mm.address));
-  // assert.equal(2121, mm.getSellPrice());
-  // assert.equal(1800, mm.getBuyPrice());
-  // assert.equal(1000, mm.getAccumulatedDistributedPercentage());
-  // assert.equal(12, mm.getMaxClaimableWei());
-  // assert.equal(12, mm.totalClaimedWei());
-  // assert.equal(2, mm.totalProfit());
-  // assert.equal(1, mm.getCurrentPeriodIndex());
-
-  // MONTH 2
-  // MMETH = 110, TP = 2, MMT = 40, TC = 60, SP = 2.142 ETH/Lif, BP = 1.4, CL 30%, maxClaimable = 36, claimed = 12
-
-  // Sell 10 tokens to the MM
-  // MMETH = 96, TP = 8, MMT = 50, TC = 50, SP = 2.142 ETH/Lif, BP = 1.4, CL 30%, maxClaimable = 30, claimed = 12
-  // Claim 18 ETH
-  // MMETH = 78, TP = 8, MMT = 50, TC = 50, SP = 2.142 ETH/Lif, BP = 1.4, CL 30%, maxClaimable = 30, claimed = 30
-
-  // MONTH 3
-  // MMETH = 78, TP = 8, MMT = 50, TC = 50, SP = 0.8 ETH/Lif, BP = 2.163, CL 60%, maxClaimable = 60, claimed = 30
-
-  // Sell 50 tokens to the MM
-  // MMETH = 38, TP = 68, MMT = 100, TC = 0, SP = 0.8 ETH/Lif, BP = 2.163, CL 60%, maxClaimable = 0, claimed = 30
-
-  // Buy 100 tokens
-  // MMETH = 254.3, TP = 92.3, MMT = 0, TC = 100, SP = 0.8 ETH/Lif, BP = 2.163, CL 60%, maxClaimable = 120, claimed = 30
-
-
-  // Month 0:
-  // Claimable amount: 0
-
-  // Month 1:
-  // Claimable month: 27
-  // Claimable total: 27
-  // ClaimAmount(8)
-  // Claimable: 19
-  // claimableUpdatedMonth: 1
-
-  // Month 2:
-  // Claimable month: 154
-  // Claimable total: 19
-  // claimableUpdatedMonth: 1
-
-  // Month 3:
-  // Claimable month: 366
-  // Claimable total: 19+154+366 = 543
-  // Claim(243);
-  // Claimable total: 300
-  // claimableUpdatedMonth: 3
-
-  // Month 4:
-  // Claimable month: 651
-  // Claimable total: 300+651 = 951
-
+  });
 
 });
