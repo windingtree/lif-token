@@ -37,6 +37,7 @@ contract LifMarketMaker is Ownable {
   uint256 public initialBuyPrice = 0;
 
   uint256 constant PERCENTAGE_FACTOR = 10000;
+  uint256 constant PRICE_FACTOR = 10000;
 
   struct DistributionPeriod {
     uint256 startBlock;
@@ -132,13 +133,15 @@ contract LifMarketMaker is Ownable {
     return sellRate;
   }
 
-  function getBuyRate() public constant returns (uint256 rate) {
+  function getBuyPrice() public constant returns (uint256 price) {
 
-    uint256 blockPeriodIndex = getCurrentPeriodIndex();
+    uint256 accumulatedDistributionPercentage = distributionPeriods[getCurrentPeriodIndex()].
+      accumDistribution;
 
-    // uint256 buyRate = distributionPeriods[blockPeriodIndex].buyRate;
-
-    return 1;
+    return initialWei.
+      mul(PERCENTAGE_FACTOR.sub(accumulatedDistributionPercentage)).
+      div(lifToken.totalSupply()).
+      div(PERCENTAGE_FACTOR);
   }
 
   // Get the maximum amount of wei that the foundation can claim, without discounting what it
@@ -161,33 +164,32 @@ contract LifMarketMaker is Ownable {
     buyLif();
   }
 
-  function buyLif() payable {
+  function getTokens() payable {
 
     require(msg.value > 0);
 
-    uint256 lifBalance = lifToken.balanceOf(address(this));
+    uint256 price = getBuyPrice();
+    uint256 tokens = msg.value.
+      mul(PRICE_FACTOR).
+      div(price);
 
-    uint256 rate = getBuyRate();
+    require(tokens <= lifToken.balanceOf(address(this)));
 
-    uint256 amount = msg.value.mul(rate);
-
-    require(amount <= lifBalance);
-
-    lifToken.transfer(msg.sender, amount);
-
+    lifToken.transfer(msg.sender, tokens);
   }
 
-  function sellLif(uint256 amount) {
+  // sends tokens from Market Maker to the msg.sender, in exchange of Eth at the price of getBuyPrice
+  function sendTokens(uint256 tokens) {
+    require(tokens > 0);
 
-    uint256 allowance = lifToken.allowance(msg.sender, address(this));
+    uint256 price = getBuyPrice();
+    uint initialPrice = initialWei.div(lifToken.totalSupply());
+    uint256 profitPerToken = initialPrice.sub(price);
+    uint256 totalWei = tokens.mul(price);
 
-    require(amount <= allowance);
+    totalWeiProfit = totalWeiProfit.add(profitPerToken.mul(tokens));
 
-    lifToken.transferFrom(msg.sender, address(this), amount);
-
-    uint256 rate = getSellRate();
-
-    uint256 totalWei = amount.mul(rate);
+    lifToken.transferFrom(msg.sender, address(this), tokens);
 
     msg.sender.transfer(totalWei);
   }
