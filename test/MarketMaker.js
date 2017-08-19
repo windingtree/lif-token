@@ -215,6 +215,68 @@ contract('marketMaker', function(accounts) {
     await help.waitToBlock(startBlock+blocksPerPeriod*numberOfMonth, accounts);
   };
 
+  it("Should return the correct sellPrice on every period", async function() {
+    token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
+
+    const startBlock = web3.eth.blockNumber+10;
+    const blocksPerPeriod = 5;
+    const initialPriceSpread = 100500;
+
+    mm = await LifMarketMaker.new(
+      token.address, startBlock, blocksPerPeriod, 24,
+      accounts[1], initialPriceSpread,
+      {value: web3.toWei(8, 'ether'), from: accounts[0]}
+    );
+
+    const initialSellPrice = parseInt(await mm.initialSellPrice());
+
+    await mm.calculateDistributionPeriods({from: accounts[4]});
+    await mm.calculateSellPricePeriods({from: accounts[3]});
+
+    help.debug('MM balance:', parseInt( web3.eth.getBalance(mm.address) ));
+    help.debug('Start block', parseInt( await mm.startBlock.call() ));
+    help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
+    help.debug('Foundation address', await mm.foundationAddr.call() );
+    help.debug('Initial Wei', parseInt( await mm.initialWei.call() ));
+    help.debug('Initial Buy Price', parseInt( await mm.initialBuyPrice.call() ));
+    help.debug('Initial Sell Price', parseInt( await mm.initialSellPrice.call() ));
+
+    let accumIncrementPrice = [
+      0, 1000, 2010, 3030, 4060, 5101,
+      6152, 7213, 8285, 9368, 10462,
+      11566, 12682, 13809, 14947, 16096,
+      17257, 18430, 19614, 20810, 22019,
+      23239, 24471, 25716, 26973, 28243,
+      29525, 30820, 32129, 33450, 34784,
+      36132, 37494, 38869, 40257, 41660,
+      43076, 44507, 45952, 47412, 48886,
+      50375, 51878, 53397, 54931, 56481,
+      58045, 59626
+    ];
+
+    function parsePrice(price) {
+      return parseInt(price.toFixed(0)/10000);
+    }
+
+    await help.waitToBlock(startBlock+1);
+    for (var i = 0; i < 24; i++) {
+
+      // To log all the accumulative price incremenets in base 10^5
+      // help.debug((100000*(1.01**i))-100000 );
+
+      help.debug(
+        parsePrice(parseFloat(initialSellPrice*(1.01**i)))
+        ,' == ',
+        parsePrice(parseFloat(await mm.getSellPrice()))
+      );
+      // assert.equal(
+      //   parsePrice(parseFloat(initialSellPrice*(1.01**i))),
+      //   parsePrice(parseFloat(await mm.getSellPrice()))
+      // );
+      await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod);
+    }
+  });
+
   it("should go through scenario with some claims and sells on the Market Maker", async function() {
     // Create MM with balance of 200 ETH and 100 tokens in circulation,
     // starting sell price of 2100 mETH/Lif, increment coefficient 0.01
