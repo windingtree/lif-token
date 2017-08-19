@@ -298,7 +298,7 @@ contract('marketMaker', function(accounts) {
 
     // Buy 100 tokens
     await token.approve(customer, 100);
-    await mm.giveTokens(100, {to: customer});
+    await mm.getTokens(100, {to: customer});
     // MMETH = 254.3, TP = 84.3, MMT = 0,   TC = 100, SP = 2163 mETH/Lif, BP = 800,  CL 60%, maxClaimable = 120, claimed = 30
     checkScenarioProperties({
       marketMakerEthBalance: 254.3, marketMakerLifBalance: 0, totalProfit: 84.3,
