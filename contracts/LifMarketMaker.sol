@@ -10,20 +10,19 @@ contract LifMarketMaker is Ownable {
   // The Lif token contract
   ERC20 public lifToken;
 
-  // The address of teh foundation that can claim the ETH
+  // The address of the foundation wallet. It can claim part of the eth funds following an
+  // exponential curve until the end of the Market Maker lifetime (24 or 48 months). After
+  // that it can claim 100% of remaining eth and tokens.
   address public foundationAddr;
 
-  // The starting wei that the market maker receives
+  // The amount of wei that the Market Maker received initially
   uint256 initialWei;
 
-  // Start and end block variables
+  // Start block since which the Market Maker begins to accept buy and sell orders
   uint256 public startBlock;
 
-  // Amount of blocks that every period will last
+  // Quantity of blocks in every period, it's roughly equivalent to 30 days
   uint256 public blocksPerPeriod;
-
-  // Last period where the foundation claimed we from the MM
-  uint256 public claimableUpdatedMonth = 0;
 
   // The total amount of wei gained on buying/selling tokens
   uint256 public totalWeiProfit = 0;
@@ -31,13 +30,14 @@ contract LifMarketMaker is Ownable {
   // The total amount of wei that was claimed by the foundation
   uint256 public totalWeiClaimed = 0;
 
-  // The initial price at which the market maker buys tokens
+  // The price at which the market maker buys tokens at the beginning of its lifetime
   uint256 public initialBuyPrice = 0;
 
   struct DistributionPeriod {
     uint256 startBlock;
     uint256 endBlock;
-    uint256 deltaDistribution; // This is % of the initialWei that can be claimed by the foundation from this period
+    // This is % of the initialWei that can be claimed by the foundation from this period
+    uint256 deltaDistribution;
   }
 
   DistributionPeriod[] public distributionPeriods;
@@ -65,6 +65,12 @@ contract LifMarketMaker is Ownable {
     require(startBlock >= block.number);
     require(blocksPerPeriod > 0);
 
+    // Table with the max delta % that can be distributed back to the foundation on
+    // each period. It follows an exponential curve (starts with lower % and ends
+    // with higher %) to keep the funds in the market maker longer. deltas24 is
+    // used when market maker lifetime is 24 months, deltas48 when it's 48 months.
+    // The sum is less than 100% because the last % is missing: after the last period
+    // the 100% remaining can be claimed by the foundation. Values multipled by 10^5
     uint256[24] memory deltas24 = [
       uint256(0), 18, 99, 234, 416, 640,
       902, 1202, 1536, 1905, 2305, 2738,
