@@ -59,11 +59,11 @@ contract LifMarketMaker is Ownable {
   }
 
   function calculateDistributionPeriods(
-    uint256 _startBlock, uint8 totalPeriods, uint256 blocksPerPeriod
+    uint256 startBlock, uint8 totalPeriods, uint256 blocksPerPeriod
   ) internal {
 
     assert(totalPeriods == 24 || totalPeriods == 48);
-    require(_startBlock >= block.number);
+    require(startBlock >= block.number);
     require(blocksPerPeriod > 0);
 
     uint256[24] memory deltas24 = [
@@ -91,12 +91,12 @@ contract LifMarketMaker is Ownable {
       } else {
         distributionDelta = deltas48[i];
       }
-      uint256 endBlockPeriod = _startBlock.add(blocksPerPeriod).sub(1);
+      uint256 endBlockPeriod = startBlock.add(blocksPerPeriod).sub(1);
 
       distributionPeriods.push(DistributionPeriod(
-        _startBlock, endBlockPeriod, distributionDelta
+        startBlock, endBlockPeriod, distributionDelta
       ));
-      _startBlock = _startBlock.add(blocksPerPeriod);
+      startBlock = startBlock.add(blocksPerPeriod);
     }
 
   }
