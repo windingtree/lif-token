@@ -36,6 +36,9 @@ contract LifMarketMaker is Ownable {
   // The price at which the market maker buys tokens at the beginning of its lifetime
   uint256 public initialBuyPrice = 0;
 
+  // The price at which the market maker sell tokens at the beginning of its lifetime
+  uint256 public initialSellPrice = 0;
+
   uint256 constant PERCENTAGE_FACTOR = 10000;
   uint256 constant PRICE_FACTOR = 10000;
 
