@@ -184,6 +184,13 @@ contract('marketMaker', function(accounts) {
     assert.equal(data.totalClaimedEth, mm.totalClaimedWei());
   };
 
+  let waitForMonth = async function(numberOfMonth, startBlock, blocksPerPeriod) {
+    await help.waitToBlock(startBlock+blocksPerPeriod*numberOfMonth, accounts);
+  };
+
+  let foundationClaimEther = async function(amountOfEther) {
+  };
+
   it("should go through scenario with some claims and sells on the Market Maker", async function() {
     // Create MM with balance of 200 ETH and 100 tokens in circulation,
     // starting sell price of 2100 mETH/Lif, increment coefficient 0.01
@@ -192,128 +199,142 @@ contract('marketMaker', function(accounts) {
     const startingSellPrice = 2100;
     const sellPriceIncrement = 1.01;
 
+    const startBlock = web3.eth.blockNumber + 10;
+    const blocksPerPeriod = 100;
+
     var customer = accounts[2];
-    mm = await LifMarketMaker.new('???');
+    token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
+    mm = await LifMarketMaker.new(
+      token.address, startBlock, blocksPerPeriod, 24, accounts[1],
+      {value: web3.toWei(8, 'ether'), from: accounts[0]}
+    );
+
 
     // Month 0
-    await setMonth(0);
+    await waitForMonth(0, startBlock, blocksPerPeriod);
     // MMETH = 200,   TP = 0,    MMT = 0,   TC = 100, SP = 2100 mETH/Lif, BP = 2000, CL 0%,  maxClaimable = 0,   claimed = 0
-    data = {
+    checkScenarioProperties({
       marketMakerEthBalance: 200, marketMakerLifBalance: 0, totalProfit: 0,
       customerEthBalance: 500, customerLifBalance: 100,
       marketMakerSellPrice: 2100, marketMakerBuyPrice: 2000,
       claimablePercentage: 0, maxClaimableEth: 0, totalClaimedEth: 0
-    };
+    });
 
     // Sell 10 tokens to the MM
-    await customerSellTokenToMarketMaker(10);
+    await token.approve(mm.address, 10);
+    await mm.sendTokens(10, {from: customer});
     // MMETH = 180,   TP = 0,    MMT = 10,  TC = 90,  SP = 2100 mETH/Lif, BP = 2000, CL 0%,  maxClaimable = 0,   claimed = 0
-    data = {
+    checkScenarioProperties({
       marketMakerEthBalance: 180, marketMakerLifBalance: 10, totalProfit: 0,
       customerEthBalance: 520, customerLifBalance: 90,
       marketMakerSellPrice: 2100, marketMakerBuyPrice: 2000,
       claimablePercentage: 0, maxClaimableEth: 0, totalClaimedEth: 0
-    };
+    });
 
     // Sell 20 tokens to the MM
-    await customerSellTokenToMarketMaker(20);
+    await token.approve(mm.address, 20);
+    await mm.sendTokens(20, {from: customer});
     // MMETH = 140,   TP = 0,    MMT = 30,  TC = 70,  SP = 2100 mETH/Lif, BP = 2000, CL 0%,  maxClaimable = 0,   claimed = 0
-    data = {
+    checkScenarioProperties({
       marketMakerEthBalance: 140, marketMakerLifBalance: 30, totalProfit: 0,
       customerEthBalance: 560, customerLifBalance: 70,
       marketMakerSellPrice: 2100, marketMakerBuyPrice: 2000,
       claimablePercentage: 0, maxClaimableEth: 0, totalClaimedEth: 0
-    };
+    });
 
     // Month 1
-    await setMonth(1);
+    await waitForMonth(1, startBlock, blocksPerPeriod);
     // MMETH = 140,   TP = 0,    MMT = 30,  TC = 70,  SP = 2121 mETH/Lif, BP = 1800, CL 10%, maxClaimable = 14,  claimed = 0
-    data = {
+    checkScenarioProperties({
       marketMakerEthBalance: 140, marketMakerLifBalance: 30, totalProfit: 0,
       customerEthBalance: 560, customerLifBalance: 70,
       marketMakerSellPrice: 2121, marketMakerBuyPrice: 1800,
       claimablePercentage: 10, maxClaimableEth: 14, totalClaimedEth: 0
-    };
+    });
 
     // Sell 10 tokens to the MM
-    await customerSellTokenToMarketMaker(10);
+    await token.approve(mm.address, 10);
+    await mm.sendTokens(10, {from: customer});
     // MMETH = 122,   TP = 2,    MMT = 40,  TC = 60,  SP = 2121 mETH/Lif, BP = 1800, CL 10%, maxClaimable = 12,  claimed = 0
-    data = {
+    checkScenarioProperties({
       marketMakerEthBalance: 122, marketMakerLifBalance: 40, totalProfit: 2,
       customerEthBalance: 578, customerLifBalance: 60,
       marketMakerSellPrice: 2121, marketMakerBuyPrice: 1800,
       claimablePercentage: 10, maxClaimableEth: 12, totalClaimedEth: 0
-    };
+    });
 
     // Claim 12
     await foundationClaimEther(12);
     // MMETH = 110,   TP = 2,    MMT = 40,  TC = 60,  SP = 2121 mETH/Lif, BP = 1800, CL 10%, maxClaimable = 12,  claimed = 12
-    data = {
+    checkScenarioProperties({
       marketMakerEthBalance: 110, marketMakerLifBalance: 40, totalProfit: 2,
       customerEthBalance: 578, customerLifBalance: 60,
       marketMakerSellPrice: 2121, marketMakerBuyPrice: 1800,
       claimablePercentage: 10, maxClaimableEth: 12, totalClaimedEth: 12
-    };
+    });
 
     // Month 2
-    await setMonth(2);
+    await waitForMonth(2, startBlock, blocksPerPeriod);
     // MMETH = 110,   TP = 2,    MMT = 40,  TC = 60,  SP = 2142 mETH/Lif, BP = 1400, CL 30%, maxClaimable = 36,  claimed = 12
-    data = {
+    checkScenarioProperties({
       marketMakerEthBalance: 110, marketMakerLifBalance: 40, totalProfit: 2,
       customerEthBalance: 578, customerLifBalance: 60,
       marketMakerSellPrice: 2142, marketMakerBuyPrice: 1400,
       claimablePercentage: 30, maxClaimableEth: 36, totalClaimedEth: 12
-    };
+    });
 
     // Sell 10 tokens to the MM
-    await customerSellTokenToMarketMaker(10);
+    await token.approve(mm.address, 10);
+    await mm.sendTokens(10, {from: customer});
     // MMETH = 96,    TP = 8,    MMT = 50,  TC = 50,  SP = 2142 mETH/Lif, BP = 1400, CL 30%, maxClaimable = 30,  claimed = 12
-    data = {
+    checkScenarioProperties({
       marketMakerEthBalance: 96, marketMakerLifBalance: 50, totalProfit: 8,
       customerEthBalance: 592, customerLifBalance: 50,
       marketMakerSellPrice: 2142, marketMakerBuyPrice: 1400,
       claimablePercentage: 30, maxClaimableEth: 30, totalClaimedEth: 12
-    };
+    });
 
     // Claim 18 ETH
     await foundationClaimEther(18);
     // MMETH = 78,    TP = 8,    MMT = 50,  TC = 50,  SP = 2142 mETH/Lif, BP = 1400, CL 30%, maxClaimable = 30,  claimed = 30
-    data = {
+    checkScenarioProperties({
       marketMakerEthBalance: 78, marketMakerLifBalance: 50, totalProfit: 8,
       customerEthBalance: 592, customerLifBalance: 50,
       marketMakerSellPrice: 2142, marketMakerBuyPrice: 1400,
       claimablePercentage: 30, maxClaimableEth: 30, totalClaimedEth: 30
-    };
+    });
 
     // Month 3
-    await setMonth(3);
+    await waitForMonth(3, startBlock, blocksPerPeriod);
     // MMETH = 78,    TP = 8,    MMT = 50,  TC = 50,  SP = 2163 mETH/Lif, BP = 800,  CL 60%, maxClaimable = 60,  claimed = 30
-    data = {
+    checkScenarioProperties({
       marketMakerEthBalance: 78, marketMakerLifBalance: 50, totalProfit: 8,
       customerEthBalance: 592, customerLifBalance: 50,
       marketMakerSellPrice: 2163, marketMakerBuyPrice: 800,
       claimablePercentage: 60, maxClaimableEth: 60, totalClaimedEth: 30
-    };
+    });
 
     // Sell 50 tokens to the MM
-    await customerSellTokenToMarketMaker(50);
+    await token.approve(mm.address, 50);
+    await mm.sendTokens(50, {from: customer});
     // MMETH = 38,    TP = 68,   MMT = 100, TC = 0,   SP = 2163 mETH/Lif, BP = 800,  CL 60%, maxClaimable = 0,   claimed = 30
-    data = {
+    checkScenarioProperties({
       marketMakerEthBalance: 38, marketMakerLifBalance: 100, totalProfit: 68,
       customerEthBalance: 632, customerLifBalance: 0,
       marketMakerSellPrice: 2163, marketMakerBuyPrice: 800,
       claimablePercentage: 60, maxClaimableEth: 0, totalClaimedEth: 30
-    };
+    });
 
     // Buy 100 tokens
-    await customerBuyTokenFromMarketMaker(50);
+    await token.approve(customer, 100);
+    await mm.giveTokens(100, {to: customer});
     // MMETH = 254.3, TP = 84.3, MMT = 0,   TC = 100, SP = 2163 mETH/Lif, BP = 800,  CL 60%, maxClaimable = 120, claimed = 30
-    data = {
+    checkScenarioProperties({
       marketMakerEthBalance: 254.3, marketMakerLifBalance: 0, totalProfit: 84.3,
       customerEthBalance: 415.7, customerLifBalance: 100,
       marketMakerSellPrice: 2163, marketMakerBuyPrice: 800,
       claimablePercentage: 60, maxClaimableEth: 120, totalClaimedEth: 30
-    };
+    });
 
   });
 
