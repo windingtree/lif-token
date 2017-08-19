@@ -16,7 +16,7 @@ contract LifMarketMaker is Ownable {
   address public foundationAddr;
 
   // The amount of wei that the Market Maker received initially
-  uint256 initialWei;
+  uint256 public initialWei;
 
   // Start block since which the Market Maker begins to accept buy and sell orders
   uint256 public startBlock;
