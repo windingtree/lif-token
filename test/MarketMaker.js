@@ -162,9 +162,6 @@ contract('marketMaker', function(accounts) {
     await help.waitToBlock(startBlock+blocksPerPeriod*numberOfMonth, accounts);
   };
 
-  let foundationClaimEther = async function(amountOfEther) {
-  };
-
   it("should go through scenario with some claims and sells on the Market Maker", async function() {
     // Create MM with balance of 200 ETH and 100 tokens in circulation,
     // starting sell price of 2100 mETH/Lif, increment coefficient 0.01
@@ -238,7 +235,7 @@ contract('marketMaker', function(accounts) {
     });
 
     // Claim 12
-    await foundationClaimEther(12);
+    await mm.claimEth(12);
     // MMETH = 110,   TP = 2,    MMT = 40,  TC = 60,  SP = 2121 mETH/Lif, BP = 1800, CL 10%, maxClaimable = 12,  claimed = 12
     checkScenarioProperties({
       marketMakerEthBalance: 110, marketMakerLifBalance: 40, totalProfit: 2,
@@ -269,7 +266,7 @@ contract('marketMaker', function(accounts) {
     });
 
     // Claim 18 ETH
-    await foundationClaimEther(18);
+    await mm.claimEth(18);
     // MMETH = 78,    TP = 8,    MMT = 50,  TC = 50,  SP = 2142 mETH/Lif, BP = 1400, CL 30%, maxClaimable = 30,  claimed = 30
     checkScenarioProperties({
       marketMakerEthBalance: 78, marketMakerLifBalance: 50, totalProfit: 8,
