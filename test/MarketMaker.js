@@ -169,9 +169,13 @@ contract('marketMaker', function(accounts) {
     const startBlock = web3.eth.blockNumber+10;
     const blocksPerPeriod = 30;
     mm = await LifMarketMaker.new(
-      token.address, startBlock, blocksPerPeriod, 24, accounts[1],
+      token.address, startBlock, blocksPerPeriod, 24,
+      accounts[1], 100500,
       {value: web3.toWei(8, 'ether'), from: accounts[0]}
     );
+
+    await mm.calculateDistributionPeriods({from: accounts[5]});
+    await mm.calculateSellPricePeriods({from: accounts[6]});
 
     help.debug('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
     help.debug('Start block', parseInt( await mm.startBlock.call() ));
