@@ -97,6 +97,7 @@ contract LifMarketMaker is Ownable {
     ];
 
     uint256 accumDistribution = 0;
+    uint256 periodStartBlock = startBlock;
 
     for (uint8 i = 0; i < totalPeriods; i++) {
       uint256 deltaDistribution;
@@ -106,18 +107,18 @@ contract LifMarketMaker is Ownable {
         deltaDistribution = deltas48[i];
       }
       accumDistribution = accumDistribution.add(deltaDistribution);
-      uint256 endBlockPeriod = startBlock.add(blocksPerPeriod).sub(1);
+      uint256 periodEndBlock = periodStartBlock.add(blocksPerPeriod).sub(1);
 
       distributionPeriods.push(DistributionPeriod(
-        startBlock, endBlockPeriod, deltaDistribution, accumDistribution
+        periodStartBlock, periodEndBlock, deltaDistribution, accumDistribution
       ));
-      startBlock = startBlock.add(blocksPerPeriod);
+      periodStartBlock = periodStartBlock.add(blocksPerPeriod);
     }
 
   }
 
   function getCurrentPeriodIndex() constant public returns(uint256) {
-    require(block.number > startBlock);
+    require(block.number >= startBlock);
     return block.number.sub(startBlock).div(blocksPerPeriod);
   }
 
