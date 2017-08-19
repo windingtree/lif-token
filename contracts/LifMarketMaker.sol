@@ -74,7 +74,7 @@ contract LifMarketMaker is Ownable {
     initialSellPrice = initialBuyPrice.div(PRICE_FACTOR).mul(initialPriceSpread);
   }
 
-  function calculateDistributionPeriods() onlyOwner {
+  function calculateDistributionPeriods() {
 
     assert(totalPeriods == 24 || totalPeriods == 48);
     require(startBlock >= block.number);
@@ -82,10 +82,11 @@ contract LifMarketMaker is Ownable {
 
     // Table with the max delta % that can be distributed back to the foundation on
     // each period. It follows an exponential curve (starts with lower % and ends
-    // with higher %) to keep the funds in the market maker longer. deltas24 is
-    // used when market maker lifetime is 24 months, deltas48 when it's 48 months.
+    // with higher %) to keep the funds in the market maker longer. deltas24
+    // is used when market maker lifetime is 24 months, deltas48 when it's 48 months.
     // The sum is less than 100% because the last % is missing: after the last period
     // the 100% remaining can be claimed by the foundation. Values multipled by 10^5
+
     uint256[24] memory deltas24 = [
       uint256(0), 18, 99, 234, 416, 640,
       902, 1202, 1536, 1905, 2305, 2738,
@@ -105,7 +106,8 @@ contract LifMarketMaker is Ownable {
     ];
 
     uint256 accumDistribution = 0;
-    uint256 periodStartBlock = startBlock;
+    uint256 deltaDistribution = 0;
+    uint256 startBlockPeriod = startBlock;
 
     for (uint8 i = 0; i < totalPeriods; i++) {
 
@@ -116,13 +118,52 @@ contract LifMarketMaker is Ownable {
       } else {
         deltaDistribution = deltas48[i];
       }
-      accumDistribution = accumDistribution.add(deltaDistribution);
-      uint256 periodEndBlock = periodStartBlock.add(blocksPerPeriod).sub(1);
 
-      distributionPeriods.push(DistributionPeriod(
-        periodStartBlock, periodEndBlock, deltaDistribution, accumDistribution
+      accumDistribution = accumDistribution.add(deltaDistribution);
+
+      uint256 endBlockPeriod = startBlockPeriod.add(blocksPerPeriod).sub(1);
+
+      marketMakerPeriods.push(MarketMakerPeriod(
+        startBlockPeriod, endBlockPeriod,
+        deltaDistribution, accumDistribution,
+        0
       ));
-      periodStartBlock = periodStartBlock.add(blocksPerPeriod);
+
+      startBlockPeriod = startBlockPeriod.add(blocksPerPeriod);
+    }
+
+  }
+
+  function calculateSellPricePeriods() {
+
+    assert(totalPeriods == 24 || totalPeriods == 48);
+    require(startBlock >= block.number);
+    require(blocksPerPeriod > 0);
+
+    // The sellPriceIncrements represents how much is going to increase in % the sellPrice
+    // every period.
+
+    uint256[48] memory accumSellPriceIncrements = [
+      uint256(0), 1000, 2010, 3030, 4060, 5101,
+      6152, 7213, 8285, 9368, 10462,
+      11566, 12682, 13809, 14947, 16096,
+      17257, 18430, 19614, 20810, 22019,
+      23239, 24471, 25716, 26973, 28243,
+      29525, 30820, 32129, 33450, 34784,
+      36132, 37494, 38869, 40257, 41660,
+      43076, 44507, 45952, 47412, 48886,
+      50375, 51878, 53397, 54931, 56481,
+      58045, 59626
+    ];
+
+    uint256 accumSellPriceIncrement = 0;
+
+    for (uint8 i = 0; i < totalPeriods; i++) {
+
+      require(marketMakerPeriods[i].startBlock > 0);
+
+      marketMakerPeriods[i].accumSellPriceIncrement = accumSellPriceIncrements[i];
+
     }
 
   }
