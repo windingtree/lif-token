@@ -213,7 +213,7 @@ contract LifMarketMaker is Ownable {
   }
 
   function() payable {
-    buyLif();
+    getTokens();
   }
 
   function getTokens() payable {
