@@ -173,16 +173,16 @@ contract LifMarketMaker is Ownable {
     return block.number.sub(startBlock).div(blocksPerPeriod);
   }
 
-  function getSellRate() public constant returns (uint256) {
+  function getSellPrice() public constant returns (uint256) {
 
-    uint256 foundationWei = 0; //getFoundationWei();
+    uint256 periodIndex = getCurrentPeriodIndex();
 
-    uint256 currentMarketMakerWei = this.balance.sub(foundationWei);
+    uint256 sellPriceIncrement = initialSellPrice
+      .div(PRICE_FACTOR)
+      .mul(PRICE_FACTOR.add(marketMakerPeriods[periodIndex].accumSellPriceIncrement));
 
-    uint256 sellRate = lifToken.totalSupply()
-      .div(currentMarketMakerWei);
+    return sellPriceIncrement;
 
-    return sellRate;
   }
 
   function getBuyPrice() public constant returns (uint256 price) {
