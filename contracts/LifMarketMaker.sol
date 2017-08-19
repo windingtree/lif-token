@@ -122,7 +122,7 @@ contract LifMarketMaker is Ownable {
 
   function getSellRate() public constant returns (uint256) {
 
-    uint256 foundationWei = getFoundationWei();
+    uint256 foundationWei = 0; //getFoundationWei();
 
     uint256 currentMarketMakerWei = this.balance.sub(foundationWei);
 
