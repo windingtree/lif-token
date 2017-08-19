@@ -187,7 +187,7 @@ contract LifMarketMaker is Ownable {
 
   function getBuyPrice() public constant returns (uint256 price) {
 
-    uint256 accumulatedDistributionPercentage = distributionPeriods[getCurrentPeriodIndex()].
+    uint256 accumulatedDistributionPercentage = marketMakerPeriods[getCurrentPeriodIndex()].
       accumDistribution;
 
     return initialWei.
