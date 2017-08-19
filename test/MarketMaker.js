@@ -44,13 +44,13 @@ contract('marketMaker', function(accounts) {
       {value: web3.toWei(8, 'ether'), from: accounts[0]}
     );
 
-    console.log('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
-    console.log('Start block', parseInt( await mm.startBlock.call() ));
-    console.log('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
-    console.log('Foundation address', await mm.foundationAddr.call() );
+    help.debug('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
+    help.debug('Start block', parseInt( await mm.startBlock.call() ));
+    help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
+    help.debug('Foundation address', await mm.foundationAddr.call() );
 
     for (var i = 0; i < 24; i ++) {
-      console.log('Period', i, (await mm.distributionPeriods.call(i)));
+      help.debug('Period', i, (await mm.distributionPeriods.call(i)));
     };
 
     assert.equal( parseInt((await mm.distributionPeriods.call(0))[2]), 0 )
@@ -86,10 +86,10 @@ contract('marketMaker', function(accounts) {
       {value: web3.toWei(8, 'ether'), from: accounts[0]}
     );
 
-    console.log('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
-    console.log('Start block', parseInt( await mm.startBlock.call() ));
-    console.log('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
-    console.log('Foundation address', await mm.foundationAddr.call() );
+    help.debug('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
+    help.debug('Start block', parseInt( await mm.startBlock.call() ));
+    help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
+    help.debug('Foundation address', await mm.foundationAddr.call() );
 
     assert.equal( parseInt((await mm.distributionPeriods.call(0))[2]), 0 )
     assert.equal( parseInt((await mm.distributionPeriods.call(1))[2]), 3 )
@@ -141,15 +141,45 @@ contract('marketMaker', function(accounts) {
     assert.equal( parseInt((await mm.distributionPeriods.call(47))[2]), 5363 )
   });
 
-  const startingMMBalance = web3.toWei(200, 'ether');
-  const tokenTotalSupply = 100;
-  var mmTokens = 0;
-  const BPIncrement = 0.01;
-  const BPFirstIncrement = 0.05;
-  var TotalProfit = 0,
-    maxClaimable = 0,
-    claimed = 0,
-    cumulativeClaimableDelta = 0;
+  it("should return correct periods using getCurrentPeriodIndex", async function() {
+    token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
+    const startBlock = web3.eth.blockNumber+10;
+    const blocksPerPeriod = 30;
+    mm = await LifMarketMaker.new(
+      token.address, startBlock, blocksPerPeriod, 24, accounts[1],
+      {value: web3.toWei(8, 'ether'), from: accounts[0]}
+    );
+
+    help.debug('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
+    help.debug('Start block', parseInt( await mm.startBlock.call() ));
+    help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
+    help.debug('Foundation address', await mm.foundationAddr.call() );
+    assert.equal( 0, parseInt(web3.eth.getBalance(token.address)) );
+    assert.equal( startBlock, parseInt(await mm.startBlock()) );
+    assert.equal( blocksPerPeriod, parseInt(await mm.blocksPerPeriod()) );
+    assert.equal( accounts[1], parseInt(await mm.foundationAddr()) );
+
+    await help.waitToBlock(startBlock+1);
+    assert.equal( 0, parseInt(await mm.getCurrentPeriodIndex()) );
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod)
+    assert.equal( 1, parseInt(await mm.getCurrentPeriodIndex()) );
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod)
+    assert.equal( 2, parseInt(await mm.getCurrentPeriodIndex()) );
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod)
+    assert.equal( 3, parseInt(await mm.getCurrentPeriodIndex()) );
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod)
+    assert.equal( 4, parseInt(await mm.getCurrentPeriodIndex()) );
+  });
+
+  // const startingMMBalance = web3.toWei(200, 'ether');
+  // const tokenTotalSupply = 100;
+  // var mmTokens = 0;
+  // const BPIncrement = 0.01;
+  // const BPFirstIncrement = 0.05;
+  // var TotalProfit = 0,
+  //   maxClaimable = 0,
+  //   claimed = 0,
+  //   cumulativeClaimableDelta = 0;
 
   // Create MM with 200 ETH, and 100 tokens in circulation, starting buy price of 2.1
   // BPIncrement = 0.01
@@ -160,83 +190,83 @@ contract('marketMaker', function(accounts) {
   // Sell 10 tokens to the MM
   // MMETH = 180, TP = 0, MMT = 10, TC = 90, SP = 2.1 ETH/Lif, BP = 2, CL 0%, maxClaimable = 0, claimed = 0
 
-  let initialAccountLifBalance = lifToken.balanceOf(accounts[2]);
-  await lifToken.approve(mm.address, 10);
-  await mm.sendTokens(10, {from: accounts[2]});
-  assert.equal(20, web3.eth.getBalance(accounts[2]));
-  assert.equal(180, web3.eth.getBalance(mm.address));
-  assert.equal(10, lifToken.balanceOf(mm.address));
-  assert.equal(initialAccountLifBalance-10, lifToken.balanceOf(accounts[2]));
-  assert.equal(21000, mm.getSellPrice());
-  assert.equal(20000, mm.getBuyPrice());
-  assert.equal(0, mm.getAccumulatedDistributedPercentage());
-  assert.equal(0, mm.getMaxClaimableWei());
-  assert.equal(0, mm.totalClaimedWei());
-  assert.equal(0, mm.totalProfit());
-  assert.equal(0, mm.getCurrentPeriodIndex());
+  // let initialAccountLifBalance = lifToken.balanceOf(accounts[2]);
+  // await lifToken.approve(mm.address, 10);
+  // await mm.sendTokens(10, {from: accounts[2]});
+  // assert.equal(20, web3.eth.getBalance(accounts[2]));
+  // assert.equal(180, web3.eth.getBalance(mm.address));
+  // assert.equal(10, lifToken.balanceOf(mm.address));
+  // assert.equal(initialAccountLifBalance-10, lifToken.balanceOf(accounts[2]));
+  // assert.equal(21000, mm.getSellPrice());
+  // assert.equal(20000, mm.getBuyPrice());
+  // assert.equal(0, mm.getAccumulatedDistributedPercentage());
+  // assert.equal(0, mm.getMaxClaimableWei());
+  // assert.equal(0, mm.totalClaimedWei());
+  // assert.equal(0, mm.totalProfit());
+  // assert.equal(0, mm.getCurrentPeriodIndex());
 
   // Sell 20 tokens to the MM
   // MMETH = 140, TP = 0, MMT = 30, TC = 70, SP = 2.1 ETH/Lif, BP = 2, CL 0%, maxClaimable = 0, claimed = 0
 
-  await lifToken.approve(mm.address, 20);
-  await mm.sendTokens(20, {from: accounts[2]});
-  assert.equal(60, web3.eth.getBalance(accounts[2]));
-  assert.equal(140, web3.eth.getBalance(mm.address));
-  assert.equal(30, lifToken.balanceOf(mm.address));
-  assert.equal(initialAccountLifBalance-30, lifToken.balanceOf(accounts[2]));
-  assert.equal(21000, mm.getSellPrice());
-  assert.equal(20000, mm.getBuyPrice());
-  assert.equal(0, mm.getAccumulatedDistributedPercentage());
-  assert.equal(0, mm.getMaxClaimableWei());
-  assert.equal(0, mm.totalClaimedWei());
-  assert.equal(0, mm.totalProfit());
-  assert.equal(0, mm.getCurrentPeriodIndex());
+  // await lifToken.approve(mm.address, 20);
+  // await mm.sendTokens(20, {from: accounts[2]});
+  // assert.equal(60, web3.eth.getBalance(accounts[2]));
+  // assert.equal(140, web3.eth.getBalance(mm.address));
+  // assert.equal(30, lifToken.balanceOf(mm.address));
+  // assert.equal(initialAccountLifBalance-30, lifToken.balanceOf(accounts[2]));
+  // assert.equal(21000, mm.getSellPrice());
+  // assert.equal(20000, mm.getBuyPrice());
+  // assert.equal(0, mm.getAccumulatedDistributedPercentage());
+  // assert.equal(0, mm.getMaxClaimableWei());
+  // assert.equal(0, mm.totalClaimedWei());
+  // assert.equal(0, mm.totalProfit());
+  // assert.equal(0, mm.getCurrentPeriodIndex());
 
   // MONTH 1
   // MMETH = 140, TP = 0, MMT = 30, TC = 70, SP = 2.121 ETH/Lif, BP = 1.8, CL 10%, maxClaimable = 14, claimed = 0
 
-  let nextPeriodBlock = startBlock + blocksPerPeriod;
-  await help.waitToBlock(nextPeriodBlock);
+  // let nextPeriodBlock = startBlock + blocksPerPeriod;
+  // await help.waitToBlock(nextPeriodBlock);
 
-  assert.equal(140, web3.eth.getBalance(mm.address));
-  assert.equal(30, lifToken.balanceOf(mm.address));
-  assert.equal(2121, mm.getSellPrice());
-  assert.equal(1800, mm.getBuyPrice());
-  assert.equal(1000, mm.getAccumulatedDistributedPercentage());
-  assert.equal(14, mm.getMaxClaimableWei());
-  assert.equal(0, mm.totalClaimedWei());
-  assert.equal(0, mm.totalProfit());
-  assert.equal(1, mm.getCurrentPeriodIndex());
+  // assert.equal(140, web3.eth.getBalance(mm.address));
+  // assert.equal(30, lifToken.balanceOf(mm.address));
+  // assert.equal(2121, mm.getSellPrice());
+  // assert.equal(1800, mm.getBuyPrice());
+  // assert.equal(1000, mm.getAccumulatedDistributedPercentage());
+  // assert.equal(14, mm.getMaxClaimableWei());
+  // assert.equal(0, mm.totalClaimedWei());
+  // assert.equal(0, mm.totalProfit());
+  // assert.equal(1, mm.getCurrentPeriodIndex());
 
   // Sell 10 tokens to the MM
   // MMETH = 122, TP = 2, MMT = 40, TC = 60, SP = 2.121 ETH/Lif, BP = 1.8, CL 10%, maxClaimable = 12, claimed = 0
 
-  await lifToken.approve(mm.address, 10);
-  await mm.sendTokens(10, {from: accounts[2]});
-  assert.equal(78, web3.eth.getBalance(accounts[2]));
-  assert.equal(122, web3.eth.getBalance(mm.address));
-  assert.equal(40, lifToken.balanceOf(mm.address));
-  assert.equal(initialAccountLifBalance-40, lifToken.balanceOf(accounts[2]));
-  assert.equal(2121, mm.getSellPrice());
-  assert.equal(1800, mm.getBuyPrice());
-  assert.equal(1000, mm.getAccumulatedDistributedPercentage());
-  assert.equal(12, mm.getMaxClaimableWei());
-  assert.equal(0, mm.totalClaimedWei());
-  assert.equal(2, mm.totalProfit());
-  assert.equal(1, mm.getCurrentPeriodIndex());
+  // await lifToken.approve(mm.address, 10);
+  // await mm.sendTokens(10, {from: accounts[2]});
+  // assert.equal(78, web3.eth.getBalance(accounts[2]));
+  // assert.equal(122, web3.eth.getBalance(mm.address));
+  // assert.equal(40, lifToken.balanceOf(mm.address));
+  // assert.equal(initialAccountLifBalance-40, lifToken.balanceOf(accounts[2]));
+  // assert.equal(2121, mm.getSellPrice());
+  // assert.equal(1800, mm.getBuyPrice());
+  // assert.equal(1000, mm.getAccumulatedDistributedPercentage());
+  // assert.equal(12, mm.getMaxClaimableWei());
+  // assert.equal(0, mm.totalClaimedWei());
+  // assert.equal(2, mm.totalProfit());
+  // assert.equal(1, mm.getCurrentPeriodIndex());
 
   // Claim 12
   // MMETH = 110, TP = 2, MMT = 40, TC = 60, SP = 2.121 ETH/Lif, BP = 1.8, CL 10%, maxClaimable = 12, claimed = 12
 
-  assert.equal(110, web3.eth.getBalance(mm.address));
-  assert.equal(40, lifToken.balanceOf(mm.address));
-  assert.equal(2121, mm.getSellPrice());
-  assert.equal(1800, mm.getBuyPrice());
-  assert.equal(1000, mm.getAccumulatedDistributedPercentage());
-  assert.equal(12, mm.getMaxClaimableWei());
-  assert.equal(12, mm.totalClaimedWei());
-  assert.equal(2, mm.totalProfit());
-  assert.equal(1, mm.getCurrentPeriodIndex());
+  // assert.equal(110, web3.eth.getBalance(mm.address));
+  // assert.equal(40, lifToken.balanceOf(mm.address));
+  // assert.equal(2121, mm.getSellPrice());
+  // assert.equal(1800, mm.getBuyPrice());
+  // assert.equal(1000, mm.getAccumulatedDistributedPercentage());
+  // assert.equal(12, mm.getMaxClaimableWei());
+  // assert.equal(12, mm.totalClaimedWei());
+  // assert.equal(2, mm.totalProfit());
+  // assert.equal(1, mm.getCurrentPeriodIndex());
 
   // MONTH 2
   // MMETH = 110, TP = 2, MMT = 40, TC = 60, SP = 2.142 ETH/Lif, BP = 1.4, CL 30%, maxClaimable = 36, claimed = 12
@@ -254,7 +284,6 @@ contract('marketMaker', function(accounts) {
 
   // Buy 100 tokens
   // MMETH = 254.3, TP = 92.3, MMT = 0, TC = 100, SP = 0.8 ETH/Lif, BP = 2.163, CL 60%, maxClaimable = 120, claimed = 30
-
 
 
   // Month 0:

@@ -61,6 +61,7 @@ contract LifMarketMaker is Ownable {
   function calculateDistributionPeriods(
     uint256 startBlock, uint8 totalPeriods, uint256 blocksPerPeriod
   ) internal {
+
     assert(totalPeriods == 24 || totalPeriods == 48);
     require(startBlock >= block.number);
     require(blocksPerPeriod > 0);
@@ -98,21 +99,17 @@ contract LifMarketMaker is Ownable {
       }
       uint256 endBlockPeriod = startBlock.add(blocksPerPeriod).sub(1);
 
-      uint256 maxClaimableWei = initialWei
-      .div(100000)
-      .mul(distributionPeriods[blockPeriodIndex].deltaDistribution);
-
       distributionPeriods.push(DistributionPeriod(
-        startBlock, endBlockPeriod, maxClaimableWei
+        startBlock, endBlockPeriod, distributionDelta
       ));
       startBlock = startBlock.add(blocksPerPeriod);
     }
 
   }
 
-  function getDistributionPeriodIndex() constant public returns(uint256) {
-    uint256 blocksAfterStart = block.number.sub(startBlock);
-    return blocksAfterStart.div(blocksPerPeriod);
+  function getCurrentPeriodIndex() constant public returns(uint256) {
+    require(block.number > startBlock);
+    return block.number.sub(startBlock).div(blocksPerPeriod);
   }
 
   function getSellRate() public constant returns (uint256) {
@@ -129,7 +126,7 @@ contract LifMarketMaker is Ownable {
 
   function getBuyRate() public constant returns (uint256 rate) {
 
-    uint256 blockPeriodIndex = getDistributionPeriodIndex();
+    uint256 blockPeriodIndex = getCurrentPeriodIndex();
 
     // uint256 buyRate = distributionPeriods[blockPeriodIndex].buyRate;
 
@@ -141,7 +138,7 @@ contract LifMarketMaker is Ownable {
   // TODO Calculate the total amount of wei that the foundation can withdraw, not only of current period
   function getFoundationWei() constant public returns (uint256) {
 
-    uint256 currentPeriodIndex = getDistributionPeriodIndex();
+    uint256 currentPeriodIndex = getCurrentPeriodIndex();
 
     uint256 foundationWei = 0;
 
@@ -197,7 +194,7 @@ contract LifMarketMaker is Ownable {
 
     foundationAddr.transfer(amountToClaim);
 
-    uint256 blockPeriodIndex = getDistributionPeriodIndex();
+    uint256 blockPeriodIndex = getCurrentPeriodIndex();
 
     distributionPeriods[ blockPeriodIndex ].deltaDistribution.sub(amountToClaim);
 
