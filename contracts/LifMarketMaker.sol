@@ -36,11 +36,15 @@ contract LifMarketMaker is Ownable {
   // The price at which the market maker buys tokens at the beginning of its lifetime
   uint256 public initialBuyPrice = 0;
 
+  uint256 constant PERCENTAGE_FACTOR = 10000;
+
   struct DistributionPeriod {
     uint256 startBlock;
     uint256 endBlock;
-    // This is % of the initialWei that can be claimed by the foundation from this period
+    // delta % of the initialWei that can be claimed by the foundation from this period
     uint256 deltaDistribution;
+    // accumulated % of the initialWei that can be claimed by the foundation on this period
+    uint256 accumDistribution;
   }
 
   DistributionPeriod[] public distributionPeriods;
@@ -91,17 +95,20 @@ contract LifMarketMaker is Ownable {
       4410, 4595, 4782, 4972, 5166, 5363
     ];
 
+    uint256 accumDistribution = 0;
+
     for (uint8 i = 0; i < totalPeriods; i++) {
-      uint256 distributionDelta;
+      uint256 deltaDistribution;
       if (totalPeriods == 24) {
-        distributionDelta = deltas24[i];
+        deltaDistribution = deltas24[i];
       } else {
-        distributionDelta = deltas48[i];
+        deltaDistribution = deltas48[i];
       }
+      accumDistribution = accumDistribution.add(deltaDistribution);
       uint256 endBlockPeriod = startBlock.add(blocksPerPeriod).sub(1);
 
       distributionPeriods.push(DistributionPeriod(
-        startBlock, endBlockPeriod, distributionDelta
+        startBlock, endBlockPeriod, deltaDistribution, accumDistribution
       ));
       startBlock = startBlock.add(blocksPerPeriod);
     }
@@ -134,20 +141,20 @@ contract LifMarketMaker is Ownable {
     return 1;
   }
 
-  // Get the total amount of wei tat the foundation can claim in the current distribution period
+  // Get the maximum amount of wei that the foundation can claim, without discounting what it
+  // claimed already (so the actual amount that it can claim can be lower). It's a portion of
+  // the ETH that was not claimed by token holders plus the profits made by the market maker
+  // by buying and selling tokens
+  function getMaxClaimableWeiAmount() constant public returns (uint256) {
 
-  // TODO Calculate the total amount of wei that the foundation can withdraw, not only of current period
-  function getFoundationWei() constant public returns (uint256) {
+    uint256 totalSupply = lifToken.totalSupply();
+    uint256 totalCirculation = totalSupply.sub(lifToken.balanceOf(address(this)));
+    uint256 accumulatedDistributionPercentage = distributionPeriods[getCurrentPeriodIndex()].accumDistribution;
 
-    uint256 currentPeriodIndex = getCurrentPeriodIndex();
-
-    uint256 foundationWei = 0;
-
-    uint256 weiRaied = this.balance
-      .sub(foundationWei)
-      .sub(initialWei);
-
-    return foundationWei.add(weiRaied);
+    return initialWei.
+      mul(accumulatedDistributionPercentage).div(PERCENTAGE_FACTOR).
+      mul(totalCirculation).div(totalSupply).
+      add(totalWeiProfit);
   }
 
   function() payable {
@@ -185,20 +192,22 @@ contract LifMarketMaker is Ownable {
     msg.sender.transfer(totalWei);
   }
 
-  function withdrawFunds(uint256 amountToClaim) {
+  // Called from the foundation wallet to claim eth back from the Market Maker. Maximum amount
+  // that can be claimed is determined by getMaxClaimableWeiAmount and how much
+  // wei has the foundation claimed already (totalWeiClaimed)
+  function claimEth(uint256 weiAmount) {
 
     require(msg.sender == foundationAddr);
 
-    uint256 available = getFoundationWei();
+    uint256 claimable = getMaxClaimableWeiAmount().sub(totalWeiClaimed);
 
-    require(available >= amountToClaim);
+    assert(claimable >= weiAmount);
 
-    foundationAddr.transfer(amountToClaim);
+    foundationAddr.transfer(weiAmount);
 
-    uint256 blockPeriodIndex = getCurrentPeriodIndex();
+    totalWeiClaimed = totalWeiClaimed.add(weiAmount);
 
-    distributionPeriods[ blockPeriodIndex ].deltaDistribution.sub(amountToClaim);
-
+    // TODO: allow to claim all the remaining ETH after the market maker lifetim (24/48 mo.)
     // require(block.number > endBlock);
 
     // uint256 lifBalance = lifToken.balanceOf(address(this));
