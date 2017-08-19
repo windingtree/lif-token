@@ -44,6 +44,8 @@ contract('marketMaker', function(accounts) {
       {value: web3.toWei(8, 'ether'), from: accounts[0]}
     );
 
+    await mm.calculateDistributionPeriods({from: accounts[0]});
+
     help.debug('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
     help.debug('Start block', parseInt( await mm.startBlock.call() ));
     help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
@@ -78,6 +80,8 @@ contract('marketMaker', function(accounts) {
       token.address, web3.eth.blockNumber+10, 100, 48, accounts[1],
       {value: web3.toWei(8, 'ether'), from: accounts[0]}
     );
+
+    await mm.calculateDistributionPeriods({from: accounts[0]});
 
     help.debug('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
     help.debug('Start block', parseInt( await mm.startBlock.call() ));
