@@ -62,7 +62,7 @@ contract('marketMaker', function(accounts) {
       6583, 7243, 7929, 8640, 9377, 10138
     ];
 
-    for (int i = 0; i < deltas.length; i++) {
+    for (i = 0; i < deltas.length; i++) {
       assert.equal(parseInt((await mm.distributionPeriods.call(i))[2]), deltas[i])
     }
     // a few specific examples to double-check
@@ -99,7 +99,7 @@ contract('marketMaker', function(accounts) {
       4410, 4595, 4782, 4972, 5166, 5363
     ];
 
-    for (int i = 0; i < deltas.length; i++) {
+    for (i = 0; i < deltas.length; i++) {
       assert.equal(parseInt((await mm.distributionPeriods.call(i))[2]), deltas[i])
     }
     // just a few examples to double-check
