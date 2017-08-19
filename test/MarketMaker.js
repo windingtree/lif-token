@@ -189,7 +189,7 @@ contract('marketMaker', function(accounts) {
       customerEthBalance: 500, customerLifBalance: 100,
       marketMakerSellPrice: 2100, marketMakerBuyPrice: 2000,
       claimablePercentage: 0, maxClaimableEth: 0, totalClaimedEth: 0
-    });
+    }, mm, customer);
 
     // Sell 10 tokens to the MM
     await token.approve(mm.address, 10);
@@ -200,7 +200,7 @@ contract('marketMaker', function(accounts) {
       customerEthBalance: 520, customerLifBalance: 90,
       marketMakerSellPrice: 2100, marketMakerBuyPrice: 2000,
       claimablePercentage: 0, maxClaimableEth: 0, totalClaimedEth: 0
-    });
+    }, mm, customer);
 
     // Sell 20 tokens to the MM
     await token.approve(mm.address, 20);
@@ -211,7 +211,7 @@ contract('marketMaker', function(accounts) {
       customerEthBalance: 560, customerLifBalance: 70,
       marketMakerSellPrice: 2100, marketMakerBuyPrice: 2000,
       claimablePercentage: 0, maxClaimableEth: 0, totalClaimedEth: 0
-    });
+    }, mm, customer);
 
     // Month 1
     await waitForMonth(1, startBlock, blocksPerPeriod);
@@ -221,7 +221,7 @@ contract('marketMaker', function(accounts) {
       customerEthBalance: 560, customerLifBalance: 70,
       marketMakerSellPrice: 2121, marketMakerBuyPrice: 1800,
       claimablePercentage: 10, maxClaimableEth: 14, totalClaimedEth: 0
-    });
+    }, mm, customer);
 
     // Sell 10 tokens to the MM
     await token.approve(mm.address, 10);
@@ -232,7 +232,7 @@ contract('marketMaker', function(accounts) {
       customerEthBalance: 578, customerLifBalance: 60,
       marketMakerSellPrice: 2121, marketMakerBuyPrice: 1800,
       claimablePercentage: 10, maxClaimableEth: 12, totalClaimedEth: 0
-    });
+    }, mm, customer);
 
     // Claim 12
     await mm.claimEth(12);
@@ -242,7 +242,7 @@ contract('marketMaker', function(accounts) {
       customerEthBalance: 578, customerLifBalance: 60,
       marketMakerSellPrice: 2121, marketMakerBuyPrice: 1800,
       claimablePercentage: 10, maxClaimableEth: 12, totalClaimedEth: 12
-    });
+    }, mm, customer);
 
     // Month 2
     await waitForMonth(2, startBlock, blocksPerPeriod);
@@ -252,7 +252,7 @@ contract('marketMaker', function(accounts) {
       customerEthBalance: 578, customerLifBalance: 60,
       marketMakerSellPrice: 2142, marketMakerBuyPrice: 1400,
       claimablePercentage: 30, maxClaimableEth: 36, totalClaimedEth: 12
-    });
+    }, mm, customer);
 
     // Sell 10 tokens to the MM
     await token.approve(mm.address, 10);
@@ -263,7 +263,7 @@ contract('marketMaker', function(accounts) {
       customerEthBalance: 592, customerLifBalance: 50,
       marketMakerSellPrice: 2142, marketMakerBuyPrice: 1400,
       claimablePercentage: 30, maxClaimableEth: 30, totalClaimedEth: 12
-    });
+    }, mm, customer);
 
     // Claim 18 ETH
     await mm.claimEth(18);
@@ -273,7 +273,7 @@ contract('marketMaker', function(accounts) {
       customerEthBalance: 592, customerLifBalance: 50,
       marketMakerSellPrice: 2142, marketMakerBuyPrice: 1400,
       claimablePercentage: 30, maxClaimableEth: 30, totalClaimedEth: 30
-    });
+    }, mm, customer);
 
     // Month 3
     await waitForMonth(3, startBlock, blocksPerPeriod);
@@ -283,7 +283,7 @@ contract('marketMaker', function(accounts) {
       customerEthBalance: 592, customerLifBalance: 50,
       marketMakerSellPrice: 2163, marketMakerBuyPrice: 800,
       claimablePercentage: 60, maxClaimableEth: 60, totalClaimedEth: 30
-    });
+    }, mm, customer);
 
     // Sell 50 tokens to the MM
     await token.approve(mm.address, 50);
@@ -294,7 +294,7 @@ contract('marketMaker', function(accounts) {
       customerEthBalance: 632, customerLifBalance: 0,
       marketMakerSellPrice: 2163, marketMakerBuyPrice: 800,
       claimablePercentage: 60, maxClaimableEth: 0, totalClaimedEth: 30
-    });
+    }, mm, customer);
 
     // Buy 100 tokens
     await token.approve(customer, 100);
@@ -305,7 +305,7 @@ contract('marketMaker', function(accounts) {
       customerEthBalance: 415.7, customerLifBalance: 100,
       marketMakerSellPrice: 2163, marketMakerBuyPrice: 800,
       claimablePercentage: 60, maxClaimableEth: 120, totalClaimedEth: 30
-    });
+    }, mm, customer);
 
   });
 
