@@ -133,7 +133,7 @@ contract('marketMaker', function(accounts) {
     assert.equal( blocksPerPeriod, parseInt(await mm.blocksPerPeriod()) );
     assert.equal( accounts[1], parseInt(await mm.foundationAddr()) );
 
-    await help.waitToBlock(startBlock+1);
+    await help.waitToBlock(startBlock);
     assert.equal( 0, parseInt(await mm.getCurrentPeriodIndex()) );
     await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod)
     assert.equal( 1, parseInt(await mm.getCurrentPeriodIndex()) );

@@ -118,7 +118,7 @@ contract LifMarketMaker is Ownable {
   }
 
   function getCurrentPeriodIndex() constant public returns(uint256) {
-    require(block.number > startBlock);
+    require(block.number >= startBlock);
     return block.number.sub(startBlock).div(blocksPerPeriod);
   }
 
