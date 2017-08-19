@@ -209,7 +209,7 @@ contract('marketMaker', function(accounts) {
     // MMETH = 38,    TP = 68,   MMT = 100, TC = 0,   SP = 2163 mETH/Lif, BP = 800,  CL 60%, maxClaimable = 0,   claimed = 30
 
     // Buy 100 tokens
-    // MMETH = 254.3, TP = 92.3, MMT = 0,   TC = 100, SP = 2163 mETH/Lif, BP = 800,  CL 60%, maxClaimable = 120, claimed = 30
+    // MMETH = 254.3, TP = 84.3, MMT = 0,   TC = 100, SP = 2163 mETH/Lif, BP = 800,  CL 60%, maxClaimable = 120, claimed = 30
 
   });
 
