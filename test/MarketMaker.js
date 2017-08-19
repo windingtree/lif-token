@@ -44,13 +44,13 @@ contract('marketMaker', function(accounts) {
       {value: web3.toWei(8, 'ether'), from: accounts[0]}
     );
 
-    console.log('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
-    console.log('Start block', parseInt( await mm.startBlock.call() ));
-    console.log('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
-    console.log('Foundation address', await mm.foundationAddr.call() );
+    help.debug('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
+    help.debug('Start block', parseInt( await mm.startBlock.call() ));
+    help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
+    help.debug('Foundation address', await mm.foundationAddr.call() );
 
     for (var i = 0; i < 24; i ++) {
-      console.log('Period', i, (await mm.distributionPeriods.call(i)));
+      help.debug('Period', i, (await mm.distributionPeriods.call(i)));
     };
 
     assert.equal( parseInt((await mm.distributionPeriods.call(0))[2]), 0 )
@@ -86,10 +86,10 @@ contract('marketMaker', function(accounts) {
       {value: web3.toWei(8, 'ether'), from: accounts[0]}
     );
 
-    console.log('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
-    console.log('Start block', parseInt( await mm.startBlock.call() ));
-    console.log('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
-    console.log('Foundation address', await mm.foundationAddr.call() );
+    help.debug('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
+    help.debug('Start block', parseInt( await mm.startBlock.call() ));
+    help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
+    help.debug('Foundation address', await mm.foundationAddr.call() );
 
     assert.equal( parseInt((await mm.distributionPeriods.call(0))[2]), 0 )
     assert.equal( parseInt((await mm.distributionPeriods.call(1))[2]), 3 )
