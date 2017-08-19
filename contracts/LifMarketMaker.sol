@@ -39,8 +39,10 @@ contract LifMarketMaker is Ownable {
   struct DistributionPeriod {
     uint256 startBlock;
     uint256 endBlock;
-    // This is % of the initialWei that can be claimed by the foundation from this period
+    // delta % of the initialWei that can be claimed by the foundation from this period
     uint256 deltaDistribution;
+    // accumulated % of the initialWei that can be claimed by the foundation on this period
+    uint256 accumDistribution;
   }
 
   DistributionPeriod[] public distributionPeriods;
@@ -91,17 +93,20 @@ contract LifMarketMaker is Ownable {
       4410, 4595, 4782, 4972, 5166, 5363
     ];
 
+    uint256 accumDistribution = 0;
+
     for (uint8 i = 0; i < totalPeriods; i++) {
-      uint256 distributionDelta;
+      uint256 deltaDistribution;
       if (totalPeriods == 24) {
-        distributionDelta = deltas24[i];
+        deltaDistribution = deltas24[i];
       } else {
-        distributionDelta = deltas48[i];
+        deltaDistribution = deltas48[i];
       }
+      accumDistribution = accumDistribution.add(deltaDistribution);
       uint256 endBlockPeriod = startBlock.add(blocksPerPeriod).sub(1);
 
       distributionPeriods.push(DistributionPeriod(
-        startBlock, endBlockPeriod, distributionDelta
+        startBlock, endBlockPeriod, deltaDistribution, accumDistribution
       ));
       startBlock = startBlock.add(blocksPerPeriod);
     }
