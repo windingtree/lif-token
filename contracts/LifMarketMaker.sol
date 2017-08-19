@@ -24,6 +24,9 @@ contract LifMarketMaker is Ownable {
   // Quantity of blocks in every period, it's roughly equivalent to 30 days
   uint256 public blocksPerPeriod;
 
+  // Number of periods. It should be 24 or 48 (each period is roughly a month)
+  uint8 public totalPeriods;
+
   // The total amount of wei gained on buying/selling tokens
   uint256 public totalWeiProfit = 0;
 
@@ -52,15 +55,13 @@ contract LifMarketMaker is Ownable {
     lifToken = ERC20(lifAddr);
     startBlock = _startBlock;
     blocksPerPeriod = _blocksPerPeriod;
-    calculateDistributionPeriods(_startBlock, _totalPeriods, _blocksPerPeriod);
+    totalPeriods = _totalPeriods;
     foundationAddr = _foundationAddr;
     initialWei = msg.value;
     initialBuyPrice = initialWei.div(lifToken.totalSupply());
   }
 
-  function calculateDistributionPeriods(
-    uint256 startBlock, uint8 totalPeriods, uint256 blocksPerPeriod
-  ) internal {
+  function calculateDistributionPeriods() onlyOwner {
 
     assert(totalPeriods == 24 || totalPeriods == 48);
     require(startBlock >= block.number);

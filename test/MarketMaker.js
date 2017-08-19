@@ -44,6 +44,8 @@ contract('marketMaker', function(accounts) {
       {value: web3.toWei(8, 'ether'), from: accounts[0]}
     );
 
+    await mm.calculateDistributionPeriods({from: accounts[0]});
+
     help.debug('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
     help.debug('Start block', parseInt( await mm.startBlock.call() ));
     help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
@@ -53,29 +55,22 @@ contract('marketMaker', function(accounts) {
       help.debug('Period', i, (await mm.distributionPeriods.call(i)));
     };
 
+    let deltas = [
+      0, 18, 99, 234, 416, 640,
+      902, 1202, 1536, 1905, 2305, 2738,
+      3201, 3693, 4215, 4766, 5345, 5951,
+      6583, 7243, 7929, 8640, 9377, 10138
+    ];
+
+    for (int i = 0; i < deltas.length; i++) {
+      assert.equal(parseInt((await mm.distributionPeriods.call(i))[2]), deltas[i])
+    }
+    // a few specific examples to double-check
     assert.equal( parseInt((await mm.distributionPeriods.call(0))[2]), 0 )
     assert.equal( parseInt((await mm.distributionPeriods.call(1))[2]), 18 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(2))[2]), 99 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(3))[2]), 234 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(4))[2]), 416 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(5))[2]), 640 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(6))[2]), 902 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(7))[2]), 1202 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(8))[2]), 1536 )
     assert.equal( parseInt((await mm.distributionPeriods.call(9))[2]), 1905 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(10))[2]), 2305 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(11))[2]), 2738 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(12))[2]), 3201 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(13))[2]), 3693 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(14))[2]), 4215 )
     assert.equal( parseInt((await mm.distributionPeriods.call(15))[2]), 4766 )
     assert.equal( parseInt((await mm.distributionPeriods.call(16))[2]), 5345 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(17))[2]), 5951 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(18))[2]), 6583 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(19))[2]), 7243 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(20))[2]), 7929 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(21))[2]), 8640 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(22))[2]), 9377 )
     assert.equal( parseInt((await mm.distributionPeriods.call(23))[2]), 10138 )
   });
 
@@ -86,54 +81,33 @@ contract('marketMaker', function(accounts) {
       {value: web3.toWei(8, 'ether'), from: accounts[0]}
     );
 
+    await mm.calculateDistributionPeriods({from: accounts[0]});
+
     help.debug('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
     help.debug('Start block', parseInt( await mm.startBlock.call() ));
     help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
     help.debug('Foundation address', await mm.foundationAddr.call() );
 
-    assert.equal( parseInt((await mm.distributionPeriods.call(0))[2]), 0 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(1))[2]), 3 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(2))[2]), 15 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(3))[2]), 36 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(4))[2]), 63 )
+    let deltas = [
+      0, 3, 15, 36, 63, 97,
+      137, 183, 233, 289, 350, 416,
+      486, 561, 641, 724, 812, 904,
+      1000, 1101, 1205, 1313, 1425, 1541,
+      1660, 1783, 1910, 2041, 2175, 2312,
+      2454, 2598, 2746, 2898, 3053, 3211,
+      3373, 3537, 3706, 3877, 4052, 4229,
+      4410, 4595, 4782, 4972, 5166, 5363
+    ];
+
+    for (int i = 0; i < deltas.length; i++) {
+      assert.equal(parseInt((await mm.distributionPeriods.call(i))[2]), deltas[i])
+    }
+    // just a few examples to double-check
     assert.equal( parseInt((await mm.distributionPeriods.call(5))[2]), 97 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(6))[2]), 137 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(7))[2]), 183 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(8))[2]), 233 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(9))[2]), 289 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(10))[2]), 350 )
     assert.equal( parseInt((await mm.distributionPeriods.call(11))[2]), 416 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(12))[2]), 486 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(13))[2]), 561 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(14))[2]), 641 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(15))[2]), 724 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(16))[2]), 812 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(17))[2]), 904 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(18))[2]), 1000 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(19))[2]), 1101 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(20))[2]), 1205 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(21))[2]), 1313 )
     assert.equal( parseInt((await mm.distributionPeriods.call(22))[2]), 1425 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(23))[2]), 1541 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(24))[2]), 1660 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(25))[2]), 1783 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(26))[2]), 1910 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(27))[2]), 2041 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(28))[2]), 2175 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(29))[2]), 2312 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(30))[2]), 2454 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(31))[2]), 2598 )
     assert.equal( parseInt((await mm.distributionPeriods.call(32))[2]), 2746 )
     assert.equal( parseInt((await mm.distributionPeriods.call(33))[2]), 2898 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(34))[2]), 3053 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(35))[2]), 3211 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(36))[2]), 3373 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(37))[2]), 3537 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(38))[2]), 3706 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(39))[2]), 3877 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(40))[2]), 4052 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(41))[2]), 4229 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(42))[2]), 4410 )
     assert.equal( parseInt((await mm.distributionPeriods.call(43))[2]), 4595 )
     assert.equal( parseInt((await mm.distributionPeriods.call(44))[2]), 4782 )
     assert.equal( parseInt((await mm.distributionPeriods.call(45))[2]), 4972 )
