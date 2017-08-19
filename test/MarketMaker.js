@@ -39,56 +39,87 @@ contract('marketMaker', function(accounts) {
 
   it("Create 24 months MM", async function() {
     token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
+    await help.checkToken(token, accounts, 100, [40,30,20,10,0]);
     mm = await LifMarketMaker.new(
-      token.address, web3.eth.blockNumber+10, 100, 24, accounts[1],
+      token.address, web3.eth.blockNumber+10, 100, 24,
+      accounts[1], 100500,
       {value: web3.toWei(8, 'ether'), from: accounts[0]}
     );
 
-    await mm.calculateDistributionPeriods({from: accounts[0]});
+    await mm.calculateDistributionPeriods({from: accounts[4]});
+    await mm.calculateSellPricePeriods({from: accounts[3]});
 
-    help.debug('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
+    help.debug('Total Token Supply:', help.lifWei2Lif(parseFloat( await token.totalSupply())));
+    help.debug('MM balance:', parseInt( web3.eth.getBalance(mm.address) ));
     help.debug('Start block', parseInt( await mm.startBlock.call() ));
     help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
     help.debug('Foundation address', await mm.foundationAddr.call() );
+    help.debug('Initial Wei', parseInt( await mm.initialWei.call() ));
+    help.debug('Initial Buy Price', parseInt( await mm.initialBuyPrice.call() ));
+    help.debug('Initial Sell Price', parseInt( await mm.initialSellPrice.call() ));
 
-    for (var i = 0; i < 24; i ++) {
-      help.debug('Period', i, (await mm.distributionPeriods.call(i)));
-    };
+    // for (var i = 0; i < 24; i ++) {
+    //   help.debug('Period', i, (await mm.marketMakerPeriods.call(i)));
+    // };
 
-    let deltas = [
+    let distributionDeltas = [
       0, 18, 99, 234, 416, 640,
       902, 1202, 1536, 1905, 2305, 2738,
       3201, 3693, 4215, 4766, 5345, 5951,
       6583, 7243, 7929, 8640, 9377, 10138
     ];
 
-    for (i = 0; i < deltas.length; i++) {
-      assert.equal(parseInt((await mm.distributionPeriods.call(i))[2]), deltas[i])
+    let accumIncrementPrice = [
+      0, 1000, 2010, 3030, 4060, 5101,
+      6152, 7213, 8285, 9368, 10462,
+      11566, 12682, 13809, 14947, 16096,
+      17257, 18430, 19614, 20810, 22019,
+      23239, 24471, 25716, 26973, 28243,
+      29525, 30820, 32129, 33450, 34784,
+      36132, 37494, 38869, 40257, 41660,
+      43076, 44507, 45952, 47412, 48886,
+      50375, 51878, 53397, 54931, 56481,
+      58045, 59626
+    ];
+
+    for (var i = 0; i < distributionDeltas.length; i++) {
+      assert.equal(parseInt((await mm.marketMakerPeriods.call(i))[2]), distributionDeltas[i])
     }
+
+    for (var i = 0; i < 24; i++) {
+      assert.equal(parseInt((await mm.marketMakerPeriods.call(i))[4]), accumIncrementPrice[i])
+    }
+
     // a few specific examples to double-check
-    assert.equal( parseInt((await mm.distributionPeriods.call(0))[2]), 0 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(1))[2]), 18 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(9))[2]), 1905 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(15))[2]), 4766 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(16))[2]), 5345 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(23))[2]), 10138 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(0))[2]), 0 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(1))[2]), 18 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(9))[2]), 1905 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(15))[2]), 4766 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(16))[2]), 5345 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(23))[2]), 10138 )
   });
 
   it("Create 48 months MM", async function() {
     token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
     mm = await LifMarketMaker.new(
-      token.address, web3.eth.blockNumber+10, 100, 48, accounts[1],
+      token.address, web3.eth.blockNumber+10, 100, 48,
+      accounts[1], 100500,
       {value: web3.toWei(8, 'ether'), from: accounts[0]}
     );
 
-    await mm.calculateDistributionPeriods({from: accounts[0]});
+    await mm.calculateDistributionPeriods({from: accounts[4]});
+    await mm.calculateSellPricePeriods({from: accounts[3]});
 
-    help.debug('MM balance:', parseInt( web3.eth.getBalance(token.address) ));
+    help.debug('Total Token Supply:', help.lifWei2Lif(parseFloat( await token.totalSupply())));
+    help.debug('MM balance:', parseInt( web3.eth.getBalance(mm.address) ));
     help.debug('Start block', parseInt( await mm.startBlock.call() ));
     help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
     help.debug('Foundation address', await mm.foundationAddr.call() );
+    help.debug('Initial Wei', parseInt( await mm.initialWei.call() ));
+    help.debug('Initial Buy Price', parseInt( await mm.initialBuyPrice.call() ));
+    help.debug('Initial Sell Price', parseInt( await mm.initialSellPrice.call() ));
 
-    let deltas = [
+    let distributionDeltas = [
       0, 3, 15, 36, 63, 97,
       137, 183, 233, 289, 350, 416,
       486, 561, 641, 724, 812, 904,
@@ -99,20 +130,38 @@ contract('marketMaker', function(accounts) {
       4410, 4595, 4782, 4972, 5166, 5363
     ];
 
-    for (i = 0; i < deltas.length; i++) {
-      assert.equal(parseInt((await mm.distributionPeriods.call(i))[2]), deltas[i])
+    let accumIncrementPrice = [
+      0, 1000, 2010, 3030, 4060, 5101,
+      6152, 7213, 8285, 9368, 10462,
+      11566, 12682, 13809, 14947, 16096,
+      17257, 18430, 19614, 20810, 22019,
+      23239, 24471, 25716, 26973, 28243,
+      29525, 30820, 32129, 33450, 34784,
+      36132, 37494, 38869, 40257, 41660,
+      43076, 44507, 45952, 47412, 48886,
+      50375, 51878, 53397, 54931, 56481,
+      58045, 59626
+    ];
+
+    for (var i = 0; i < distributionDeltas.length; i++) {
+      assert.equal(parseInt((await mm.marketMakerPeriods.call(i))[2]), distributionDeltas[i])
     }
+
+    for (var i = 0; i < 48; i++) {
+      assert.equal(parseInt((await mm.marketMakerPeriods.call(i))[4]), accumIncrementPrice[i])
+    }
+
     // just a few examples to double-check
-    assert.equal( parseInt((await mm.distributionPeriods.call(5))[2]), 97 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(11))[2]), 416 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(22))[2]), 1425 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(32))[2]), 2746 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(33))[2]), 2898 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(43))[2]), 4595 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(44))[2]), 4782 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(45))[2]), 4972 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(46))[2]), 5166 )
-    assert.equal( parseInt((await mm.distributionPeriods.call(47))[2]), 5363 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(5))[2]), 97 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(11))[2]), 416 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(22))[2]), 1425 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(32))[2]), 2746 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(33))[2]), 2898 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(43))[2]), 4595 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(44))[2]), 4782 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(45))[2]), 4972 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(46))[2]), 5166 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(47))[2]), 5363 )
   });
 
   it("should return correct periods using getCurrentPeriodIndex", async function() {
