@@ -176,11 +176,9 @@ contract LifMarketMaker is Ownable {
 
     uint256 periodIndex = getCurrentPeriodIndex();
 
-    uint256 sellPriceIncrement = initialSellPrice
+    return initialSellPrice
       .mul(PRICE_FACTOR.add(marketMakerPeriods[periodIndex].accumSellPriceIncrement))
       .div(PRICE_FACTOR);
-
-    return sellPriceIncrement;
 
   }
 
