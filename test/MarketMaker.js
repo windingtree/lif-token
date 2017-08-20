@@ -215,31 +215,39 @@ contract('marketMaker', function(accounts) {
     await help.waitToBlock(startBlock+blocksPerPeriod*numberOfMonth, accounts);
   };
 
-  it("Should return the correct sellPrice on every period", async function() {
-    token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
+  it("Should return the correct sellPrice on every period with 873750 tokens total supply and 3285 ETH in MM", async function() {
+    token = await simulateCrowdsale(100, [873750,0,0,0,0], accounts);
 
     const startBlock = web3.eth.blockNumber+10;
     const blocksPerPeriod = 5;
-    const initialPriceSpread = 100500;
+    const initialPriceSpread = 0.05;
+    const priceFactor = 100000;
+    const initialPriceSpreadFactor = priceFactor*(1+initialPriceSpread);
+    const initialMMEther = 30285;
+    const MMInitialBalance = web3.toWei(initialMMEther, 'ether');
+    const tokenTotalSupply = help.lif2LifWei(873750);
+
+    const initialSellPrice = parseFloat((MMInitialBalance / tokenTotalSupply)*(1+initialPriceSpread)).toFixed(5);
+    const initialBuyPrice = parseFloat((MMInitialBalance / tokenTotalSupply)).toFixed(5);
 
     mm = await LifMarketMaker.new(
       token.address, startBlock, blocksPerPeriod, 24,
-      accounts[1], initialPriceSpread,
-      {value: web3.toWei(8, 'ether'), from: accounts[0]}
+      accounts[1], initialPriceSpreadFactor,
+      {value: web3.toWei(initialMMEther, 'ether'), from: accounts[0]}
     );
-
-    const initialSellPrice = parseInt(await mm.initialSellPrice());
 
     await mm.calculateDistributionPeriods({from: accounts[4]});
     await mm.calculateSellPricePeriods({from: accounts[3]});
 
-    help.debug('MM balance:', parseInt( web3.eth.getBalance(mm.address) ));
+    help.debug('Total Token Supply:', help.lifWei2Lif(parseFloat( await token.totalSupply())));
+    help.debug('MM balance:', parseFloat( web3.eth.getBalance(mm.address) ).toFixed(0));
     help.debug('Start block', parseInt( await mm.startBlock.call() ));
     help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
     help.debug('Foundation address', await mm.foundationAddr.call() );
-    help.debug('Initial Wei', parseInt( await mm.initialWei.call() ));
-    help.debug('Initial Buy Price', parseInt( await mm.initialBuyPrice.call() ));
-    help.debug('Initial Sell Price', parseInt( await mm.initialSellPrice.call() ));
+    help.debug('Initial Wei', parseFloat( await mm.initialWei.call() ).toFixed(0));
+
+    assert.equal(initialBuyPrice, parseFloat(await mm.initialBuyPrice()/priceFactor).toFixed(5) );
+    assert.equal(initialSellPrice, parseFloat(await mm.initialSellPrice()/priceFactor).toFixed(5) );
 
     let accumIncrementPrice = [
       0, 1000, 2010, 3030, 4060, 5101,
@@ -254,26 +262,19 @@ contract('marketMaker', function(accounts) {
       58045, 59626
     ];
 
-    function parsePrice(price) {
-      return parseInt(price.toFixed(0)/10000);
-    }
-
     await help.waitToBlock(startBlock+1);
     for (var i = 0; i < 24; i++) {
 
-      // To log all the accumulative price incremenets in base 10^5
-      // help.debug((100000*(1.01**i))-100000 );
-
-      // help.debug(
-      //   parsePrice(parseFloat(initialSellPrice*(1.01**i)))
-      //   ,' == ',
-      //   parsePrice(parseFloat(await mm.getSellPrice()))
-      // );
-      assert.approximately(
-        parsePrice(parseFloat(initialSellPrice*(1.01**i))),
-        parsePrice(parseFloat(await mm.getSellPrice())),
-        1, 'wrong sell price in contract on period index'+ i
+      help.debug('Sell price on period', i,
+        parseFloat(await mm.getSellPrice()/priceFactor)
       );
+
+      assert.approximately(
+        parseFloat(initialSellPrice*(1.01**i))*priceFactor/priceFactor,
+        parseFloat(await mm.getSellPrice()/priceFactor),
+        0.0001, 'wrong sell price in contract on period index'+ i
+      );
+
       await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod);
     }
   });
