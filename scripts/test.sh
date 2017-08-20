@@ -8,8 +8,8 @@ if [ ! $trpc_running ]; then
   trpc_pid=$!
 fi
 
-./node_modules/truffle/cli.js compile
-./node_modules/truffle/cli.js test $1
+./node_modules/.bin/truffle compile
+./node_modules/.bin/truffle test $1
 test_result=$?
 
 if [ ! $trpc_running ]; then
