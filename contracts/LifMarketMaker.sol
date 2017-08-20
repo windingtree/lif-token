@@ -16,7 +16,7 @@ contract LifMarketMaker is Ownable {
   address public foundationAddr;
 
   // The amount of wei that the Market Maker received initially
-  uint256 initialWei;
+  uint256 public initialWei;
 
   // Start block since which the Market Maker begins to accept buy and sell orders
   uint256 public startBlock;
@@ -36,23 +36,28 @@ contract LifMarketMaker is Ownable {
   // The price at which the market maker buys tokens at the beginning of its lifetime
   uint256 public initialBuyPrice = 0;
 
-  uint256 constant PERCENTAGE_FACTOR = 10000;
-  uint256 constant PRICE_FACTOR = 10000;
+  // The price at which the market maker sell tokens at the beginning of its lifetime
+  uint256 public initialSellPrice = 0;
 
-  struct DistributionPeriod {
+  uint256 constant PERCENTAGE_FACTOR = 10000;
+  uint256 constant PRICE_FACTOR = 100000;
+
+  struct MarketMakerPeriod {
     uint256 startBlock;
     uint256 endBlock;
     // delta % of the initialWei that can be claimed by the foundation from this period
     uint256 deltaDistribution;
     // accumulated % of the initialWei that can be claimed by the foundation on this period
     uint256 accumDistribution;
+    // accumulated % of the increment in the sell price in this period
+    uint256 accumSellPriceIncrement;
   }
 
-  DistributionPeriod[] public distributionPeriods;
+  MarketMakerPeriod[] public marketMakerPeriods;
 
   function LifMarketMaker(
     address lifAddr, uint256 _startBlock, uint256 _blocksPerPeriod,
-    uint8 _totalPeriods, address _foundationAddr
+    uint8 _totalPeriods, address _foundationAddr, uint256 initialPriceSpread
   ) payable {
 
     assert(_totalPeriods == 24 || _totalPeriods == 48);
@@ -63,10 +68,16 @@ contract LifMarketMaker is Ownable {
     totalPeriods = _totalPeriods;
     foundationAddr = _foundationAddr;
     initialWei = msg.value;
-    initialBuyPrice = initialWei.div(lifToken.totalSupply());
+    initialBuyPrice = initialWei
+      .mul(PRICE_FACTOR)
+      .div(lifToken.totalSupply());
+
+    initialSellPrice = initialBuyPrice
+      .mul(initialPriceSpread)
+      .div(PRICE_FACTOR);
   }
 
-  function calculateDistributionPeriods() onlyOwner {
+  function calculateDistributionPeriods() {
 
     assert(totalPeriods == 24 || totalPeriods == 48);
     require(startBlock >= block.number);
@@ -74,10 +85,11 @@ contract LifMarketMaker is Ownable {
 
     // Table with the max delta % that can be distributed back to the foundation on
     // each period. It follows an exponential curve (starts with lower % and ends
-    // with higher %) to keep the funds in the market maker longer. deltas24 is
-    // used when market maker lifetime is 24 months, deltas48 when it's 48 months.
+    // with higher %) to keep the funds in the market maker longer. deltas24
+    // is used when market maker lifetime is 24 months, deltas48 when it's 48 months.
     // The sum is less than 100% because the last % is missing: after the last period
     // the 100% remaining can be claimed by the foundation. Values multipled by 10^5
+
     uint256[24] memory deltas24 = [
       uint256(0), 18, 99, 234, 416, 640,
       902, 1202, 1536, 1905, 2305, 2738,
@@ -97,22 +109,60 @@ contract LifMarketMaker is Ownable {
     ];
 
     uint256 accumDistribution = 0;
-    uint256 periodStartBlock = startBlock;
+    uint256 deltaDistribution = 0;
+    uint256 startBlockPeriod = startBlock;
+
+    require(marketMakerPeriods.length == 0);
 
     for (uint8 i = 0; i < totalPeriods; i++) {
-      uint256 deltaDistribution;
+
       if (totalPeriods == 24) {
         deltaDistribution = deltas24[i];
       } else {
         deltaDistribution = deltas48[i];
       }
-      accumDistribution = accumDistribution.add(deltaDistribution);
-      uint256 periodEndBlock = periodStartBlock.add(blocksPerPeriod).sub(1);
 
-      distributionPeriods.push(DistributionPeriod(
-        periodStartBlock, periodEndBlock, deltaDistribution, accumDistribution
+      accumDistribution = accumDistribution.add(deltaDistribution);
+
+      marketMakerPeriods.push(MarketMakerPeriod(
+        startBlockPeriod, startBlockPeriod.add(blocksPerPeriod).sub(1),
+        deltaDistribution, accumDistribution,
+        0
       ));
-      periodStartBlock = periodStartBlock.add(blocksPerPeriod);
+
+      startBlockPeriod = startBlockPeriod.add(blocksPerPeriod);
+    }
+
+  }
+
+  function calculateSellPricePeriods() {
+
+    assert(totalPeriods == 24 || totalPeriods == 48);
+    require(startBlock >= block.number);
+    require(blocksPerPeriod > 0);
+
+    // The sellPriceIncrements represents how much is going to increase in % the sellPrice
+    // every period.
+
+    uint256[48] memory accumSellPriceIncrements = [
+      uint256(0), 1000, 2010, 3030, 4060, 5101,
+      6152, 7213, 8285, 9368, 10462,
+      11566, 12682, 13809, 14947, 16096,
+      17257, 18430, 19614, 20810, 22019,
+      23239, 24471, 25716, 26973, 28243,
+      29525, 30820, 32129, 33450, 34784,
+      36132, 37494, 38869, 40257, 41660,
+      43076, 44507, 45952, 47412, 48886,
+      50375, 51878, 53397, 54931, 56481,
+      58045, 59626
+    ];
+
+    for (uint8 i = 0; i < totalPeriods; i++) {
+
+      require(marketMakerPeriods[i].startBlock > 0);
+
+      marketMakerPeriods[i].accumSellPriceIncrement = accumSellPriceIncrements[i];
+
     }
 
   }
@@ -122,21 +172,19 @@ contract LifMarketMaker is Ownable {
     return block.number.sub(startBlock).div(blocksPerPeriod);
   }
 
-  function getSellRate() public constant returns (uint256) {
+  function getSellPrice() public constant returns (uint256) {
 
-    uint256 foundationWei = 0; //getFoundationWei();
+    uint256 periodIndex = getCurrentPeriodIndex();
 
-    uint256 currentMarketMakerWei = this.balance.sub(foundationWei);
+    return initialSellPrice
+      .mul(PRICE_FACTOR.add(marketMakerPeriods[periodIndex].accumSellPriceIncrement))
+      .div(PRICE_FACTOR);
 
-    uint256 sellRate = lifToken.totalSupply()
-      .div(currentMarketMakerWei);
-
-    return sellRate;
   }
 
   function getBuyPrice() public constant returns (uint256 price) {
 
-    uint256 accumulatedDistributionPercentage = distributionPeriods[getCurrentPeriodIndex()].
+    uint256 accumulatedDistributionPercentage = marketMakerPeriods[getCurrentPeriodIndex()].
       accumDistribution;
 
     return initialWei.
@@ -153,7 +201,7 @@ contract LifMarketMaker is Ownable {
 
     uint256 totalSupply = lifToken.totalSupply();
     uint256 totalCirculation = totalSupply.sub(lifToken.balanceOf(address(this)));
-    uint256 accumulatedDistributionPercentage = distributionPeriods[getCurrentPeriodIndex()].accumDistribution;
+    uint256 accumulatedDistributionPercentage = marketMakerPeriods[getCurrentPeriodIndex()].accumDistribution;
 
     return initialWei.
       mul(accumulatedDistributionPercentage).div(PERCENTAGE_FACTOR).
@@ -162,14 +210,14 @@ contract LifMarketMaker is Ownable {
   }
 
   function() payable {
-    buyLif();
+    getTokens();
   }
 
   function getTokens() payable {
 
     require(msg.value > 0);
 
-    uint256 price = getBuyPrice();
+    uint256 price = getSellPrice();
     uint256 tokens = msg.value.
       mul(PRICE_FACTOR).
       div(price);
