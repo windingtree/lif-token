@@ -124,10 +124,8 @@ contract LifMarketMaker is Ownable {
 
       accumDistribution = accumDistribution.add(deltaDistribution);
 
-      uint256 endBlockPeriod = startBlockPeriod.add(blocksPerPeriod).sub(1);
-
       marketMakerPeriods.push(MarketMakerPeriod(
-        startBlockPeriod, endBlockPeriod,
+        startBlockPeriod, startBlockPeriod.add(blocksPerPeriod).sub(1),
         deltaDistribution, accumDistribution,
         0
       ));
