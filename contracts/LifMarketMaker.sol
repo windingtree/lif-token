@@ -70,7 +70,7 @@ contract LifMarketMaker is Ownable {
     initialWei = msg.value;
     initialBuyPrice = initialWei
       .mul(PRICE_FACTOR)
-      .div(lifToken.totalSupply().div(PRICE_FACTOR));
+      .div(lifToken.totalSupply());
 
     initialSellPrice = initialBuyPrice
       .mul(initialPriceSpread)
