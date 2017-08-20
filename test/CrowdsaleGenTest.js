@@ -31,7 +31,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     foundationWallet: accountGen,
     marketMaker: accountGen,
     minCapEth: jsc.number(0, 200),
-    maxPresaleEth: jsc.number(0, 200)
+    maxPresaleEth: jsc.number(0, 200),
+    owner: accountGen
   });
 
   let waitBlockCommandGen = jsc.record({
@@ -220,7 +221,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   let runPauseCrowdsaleCommand = async (command, state) => {
     let shouldThrow = (state.crowdsalePaused == command.pause) ||
-      (command.fromAccount != 0);
+      (command.fromAccount != state.owner);
 
     help.debug("pausing crowdsale, previous state:", state.crowdsalePaused, "new state:", command.pause);
     try {
@@ -241,7 +242,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   let runPauseTokenCommand = async (command, state) => {
     let shouldThrow = (state.tokenPaused == command.pause) ||
       !state.crowdsaleFinalized ||
-      (state.crowdsaleFinalized && (command.fromAccount != 0));
+      (state.crowdsaleFinalized && (command.fromAccount != state.owner));
 
     help.debug("pausing token, previous state:", state.tokenPaused, "new state:", command.pause);
     try {
@@ -303,7 +304,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     let shouldThrow = (nextBlock >= publicPresaleStartBlock) ||
       (state.crowdsalePaused) ||
-      (account != accounts[0]) ||
+      (account != accounts[state.owner]) ||
       (state.crowdsaleFinalized) ||
       (weiToSend == 0) ||
       ((state.totalPresaleWei + weiToSend) > maxPresaleWei);
@@ -367,7 +368,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     help.debug("crowdsaleTestInput data:\n", input, publicPresaleStartBlock, publicPresaleEndBlock, startBlock, endBlock1, endBlock2);
 
-    let {publicPresaleRate, rate1, rate2, minCapEth} = input.crowdsale;
+    let {publicPresaleRate, rate1, rate2, minCapEth, owner} = input.crowdsale,
+      ownerAddress = accounts[input.crowdsale.owner];
     let shouldThrow = (publicPresaleRate == 0) ||
       (rate1 == 0) ||
       (rate2 == 0) ||
@@ -407,7 +409,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         crowdsaleData.marketMaker,
         crowdsaleData.minCap,
         crowdsaleData.maxPresaleWei,
-        {from: accounts[0]}
+        {from: ownerAddress}
       );
 
       assert.equal(false, shouldThrow, "create Crowdsale should have thrown but it didn't");
@@ -435,7 +437,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         totalPresaleWei: 0,
         crowdsalePaused: false,
         tokenPaused: false,
-        crowdsaleFinalized: false
+        crowdsaleFinalized: false,
+        owner: owner
       };
 
       let findCommand = (type) => {
@@ -480,10 +483,12 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   it("calculates correct rate on the boundaries between endBlock1 and endBlock2", async function() {
     let crowdsaleAndCommands = {
-      commands: [ { type: 'checkRate' },
+      commands: [
+        { type: 'checkRate' },
         { type: 'checkRate' },
         { type: 'waitBlock', blocks: 29 },
-        { type: 'buyTokens', beneficiary: 3, account: 2, eth: 12 } ],
+        { type: 'buyTokens', beneficiary: 3, account: 2, eth: 12 }
+      ],
       crowdsale: {
         publicPresaleRate: 20,
         rate1: 16,
@@ -492,7 +497,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         foundationWallet: 2,
         marketMaker: 8,
         minCapEth: 72.68016394227743,
-        maxPresaleEth: 24.53689146786928
+        maxPresaleEth: 24.53689146786928,
+        owner: 3
       }
     };
 
@@ -505,7 +511,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         {
           "type":"pauseToken",
           "pause":true,
-          "fromAccount":0
+          "fromAccount":1
         }
       ],
       crowdsale: {
@@ -516,7 +522,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         foundationWallet: 10,
         marketMaker: 6,
         minCapEth: 120.9007621742785,
-        maxPresaleEth: 24.53689146786928
+        maxPresaleEth: 24.53689146786928,
+        owner: 1
       }
     };
 
