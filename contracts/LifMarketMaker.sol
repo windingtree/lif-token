@@ -157,8 +157,6 @@ contract LifMarketMaker is Ownable {
       58045, 59626
     ];
 
-    uint256 accumSellPriceIncrement = 0;
-
     for (uint8 i = 0; i < totalPeriods; i++) {
 
       require(marketMakerPeriods[i].startBlock > 0);
