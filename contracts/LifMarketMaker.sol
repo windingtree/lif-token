@@ -112,9 +112,9 @@ contract LifMarketMaker is Ownable {
     uint256 deltaDistribution = 0;
     uint256 startBlockPeriod = startBlock;
 
-    for (uint8 i = 0; i < totalPeriods; i++) {
+    require(marketMakerPeriods.length == 0);
 
-      require(marketMakerPeriods.length <= i);
+    for (uint8 i = 0; i < totalPeriods; i++) {
 
       if (totalPeriods == 24) {
         deltaDistribution = deltas24[i];
