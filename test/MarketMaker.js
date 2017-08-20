@@ -231,7 +231,7 @@ contract('marketMaker', function(accounts) {
     const initialBuyPrice = parseFloat((MMInitialBalance / tokenTotalSupply)).toFixed(5);
 
     mm = await LifMarketMaker.new(
-      token.address, startBlock, blocksPerPeriod, 24,
+      token.address, startBlock, blocksPerPeriod, 48,
       accounts[1], initialPriceSpreadFactor,
       {value: web3.toWei(initialMMEther, 'ether'), from: accounts[0]}
     );
@@ -249,34 +249,42 @@ contract('marketMaker', function(accounts) {
     assert.equal(initialBuyPrice, parseFloat(await mm.initialBuyPrice()/priceFactor).toFixed(5) );
     assert.equal(initialSellPrice, parseFloat(await mm.initialSellPrice()/priceFactor).toFixed(5) );
 
-    let accumIncrementPrice = [
-      0, 1000, 2010, 3030, 4060, 5101,
-      6152, 7213, 8285, 9368, 10462,
-      11566, 12682, 13809, 14947, 16096,
-      17257, 18430, 19614, 20810, 22019,
-      23239, 24471, 25716, 26973, 28243,
-      29525, 30820, 32129, 33450, 34784,
-      36132, 37494, 38869, 40257, 41660,
-      43076, 44507, 45952, 47412, 48886,
-      50375, 51878, 53397, 54931, 56481,
-      58045, 59626
-    ];
-
     await help.waitToBlock(startBlock+1);
-    for (var i = 0; i < 24; i++) {
+    for (var i = 0; i < 48; i++) {
 
       help.debug('Sell price on period', i,
         parseFloat(await mm.getSellPrice()/priceFactor)
       );
 
       assert.approximately(
-        parseFloat(initialSellPrice*(1.01**i))*priceFactor/priceFactor,
+        parseFloat(initialSellPrice*(1.01**i)),
         parseFloat(await mm.getSellPrice()/priceFactor),
         0.0001, 'wrong sell price in contract on period index'+ i
       );
 
+      if (i == 3) {
+        assert.equal(
+          0.03749,
+          parseFloat(await mm.getSellPrice()/priceFactor),
+          'wrong sell price in contract on period 3'
+        );
+      } else if (i == 23) {
+        assert.equal(
+          0.04574,
+          parseFloat(await mm.getSellPrice()/priceFactor),
+          'wrong sell price in contract on period 23'
+        );
+      } else if (i == 38) {
+        assert.equal(
+          0.05311,
+          parseFloat(await mm.getSellPrice()/priceFactor),
+          'wrong sell price in contract on period 38'
+        );
+      }
+
       await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod);
     }
+
   });
 
   it("should go through scenario with some claims and sells on the Market Maker", async function() {
