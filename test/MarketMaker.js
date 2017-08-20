@@ -264,15 +264,16 @@ contract('marketMaker', function(accounts) {
       // To log all the accumulative price incremenets in base 10^5
       // help.debug((100000*(1.01**i))-100000 );
 
-      help.debug(
-        parsePrice(parseFloat(initialSellPrice*(1.01**i)))
-        ,' == ',
-        parsePrice(parseFloat(await mm.getSellPrice()))
-      );
-      // assert.equal(
-      //   parsePrice(parseFloat(initialSellPrice*(1.01**i))),
+      // help.debug(
+      //   parsePrice(parseFloat(initialSellPrice*(1.01**i)))
+      //   ,' == ',
       //   parsePrice(parseFloat(await mm.getSellPrice()))
       // );
+      assert.approximately(
+        parsePrice(parseFloat(initialSellPrice*(1.01**i))),
+        parsePrice(parseFloat(await mm.getSellPrice())),
+        1, 'wrong sell price in contract on period index'+ i
+      );
       await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod);
     }
   });
