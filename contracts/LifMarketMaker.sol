@@ -223,7 +223,7 @@ contract LifMarketMaker is Ownable {
 
     require(msg.value > 0);
 
-    uint256 price = getBuyPrice();
+    uint256 price = getSellPrice();
     uint256 tokens = msg.value.
       mul(PRICE_FACTOR).
       div(price);
