@@ -40,7 +40,7 @@ contract LifMarketMaker is Ownable {
   uint256 public initialSellPrice = 0;
 
   uint256 constant PERCENTAGE_FACTOR = 10000;
-  uint256 constant PRICE_FACTOR = 10000;
+  uint256 constant PRICE_FACTOR = 100000;
 
   struct MarketMakerPeriod {
     uint256 startBlock;
