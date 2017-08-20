@@ -69,9 +69,12 @@ contract LifMarketMaker is Ownable {
     foundationAddr = _foundationAddr;
     initialWei = msg.value;
     initialBuyPrice = initialWei
-      .div(lifToken.totalSupply().div(PRICE_FACTOR))
-      .mul(PRICE_FACTOR);
-    initialSellPrice = initialBuyPrice.div(PRICE_FACTOR).mul(initialPriceSpread);
+      .mul(PRICE_FACTOR)
+      .div(lifToken.totalSupply().div(PRICE_FACTOR));
+
+    initialSellPrice = initialBuyPrice
+      .mul(initialPriceSpread)
+      .div(PRICE_FACTOR);
   }
 
   function calculateDistributionPeriods() {
@@ -178,8 +181,8 @@ contract LifMarketMaker is Ownable {
     uint256 periodIndex = getCurrentPeriodIndex();
 
     uint256 sellPriceIncrement = initialSellPrice
-      .div(PRICE_FACTOR)
-      .mul(PRICE_FACTOR.add(marketMakerPeriods[periodIndex].accumSellPriceIncrement));
+      .mul(PRICE_FACTOR.add(marketMakerPeriods[periodIndex].accumSellPriceIncrement))
+      .div(PRICE_FACTOR);
 
     return sellPriceIncrement;
 
