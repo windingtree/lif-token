@@ -62,14 +62,16 @@ contract('marketMaker', function(accounts) {
     ];
 
     let accumIncrementPrice = [
-      0, 1000, 2010, 3030, 4060, 5101,
-      6152, 7213, 8285, 9368, 10462, 11566,
-      12682, 13809, 14947, 16096, 17257, 18430,
-      19614, 20810, 22019, 23239, 24471, 25716
+      100000, 101000, 102010, 103030, 104060, 105100,
+      106151, 107212, 108284, 109366, 110459, 111563,
+      112678, 113804, 114942, 116091, 117251, 118423,
+      119607, 120803, 122011, 123231, 124463, 125707
     ];
 
     for (var i = 0; i < distributionDeltas.length; i++) {
       assert.equal(distributionDeltas[i], parseInt((await mm.marketMakerPeriods.call(i))[2]))
+
+      console.log( parseInt((await mm.marketMakerPeriods.call(i))[4]) );
       assert.equal(accumIncrementPrice[i], parseInt((await mm.marketMakerPeriods.call(i))[4]))
     }
 
@@ -112,14 +114,14 @@ contract('marketMaker', function(accounts) {
     ];
 
     let accumIncrementPrice = [
-      0, 1000, 2010, 3030, 4060, 5101,
-      6152, 7213, 8285, 9368, 10462, 11566,
-      12682, 13809, 14947, 16096, 17257, 18430,
-      19614, 20810, 22019, 23239, 24471, 25716,
-      26973, 28243, 29525, 30820, 32129, 33450,
-      34784, 36132, 37494, 38869, 40257, 41660,
-      43076, 44507, 45952, 47412, 48886, 50375,
-      51878, 53397, 54931, 56481, 58045, 59626
+      100000, 101000, 102010, 103030, 104060, 105100,
+      106151, 107212, 108284, 109366, 110459, 111563,
+      112678, 113804, 114942, 116091, 117251, 118423,
+      119607, 120803, 122011, 123231, 124463, 125707,
+      126964, 128233, 129515, 130810, 132118, 133439,
+      134773, 136120, 137481, 138855, 140243, 141645,
+      143061, 144491, 145935, 147394, 148867, 150355,
+      151858, 153376, 154909, 156458, 158022, 159602
     ];
 
     for (var i = 0; i < distributionDeltas.length; i++) {
@@ -237,7 +239,7 @@ contract('marketMaker', function(accounts) {
         assert.equal(0.04574, parseFloat(await mm.getSellPrice()/priceFactor),
           'wrong sell price in contract on period 23');
       } else if (i == 38) {
-        assert.equal(0.05311, parseFloat(await mm.getSellPrice()/priceFactor),
+        assert.equal(0.05310, parseFloat(await mm.getSellPrice()/priceFactor),
           'wrong sell price in contract on period 38');
       }
 
