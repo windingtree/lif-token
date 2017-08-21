@@ -143,7 +143,7 @@ contract('marketMaker', function(accounts) {
   it("should return correct periods using getCurrentPeriodIndex", async function() {
     token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
     const startBlock = web3.eth.blockNumber+10;
-    const blocksPerPeriod = 30;
+    const blocksPerPeriod = 12;
 
     mm = await LifMarketMaker.new(token.address, startBlock, blocksPerPeriod, 24, accounts[1],
       100500, {value: web3.toWei(8, 'ether'), from: accounts[0]});
