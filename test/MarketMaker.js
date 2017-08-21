@@ -37,10 +37,9 @@ contract('marketMaker', function(accounts) {
 
     mm = await LifMarketMaker.new(
       token.address, web3.eth.blockNumber+10, 100, 24,
-      accounts[1], 100500,
-      {value: web3.toWei(8, 'ether'), from: accounts[0]}
-    );
+      accounts[1], 100500, {from: accounts[0]});
 
+    await mm.fund({value: web3.toWei(8, 'ether'), from: accounts[0]});
     await mm.calculateDistributionPeriods({from: accounts[4]});
     await mm.calculateSellPricePeriods({from: accounts[3]});
 
@@ -86,8 +85,9 @@ contract('marketMaker', function(accounts) {
   it("Create 48 months MM", async function() {
     token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
     mm = await LifMarketMaker.new(token.address, web3.eth.blockNumber+10, 100, 48,
-      accounts[1], 100500, {value: web3.toWei(8, 'ether'), from: accounts[0]});
+      accounts[1], 100500, {from: accounts[0]});
 
+    await mm.fund({value: web3.toWei(8, 'ether'), from: accounts[0]});
     await mm.calculateDistributionPeriods({from: accounts[4]});
     await mm.calculateSellPricePeriods({from: accounts[3]});
 
@@ -146,8 +146,9 @@ contract('marketMaker', function(accounts) {
     const blocksPerPeriod = 12;
 
     mm = await LifMarketMaker.new(token.address, startBlock, blocksPerPeriod, 24, accounts[1],
-      100500, {value: web3.toWei(8, 'ether'), from: accounts[0]});
+      100500, {from: accounts[0]});
 
+    await mm.fund({value: web3.toWei(8, 'ether'), from: accounts[0]});
     await mm.calculateDistributionPeriods({from: accounts[5]});
     await mm.calculateSellPricePeriods({from: accounts[6]});
 
@@ -205,8 +206,9 @@ contract('marketMaker', function(accounts) {
     const initialBuyPrice = parseFloat((MMInitialBalance / tokenTotalSupply)).toFixed(5);
 
     mm = await LifMarketMaker.new(token.address, startBlock, blocksPerPeriod, 48, accounts[1],
-      initialPriceSpreadFactor, {value: web3.toWei(initialMMEther, 'ether'), from: accounts[0]});
+      initialPriceSpreadFactor, {from: accounts[0]});
 
+    await mm.fund({value: web3.toWei(initialMMEther, 'ether'), from: accounts[0]});
     await mm.calculateDistributionPeriods({from: accounts[4]});
     await mm.calculateSellPricePeriods({from: accounts[3]});
 
@@ -256,9 +258,10 @@ contract('marketMaker', function(accounts) {
 
     var customer = accounts[2];
     token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
-    mm = await LifMarketMaker.new(token.address, startBlock, blocksPerPeriod, 24, accounts[1],
-      {value: web3.toWei(8, 'ether'), from: accounts[0]});
+    mm = await LifMarketMaker.new(token.address, startBlock, blocksPerPeriod, 24,
+      accounts[1], {from: accounts[0]});
 
+    await mm.fund({value: web3.toWei(8, 'ether'), from: accounts[0]});
 
     // Month 0
     await waitForMonth(0, startBlock, blocksPerPeriod);
