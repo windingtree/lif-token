@@ -39,8 +39,13 @@ contract LifMarketMaker is Ownable {
   // The price at which the market maker sell tokens at the beginning of its lifetime
   uint256 public initialSellPrice = 0;
 
+  // Initial price difference factor from buy to sell price (scaled by PRICE_FACTOR)
+  uint256 public initialPriceSpread;
+
   uint256 constant PERCENTAGE_FACTOR = 10000;
   uint256 constant PRICE_FACTOR = 100000;
+
+  bool public funded = false;
 
   struct MarketMakerPeriod {
     uint256 startBlock;
@@ -57,8 +62,8 @@ contract LifMarketMaker is Ownable {
 
   function LifMarketMaker(
     address lifAddr, uint256 _startBlock, uint256 _blocksPerPeriod,
-    uint8 _totalPeriods, address _foundationAddr, uint256 initialPriceSpread
-  ) payable {
+    uint8 _totalPeriods, address _foundationAddr, uint256 _initialPriceSpread
+  ) {
 
     assert(_totalPeriods == 24 || _totalPeriods == 48);
 
@@ -67,14 +72,22 @@ contract LifMarketMaker is Ownable {
     blocksPerPeriod = _blocksPerPeriod;
     totalPeriods = _totalPeriods;
     foundationAddr = _foundationAddr;
-    initialWei = msg.value;
-    initialBuyPrice = initialWei
-      .mul(PRICE_FACTOR)
-      .div(lifToken.totalSupply());
+    initialPriceSpread = _initialPriceSpread;
+  }
 
-    initialSellPrice = initialBuyPrice
-      .mul(initialPriceSpread)
-      .div(PRICE_FACTOR);
+  function fund() payable onlyOwner {
+    assert(!funded);
+
+    initialWei = msg.value;
+    initialBuyPrice = initialWei.
+      mul(PRICE_FACTOR).
+      div(lifToken.totalSupply());
+
+    initialSellPrice = initialBuyPrice.
+      mul(initialPriceSpread).
+      div(PRICE_FACTOR);
+
+    funded = true;
   }
 
   function calculateDistributionPeriods() {
