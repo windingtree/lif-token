@@ -22,16 +22,10 @@ contract('marketMaker', function(accounts) {
       accounts[0], accounts[1], 1, 1
     );
     await help.waitToBlock(startBlock+3, accounts);
-    if (balances[0] > 0)
-      await crowdsale.sendTransaction({ value: web3.toWei(balances[0]/rate, 'ether'), from: accounts[1] });
-    if (balances[1] > 0)
-      await crowdsale.sendTransaction({ value: web3.toWei(balances[1]/rate, 'ether'), from: accounts[2] });
-    if (balances[2] > 0)
-      await crowdsale.sendTransaction({ value: web3.toWei(balances[2]/rate, 'ether'), from: accounts[3] });
-    if (balances[3] > 0)
-      await crowdsale.sendTransaction({ value: web3.toWei(balances[3]/rate, 'ether'), from: accounts[4] });
-    if (balances[4] > 0)
-      await crowdsale.sendTransaction({ value: web3.toWei(balances[4]/rate, 'ether'), from: accounts[5] });
+    for(i = 0; i < 5; i++) {
+      if (balances[i] > 0)
+        await crowdsale.sendTransaction({ value: web3.toWei(balances[i]/rate, 'ether'), from: accounts[i + 1]});
+    }
     await help.waitToBlock(endBlock+1, accounts);
     await crowdsale.finalize();
     return LifToken.at( await crowdsale.token() );
@@ -40,6 +34,7 @@ contract('marketMaker', function(accounts) {
   it("Create 24 months MM", async function() {
     token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
     await help.checkToken(token, accounts, 100, [40,30,20,10,0]);
+
     mm = await LifMarketMaker.new(
       token.address, web3.eth.blockNumber+10, 100, 24,
       accounts[1], 100500,
@@ -58,9 +53,7 @@ contract('marketMaker', function(accounts) {
     help.debug('Initial Buy Price', parseInt( await mm.initialBuyPrice.call() ));
     help.debug('Initial Sell Price', parseInt( await mm.initialSellPrice.call() ));
 
-    // for (var i = 0; i < 24; i ++) {
-    //   help.debug('Period', i, (await mm.marketMakerPeriods.call(i)));
-    // };
+    // for (var i = 0; i < 24; i ++) { help.debug('Period', i, (await mm.marketMakerPeriods.call(i))); };
 
     let distributionDeltas = [
       0, 18, 99, 234, 416, 640,
@@ -71,23 +64,14 @@ contract('marketMaker', function(accounts) {
 
     let accumIncrementPrice = [
       0, 1000, 2010, 3030, 4060, 5101,
-      6152, 7213, 8285, 9368, 10462,
-      11566, 12682, 13809, 14947, 16096,
-      17257, 18430, 19614, 20810, 22019,
-      23239, 24471, 25716, 26973, 28243,
-      29525, 30820, 32129, 33450, 34784,
-      36132, 37494, 38869, 40257, 41660,
-      43076, 44507, 45952, 47412, 48886,
-      50375, 51878, 53397, 54931, 56481,
-      58045, 59626
+      6152, 7213, 8285, 9368, 10462, 11566,
+      12682, 13809, 14947, 16096, 17257, 18430,
+      19614, 20810, 22019, 23239, 24471, 25716
     ];
 
     for (var i = 0; i < distributionDeltas.length; i++) {
-      assert.equal(parseInt((await mm.marketMakerPeriods.call(i))[2]), distributionDeltas[i])
-    }
-
-    for (var i = 0; i < 24; i++) {
-      assert.equal(parseInt((await mm.marketMakerPeriods.call(i))[4]), accumIncrementPrice[i])
+      assert.equal(distributionDeltas[i], parseInt((await mm.marketMakerPeriods.call(i))[2]))
+      assert.equal(accumIncrementPrice[i], parseInt((await mm.marketMakerPeriods.call(i))[4]))
     }
 
     // a few specific examples to double-check
@@ -101,11 +85,8 @@ contract('marketMaker', function(accounts) {
 
   it("Create 48 months MM", async function() {
     token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
-    mm = await LifMarketMaker.new(
-      token.address, web3.eth.blockNumber+10, 100, 48,
-      accounts[1], 100500,
-      {value: web3.toWei(8, 'ether'), from: accounts[0]}
-    );
+    mm = await LifMarketMaker.new(token.address, web3.eth.blockNumber+10, 100, 48,
+      accounts[1], 100500, {value: web3.toWei(8, 'ether'), from: accounts[0]});
 
     await mm.calculateDistributionPeriods({from: accounts[4]});
     await mm.calculateSellPricePeriods({from: accounts[3]});
@@ -132,47 +113,40 @@ contract('marketMaker', function(accounts) {
 
     let accumIncrementPrice = [
       0, 1000, 2010, 3030, 4060, 5101,
-      6152, 7213, 8285, 9368, 10462,
-      11566, 12682, 13809, 14947, 16096,
-      17257, 18430, 19614, 20810, 22019,
-      23239, 24471, 25716, 26973, 28243,
-      29525, 30820, 32129, 33450, 34784,
-      36132, 37494, 38869, 40257, 41660,
-      43076, 44507, 45952, 47412, 48886,
-      50375, 51878, 53397, 54931, 56481,
-      58045, 59626
+      6152, 7213, 8285, 9368, 10462, 11566,
+      12682, 13809, 14947, 16096, 17257, 18430,
+      19614, 20810, 22019, 23239, 24471, 25716,
+      26973, 28243, 29525, 30820, 32129, 33450,
+      34784, 36132, 37494, 38869, 40257, 41660,
+      43076, 44507, 45952, 47412, 48886, 50375,
+      51878, 53397, 54931, 56481, 58045, 59626
     ];
 
     for (var i = 0; i < distributionDeltas.length; i++) {
-      assert.equal(parseInt((await mm.marketMakerPeriods.call(i))[2]), distributionDeltas[i])
-    }
-
-    for (var i = 0; i < 48; i++) {
-      assert.equal(parseInt((await mm.marketMakerPeriods.call(i))[4]), accumIncrementPrice[i])
+      assert.equal(distributionDeltas[i], parseInt((await mm.marketMakerPeriods.call(i))[2]))
+      assert.equal(accumIncrementPrice[i], parseInt((await mm.marketMakerPeriods.call(i))[4]))
     }
 
     // just a few examples to double-check
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(5))[2]), 97 )
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(11))[2]), 416 )
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(22))[2]), 1425 )
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(32))[2]), 2746 )
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(33))[2]), 2898 )
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(43))[2]), 4595 )
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(44))[2]), 4782 )
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(45))[2]), 4972 )
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(46))[2]), 5166 )
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(47))[2]), 5363 )
+    assert.equal(97, parseInt((await mm.marketMakerPeriods.call(5))[2]))
+    assert.equal(416, parseInt((await mm.marketMakerPeriods.call(11))[2]))
+    assert.equal(1425, parseInt((await mm.marketMakerPeriods.call(22))[2]))
+    assert.equal(2746, parseInt((await mm.marketMakerPeriods.call(32))[2]))
+    assert.equal(2898, parseInt((await mm.marketMakerPeriods.call(33))[2]))
+    assert.equal(4595, parseInt((await mm.marketMakerPeriods.call(43))[2]))
+    assert.equal(4782, parseInt((await mm.marketMakerPeriods.call(44))[2]))
+    assert.equal(4972, parseInt((await mm.marketMakerPeriods.call(45))[2]))
+    assert.equal(5166, parseInt((await mm.marketMakerPeriods.call(46))[2]))
+    assert.equal(5363, parseInt((await mm.marketMakerPeriods.call(47))[2]))
   });
 
   it("should return correct periods using getCurrentPeriodIndex", async function() {
     token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
     const startBlock = web3.eth.blockNumber+10;
-    const blocksPerPeriod = 30;
-    mm = await LifMarketMaker.new(
-      token.address, startBlock, blocksPerPeriod, 24,
-      accounts[1], 100500,
-      {value: web3.toWei(8, 'ether'), from: accounts[0]}
-    );
+    const blocksPerPeriod = 12;
+
+    mm = await LifMarketMaker.new(token.address, startBlock, blocksPerPeriod, 24, accounts[1],
+      100500, {value: web3.toWei(8, 'ether'), from: accounts[0]});
 
     await mm.calculateDistributionPeriods({from: accounts[5]});
     await mm.calculateSellPricePeriods({from: accounts[6]});
@@ -181,21 +155,21 @@ contract('marketMaker', function(accounts) {
     help.debug('Start block', parseInt( await mm.startBlock.call() ));
     help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
     help.debug('Foundation address', await mm.foundationAddr.call() );
-    assert.equal( 0, parseInt(web3.eth.getBalance(token.address)) );
-    assert.equal( startBlock, parseInt(await mm.startBlock()) );
-    assert.equal( blocksPerPeriod, parseInt(await mm.blocksPerPeriod()) );
-    assert.equal( accounts[1], parseInt(await mm.foundationAddr()) );
+    assert.equal(0, parseInt(web3.eth.getBalance(token.address)) );
+    assert.equal(startBlock, parseInt(await mm.startBlock()) );
+    assert.equal(blocksPerPeriod, parseInt(await mm.blocksPerPeriod()) );
+    assert.equal(accounts[1], parseInt(await mm.foundationAddr()) );
 
     await help.waitToBlock(startBlock);
-    assert.equal( 0, parseInt(await mm.getCurrentPeriodIndex()) );
+    assert.equal(0, parseInt(await mm.getCurrentPeriodIndex()) );
     await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod)
-    assert.equal( 1, parseInt(await mm.getCurrentPeriodIndex()) );
+    assert.equal(1, parseInt(await mm.getCurrentPeriodIndex()) );
     await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod)
-    assert.equal( 2, parseInt(await mm.getCurrentPeriodIndex()) );
+    assert.equal(2, parseInt(await mm.getCurrentPeriodIndex()) );
     await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod)
-    assert.equal( 3, parseInt(await mm.getCurrentPeriodIndex()) );
+    assert.equal(3, parseInt(await mm.getCurrentPeriodIndex()) );
     await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod)
-    assert.equal( 4, parseInt(await mm.getCurrentPeriodIndex()) );
+    assert.equal(4, parseInt(await mm.getCurrentPeriodIndex()) );
   });
 
   var checkScenarioProperties = async function(data, mm, customer) {
@@ -230,11 +204,8 @@ contract('marketMaker', function(accounts) {
     const initialSellPrice = parseFloat((MMInitialBalance / tokenTotalSupply)*(1+initialPriceSpread)).toFixed(5);
     const initialBuyPrice = parseFloat((MMInitialBalance / tokenTotalSupply)).toFixed(5);
 
-    mm = await LifMarketMaker.new(
-      token.address, startBlock, blocksPerPeriod, 48,
-      accounts[1], initialPriceSpreadFactor,
-      {value: web3.toWei(initialMMEther, 'ether'), from: accounts[0]}
-    );
+    mm = await LifMarketMaker.new(token.address, startBlock, blocksPerPeriod, 48, accounts[1],
+      initialPriceSpreadFactor, {value: web3.toWei(initialMMEther, 'ether'), from: accounts[0]});
 
     await mm.calculateDistributionPeriods({from: accounts[4]});
     await mm.calculateSellPricePeriods({from: accounts[3]});
@@ -252,39 +223,24 @@ contract('marketMaker', function(accounts) {
     await help.waitToBlock(startBlock+1);
     for (var i = 0; i < 48; i++) {
 
-      help.debug('Sell price on period', i,
-        parseFloat(await mm.getSellPrice()/priceFactor)
-      );
+      help.debug('Sell price on period', i, parseFloat(await mm.getSellPrice()/priceFactor));
 
-      assert.approximately(
-        parseFloat(initialSellPrice*(1.01**i)),
-        parseFloat(await mm.getSellPrice()/priceFactor),
-        0.0001, 'wrong sell price in contract on period index'+ i
-      );
+      assert.approximately(parseFloat(initialSellPrice*(1.01**i)), parseFloat(await mm.getSellPrice()/priceFactor),
+        0.0001, 'wrong sell price in contract on period index'+ i);
 
       if (i == 3) {
-        assert.equal(
-          0.03749,
-          parseFloat(await mm.getSellPrice()/priceFactor),
-          'wrong sell price in contract on period 3'
-        );
+        assert.equal(0.03749, parseFloat(await mm.getSellPrice()/priceFactor),
+          'wrong sell price in contract on period 3');
       } else if (i == 23) {
-        assert.equal(
-          0.04574,
-          parseFloat(await mm.getSellPrice()/priceFactor),
-          'wrong sell price in contract on period 23'
-        );
+        assert.equal(0.04574, parseFloat(await mm.getSellPrice()/priceFactor),
+          'wrong sell price in contract on period 23');
       } else if (i == 38) {
-        assert.equal(
-          0.05311,
-          parseFloat(await mm.getSellPrice()/priceFactor),
-          'wrong sell price in contract on period 38'
-        );
+        assert.equal(0.05311, parseFloat(await mm.getSellPrice()/priceFactor),
+          'wrong sell price in contract on period 38');
       }
 
       await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod);
     }
-
   });
 
   it("should go through scenario with some claims and sells on the Market Maker", async function() {
@@ -300,10 +256,8 @@ contract('marketMaker', function(accounts) {
 
     var customer = accounts[2];
     token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
-    mm = await LifMarketMaker.new(
-      token.address, startBlock, blocksPerPeriod, 24, accounts[1],
-      {value: web3.toWei(8, 'ether'), from: accounts[0]}
-    );
+    mm = await LifMarketMaker.new(token.address, startBlock, blocksPerPeriod, 24, accounts[1],
+      {value: web3.toWei(8, 'ether'), from: accounts[0]});
 
 
     // Month 0
