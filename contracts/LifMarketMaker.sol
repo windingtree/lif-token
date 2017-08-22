@@ -42,7 +42,7 @@ contract LifMarketMaker is Ownable {
   // Initial price difference factor from buy to sell price (scaled by PRICE_FACTOR)
   uint256 public initialPriceSpread;
 
-  uint256 constant PERCENTAGE_FACTOR = 10000;
+  uint256 constant PERCENTAGE_FACTOR = 100000;
   uint256 constant PRICE_FACTOR = 100000;
 
   bool public funded = false;
@@ -195,14 +195,16 @@ contract LifMarketMaker is Ownable {
 
   }
 
+  function getAccumulatedDistributionPercentage() public constant returns(uint256 percentage) {
+    return marketMakerPeriods[getCurrentPeriodIndex()].accumDistribution;
+  }
+
   function getBuyPrice() public constant returns (uint256 price) {
 
-    uint256 accumulatedDistributionPercentage = marketMakerPeriods[getCurrentPeriodIndex()].
-      accumDistribution;
+    uint256 accumulatedDistributionPercentage = getAccumulatedDistributionPercentage();
 
-    return initialWei.
+    return initialBuyPrice.
       mul(PERCENTAGE_FACTOR.sub(accumulatedDistributionPercentage)).
-      div(lifToken.totalSupply()).
       div(PERCENTAGE_FACTOR);
   }
 
@@ -214,7 +216,7 @@ contract LifMarketMaker is Ownable {
 
     uint256 totalSupply = lifToken.totalSupply();
     uint256 totalCirculation = totalSupply.sub(lifToken.balanceOf(address(this)));
-    uint256 accumulatedDistributionPercentage = marketMakerPeriods[getCurrentPeriodIndex()].accumDistribution;
+    uint256 accumulatedDistributionPercentage = getAccumulatedDistributionPercentage();
 
     return initialWei.
       mul(accumulatedDistributionPercentage).div(PERCENTAGE_FACTOR).
@@ -235,7 +237,9 @@ contract LifMarketMaker is Ownable {
       mul(PRICE_FACTOR).
       div(price);
 
-    require(tokens <= lifToken.balanceOf(address(this)));
+    uint256 profitPerToken = price.sub(initialBuyPrice);
+    uint256 profit = profitPerToken.mul(tokens).div(PRICE_FACTOR);
+    totalWeiProfit = totalWeiProfit.add(profit);
 
     lifToken.transfer(msg.sender, tokens);
   }
@@ -245,11 +249,11 @@ contract LifMarketMaker is Ownable {
     require(tokens > 0);
 
     uint256 price = getBuyPrice();
-    uint initialPrice = initialWei.div(lifToken.totalSupply());
-    uint256 profitPerToken = initialPrice.sub(price);
-    uint256 totalWei = tokens.mul(price);
+    uint256 profitPerToken = initialBuyPrice.sub(price);
+    uint256 totalWei = tokens.mul(price).div(PRICE_FACTOR);
 
-    totalWeiProfit = totalWeiProfit.add(profitPerToken.mul(tokens));
+    uint256 profit = profitPerToken.mul(tokens).div(PRICE_FACTOR);
+    totalWeiProfit = totalWeiProfit.add(profit);
 
     lifToken.transferFrom(msg.sender, address(this), tokens);
 
