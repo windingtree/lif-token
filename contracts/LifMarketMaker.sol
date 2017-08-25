@@ -208,8 +208,7 @@ contract LifMarketMaker is Ownable {
       div(PERCENTAGE_FACTOR);
   }
 
-  // Get the maximum amount of wei that the foundation can claim, without discounting what it
-  // claimed already (so the actual amount that it can claim can be lower). It's a portion of
+  // Get the maximum amount of wei that the foundation can claim. It's a portion of
   // the ETH that was not claimed by token holders plus the profits made by the market maker
   // by buying and selling tokens
   function getMaxClaimableWeiAmount() constant public returns (uint256) {
@@ -221,7 +220,8 @@ contract LifMarketMaker is Ownable {
     return initialWei.
       mul(accumulatedDistributionPercentage).div(PERCENTAGE_FACTOR).
       mul(totalCirculation).div(totalSupply).
-      add(totalWeiProfit);
+      add(totalWeiProfit).
+      sub(totalWeiClaimed);
   }
 
   function() payable {
@@ -261,13 +261,12 @@ contract LifMarketMaker is Ownable {
   }
 
   // Called from the foundation wallet to claim eth back from the Market Maker. Maximum amount
-  // that can be claimed is determined by getMaxClaimableWeiAmount and how much
-  // wei has the foundation claimed already (totalWeiClaimed)
+  // that can be claimed is determined by getMaxClaimableWeiAmount
   function claimEth(uint256 weiAmount) {
 
     require(msg.sender == foundationAddr);
 
-    uint256 claimable = getMaxClaimableWeiAmount().sub(totalWeiClaimed);
+    uint256 claimable = getMaxClaimableWeiAmount();
 
     assert(claimable >= weiAmount);
 
