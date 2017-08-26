@@ -432,7 +432,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         weiRaised: 0,
         totalPresaleWei: 0,
         crowdsalePaused: false,
-        tokenPaused: false,
+        tokenPaused: true,
         crowdsaleFinalized: false,
         owner: owner
       };
