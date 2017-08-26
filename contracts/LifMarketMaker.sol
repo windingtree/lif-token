@@ -153,28 +153,18 @@ contract LifMarketMaker is Ownable {
     assert(totalPeriods == 24 || totalPeriods == 48);
     require(startBlock >= block.number);
     require(blocksPerPeriod > 0);
+    require(marketMakerPeriods[i].startBlock > 0);
 
     // The sellPriceIncrements represents how much is going to increase in % the sellPrice
     // every period.
 
-    uint256[48] memory accumSellPriceIncrements = [
-      uint256(0), 1000, 2010, 3030, 4060, 5101,
-      6152, 7213, 8285, 9368, 10462,
-      11566, 12682, 13809, 14947, 16096,
-      17257, 18430, 19614, 20810, 22019,
-      23239, 24471, 25716, 26973, 28243,
-      29525, 30820, 32129, 33450, 34784,
-      36132, 37494, 38869, 40257, 41660,
-      43076, 44507, 45952, 47412, 48886,
-      50375, 51878, 53397, 54931, 56481,
-      58045, 59626
-    ];
+    marketMakerPeriods[0].accumSellPriceIncrement = PRICE_FACTOR;
 
-    for (uint8 i = 0; i < totalPeriods; i++) {
+    for (uint8 i = 1; i < totalPeriods; i++) {
 
-      require(marketMakerPeriods[i].startBlock > 0);
-
-      marketMakerPeriods[i].accumSellPriceIncrement = accumSellPriceIncrements[i];
+      marketMakerPeriods[i].accumSellPriceIncrement =
+        marketMakerPeriods[i-1].accumSellPriceIncrement
+        .mul(101000).div(PRICE_FACTOR);
 
     }
 
@@ -193,7 +183,7 @@ contract LifMarketMaker is Ownable {
     assert(periodIndex < totalPeriods);
 
     return initialSellPrice
-      .mul(PRICE_FACTOR.add(marketMakerPeriods[periodIndex].accumSellPriceIncrement))
+      .mul(marketMakerPeriods[periodIndex].accumSellPriceIncrement)
       .div(PRICE_FACTOR);
   }
 
