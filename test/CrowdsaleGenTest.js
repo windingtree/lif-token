@@ -18,9 +18,6 @@ if (isNaN(GEN_TESTS_TIMEOUT))
   GEN_TESTS_TIMEOUT = 240;
 
 contract('LifCrowdsale Property-based test', function(accounts) {
-  var token;
-  var eventsWatcher;
-
   let accountGen = jsc.nat(accounts.length - 1);
 
   let crowdsaleGen = jsc.record({
@@ -131,7 +128,6 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       help.debug("buyTokens rate:", rate, "eth:", command.eth, "endBlocks:", crowdsale.endBlock1, endBlock2, "blockNumber:", nextBlock);
 
       await state.crowdsaleContract.buyTokens(beneficiaryAccount, {value: weiCost, from: account});
-      help.debug('yeah')
       assert.equal(false, shouldThrow, "buyTokens should have thrown but it didn't");
 
       state.purchases = _.concat(state.purchases,
