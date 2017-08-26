@@ -6,6 +6,7 @@ var help = require("./helpers");
 
 var LifToken = artifacts.require("./LifToken.sol");
 var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
+var LifMarketMaker = artifacts.require("./LifMarketMaker.sol");
 
 const LOG_EVENTS = true;
 
@@ -26,9 +27,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     rate2: jsc.nat,
     privatePresaleRate: jsc.nat,
     foundationWallet: accountGen,
-    marketMaker: accountGen,
-    minCapEth: jsc.number(0, 200),
-    maxPresaleEth: jsc.number(0, 200),
+    setWeiLockBlocks: jsc.nat(1,10),
     owner: accountGen
   });
 
@@ -38,6 +37,16 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   });
   let checkRateCommandGen = jsc.record({
     type: jsc.constant("checkRate")
+  });
+  let setWeiPerUSDinPresaleCommandGen = jsc.record({
+    type: jsc.constant("setWeiPerUSDinPresale"),
+    wei: jsc.nat(0,10000000000000000), // between 0-0.01 ETH
+    fromAccount: accountGen
+  });
+  let setWeiPerUSDinICOCommandGen = jsc.record({
+    type: jsc.constant("setWeiPerUSDinICO"),
+    wei: jsc.nat(0,10000000000000000), // between 0-0.01 ETH
+    fromAccount: accountGen
   });
   let buyTokensCommandGen = jsc.record({
     type: jsc.constant("buyTokens"),
@@ -114,7 +123,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   let runBuyTokensCommand = async (command, state) => {
     let crowdsale = state.crowdsaleData,
-      { startBlock, endBlock2 } = crowdsale,
+      { startBlock, endBlock2, weiPerUSDinICO} = crowdsale,
       weiCost = parseInt(web3.toWei(command.eth, 'ether')),
       nextBlock = web3.eth.blockNumber + 1,
       rate = help.getCrowdsaleExpectedRate(crowdsale, nextBlock),
@@ -126,6 +135,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       (nextBlock > endBlock2) ||
       (state.crowdsalePaused) ||
       (state.crowdsaleFinalized) ||
+      (state.weiPerUSDinICO == 0) ||
       (command.eth == 0);
 
     try {
@@ -149,27 +159,30 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   let runBuyPresaleTokensCommand = async (command, state) => {
     let crowdsale = state.crowdsaleData,
-      { publicPresaleStartBlock, publicPresaleEndBlock, startBlock, publicPresaleRate, maxPresaleWei } = crowdsale,
+      { publicPresaleStartBlock, publicPresaleEndBlock,
+        startBlock, publicPresaleRate } = crowdsale,
       weiCost = parseInt(web3.toWei(command.eth, 'ether')),
       nextBlock = web3.eth.blockNumber + 1,
       rate = help.getCrowdsaleExpectedRate(crowdsale, nextBlock),
       tokens = command.eth * rate,
       account = accounts[command.account],
-      beneficiaryAccount = accounts[command.beneficiary];
+      beneficiaryAccount = accounts[command.beneficiary],
+      maxPresaleWei = crowdsale.maxPresaleCapUSD*state.weiPerUSDinPresale;
 
     let shouldThrow = (nextBlock < publicPresaleStartBlock) ||
       ((state.totalPresaleWei + weiCost) > maxPresaleWei) ||
       (nextBlock > publicPresaleEndBlock) ||
       (state.crowdsalePaused) ||
       (state.crowdsaleFinalized) ||
+      (state.weiPerUSDinPresale == 0) ||
       (command.eth == 0);
 
     try {
-      // help.debug("buyTokens rate:", rate, "eth:", command.eth, "endBlocks:", crowdsale.endBlock1, endBlock2, "blockNumber:", nextBlock);
+      help.debug("buying presale tokens, rate:", rate, "eth:", command.eth, "endBlock:", crowdsale.publicPresaleEndBlock, "blockNumber:", nextBlock);
 
       await state.crowdsaleContract.buyPresaleTokens(beneficiaryAccount, {value: weiCost, from: account});
 
-      assert.equal(false, shouldThrow, "buyTokens should have thrown but it didn't");
+      assert.equal(false, shouldThrow, "buyPresaleTokens should have thrown but it didn't");
 
       state.totalPresaleWei += weiCost;
 
@@ -183,16 +196,21 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   let runSendTransactionCommand = async (command, state) => {
     let crowdsale = state.crowdsaleData,
-      { publicPresaleStartBlock, publicPresaleEndBlock, startBlock, endBlock2, publicPresaleRate, rate1, rate2, maxPresaleWei } = crowdsale,
+      { publicPresaleStartBlock, publicPresaleEndBlock,
+        startBlock, endBlock2, publicPresaleRate,
+        rate1, rate2 } = crowdsale,
       weiCost = parseInt(web3.toWei(command.eth, 'ether')),
       nextBlock = web3.eth.blockNumber + 1,
       rate = help.getCrowdsaleExpectedRate(crowdsale, nextBlock),
       tokens = command.eth * rate,
       account = accounts[command.account],
-      beneficiaryAccount = accounts[command.beneficiary];
+      beneficiaryAccount = accounts[command.beneficiary],
+      maxPresaleWei = crowdsale.maxPresaleCapUSD*state.weiPerUSDinPresale;
 
     let shouldThrow = (nextBlock < publicPresaleStartBlock) ||
       (nextBlock > publicPresaleEndBlock && nextBlock < startBlock) ||
+      (nextBlock > startBlock && nextBlock < endBlock2 && state.weiPerUSDinICO == 0) ||
+      (nextBlock > publicPresaleStartBlock && nextBlock < publicPresaleEndBlock && state.weiPerUSDinPresale == 0) ||
       (nextBlock <= publicPresaleEndBlock && nextBlock >= publicPresaleStartBlock && ((state.totalPresaleWei + weiCost) > maxPresaleWei)) ||
       (nextBlock > endBlock2) ||
       (state.crowdsalePaused) ||
@@ -237,7 +255,51 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         throw(new ExceptionRunningCommand(e, state, command));
     }
     return state;
-  }
+  };
+
+  let runSetWeiPerUSDinPresaleCommand = async (command, state) => {
+
+    let crowdsale = state.crowdsaleData,
+      { publicPresaleStartBlock, setWeiLockBlocks } = crowdsale,
+      nextBlock = web3.eth.blockNumber + 1;
+
+    let shouldThrow = (nextBlock > publicPresaleStartBlock-setWeiLockBlocks) ||
+      (command.fromAccount != state.owner) ||
+      (command.wei == 0);
+
+    help.debug("seting wei per usd in presale:", command.wei);
+    try {
+      await state.crowdsaleContract.setWeiPerUSDinPresale(command.wei, {from: accounts[command.fromAccount]});
+      assert.equal(false, shouldThrow);
+      state.weiPerUSDinPresale = command.wei;
+    } catch(e) {
+      if (!shouldThrow)
+        throw(new ExceptionRunningCommand(e, state, command));
+    }
+    return state;
+  };
+
+  let runSetWeiPerUSDinICOCommand = async (command, state) => {
+
+    let crowdsale = state.crowdsaleData,
+      { startBlock, setWeiLockBlocks } = crowdsale,
+      nextBlock = web3.eth.blockNumber + 1;
+
+    let shouldThrow = (nextBlock > startBlock-setWeiLockBlocks) ||
+      (command.fromAccount != state.owner) ||
+      (command.wei == 0);
+
+    help.debug("seting wei per usd in ico:", command.wei);
+    try {
+      await state.crowdsaleContract.setWeiPerUSDinICO(command.wei, {from: accounts[command.fromAccount]});
+      assert.equal(false, shouldThrow);
+      state.weiPerUSDinICO = command.wei;
+    } catch(e) {
+      if (!shouldThrow)
+        throw(new ExceptionRunningCommand(e, state, command));
+    }
+    return state;
+  };
 
   let runPauseCrowdsaleCommand = async (command, state) => {
     let shouldThrow = (state.crowdsalePaused == command.pause) ||
@@ -262,7 +324,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   let runPauseTokenCommand = async (command, state) => {
     let shouldThrow = (state.tokenPaused == command.pause) ||
       !state.crowdsaleFinalized ||
-      (state.crowdsaleFinalized && (command.fromAccount != state.owner));
+      (command.fromAccount != state.owner);
 
     help.debug("pausing token, previous state:", state.tokenPaused, "new state:", command.pause);
     try {
@@ -281,13 +343,32 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   };
 
   let runFinalizeCrowdsaleCommand = async (command, state) => {
+    let nextBlock = web3.eth.blockNumber + 1;
     let shouldThrow = state.crowdsaleFinalized ||
-      state.crowdsalePaused ||
+      state.crowdsalePaused || (state.weiPerUSDinICO == 0) ||
       (web3.eth.blockNumber <= state.crowdsaleData.endBlock2);
 
-    help.debug("finishing crowdsale, from address:", accounts[command.fromAccount]);
     try {
-      await state.crowdsaleContract.finalize({from: accounts[command.fromAccount]});
+
+      let crowdsaleFunded = (state.weiRaised > state.crowdsaleData.minCapUSD*state.weiPerUSDinICO);
+
+      help.debug("finishing crowdsale on block", nextBlock, ", from address:", accounts[command.fromAccount], ", funded:", crowdsaleFunded);
+
+      let finalizeTx = await state.crowdsaleContract.finalize({from: accounts[command.fromAccount]});
+
+      if (crowdsaleFunded) {
+
+        let marketMakerInitialBalance = state.weiRaised - (state.crowdsaleData.minCapUSD*state.weiPerUSDinICO);
+        let marketMakerPeriods = (marketMakerInitialBalance > (state.crowdsaleData.marketMaker24PeriodsCapUSD*state.weiPerUSDinICO)) ? 48 : 24;
+        let mmAddress = await state.crowdsaleContract.marketMaker();
+        help.debug('MarketMaker contract address', mmAddress);
+
+        let marketMaker = new LifMarketMaker(mmAddress);
+
+        assert.equal(24, parseInt(await marketMaker.totalPeriods()));
+        assert.equal(state.crowdsaleData.foundationWallet, await marketMaker.foundationAddr());
+      }
+
       assert.equal(false, shouldThrow);
       state.crowdsaleFinalized = true;
     } catch(e) {
@@ -300,7 +381,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   let runAddPrivatePresalePaymentCommand = async (command, state) => {
 
     let crowdsale = state.crowdsaleData,
-      { publicPresaleStartBlock, maxPresaleWei, privatePresaleRate } = crowdsale,
+      { publicPresaleStartBlock, privatePresaleRate } = crowdsale,
       nextBlock = web3.eth.blockNumber + 1,
       weiToSend = web3.toWei(command.eth, 'ether'),
       account = accounts[command.fromAccount],
@@ -310,8 +391,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       (state.crowdsalePaused) ||
       (account != accounts[state.owner]) ||
       (state.crowdsaleFinalized) ||
-      (weiToSend == 0) ||
-      ((state.totalPresaleWei + weiToSend) > maxPresaleWei);
+      (weiToSend == 0);
 
     try {
       help.debug("Adding presale private tokens for account:", command.beneficiaryAccount, "eth:", command.eth, "fromAccount:", command.fromAccount, "blockNumber:", nextBlock);
@@ -332,6 +412,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     waitBlock: {gen: waitBlockCommandGen, run: runWaitBlockCommand},
     checkRate: {gen: checkRateCommandGen, run: runCheckRateCommand},
     sendTransaction: {gen: sendTransactionCommandGen, run: runSendTransactionCommand},
+    setWeiPerUSDinPresale: {gen: setWeiPerUSDinPresaleCommandGen, run: runSetWeiPerUSDinPresaleCommand},
+    setWeiPerUSDinICO: {gen: setWeiPerUSDinICOCommandGen, run: runSetWeiPerUSDinICOCommand},
     buyTokens: {gen: buyTokensCommandGen, run: runBuyTokensCommand},
     buyPresaleTokens: {gen: buyPresaleTokensCommandGen, run: runBuyPresaleTokensCommand},
     burnTokens: {gen: burnTokensCommandGen, run: runBurnTokensCommand},
@@ -349,17 +431,21 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   });
 
   let checkCrowdsaleState = async function(state, crowdsaleData, crowdsale) {
-    assert.equal(state.crowdsalePaused, await crowdsale.paused.call());
-    assert.equal(_.sumBy(state.purchases, (b) => b.tokens), help.lifWei2Lif(parseFloat(await crowdsale.tokensSold.call())));
+    assert.equal(state.crowdsalePaused, await crowdsale.paused());
+    assert.approximately(
+      _.sumBy(state.purchases, (b) => b.tokens),
+      parseFloat(help.lifWei2Lif(parseFloat(await crowdsale.tokensSold()))),
+      0.000000001
+    );
     /*
     let inMemoryPresaleWei = web3.toWei(_.sumBy(state.presalePayments, (p) => p.amountEth), 'ether')
     assert.equal(inMemoryPresaleWei, parseInt(await crowdsale.totalPresaleWei.call()));
     */
     help.debug("checking purchases total wei, purchases:", JSON.stringify(state.purchases));
-    assert.equal(_.sumBy(state.purchases, (b) => b.wei), parseInt(await crowdsale.weiRaised.call()));
+    assert.equal(_.sumBy(state.purchases, (b) => b.wei), parseFloat(await crowdsale.weiRaised()));
 
     // Check presale tokens sold
-    assert.equal(state.totalPresaleWei, parseInt(await crowdsale.totalPresaleWei.call()));
+    assert.equal(state.totalPresaleWei, parseFloat(await crowdsale.totalPresaleWei()));
   }
 
   let runGeneratedCrowdsaleAndCommands = async function(input) {
@@ -371,7 +457,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     help.debug("crowdsaleTestInput data:\n", input, publicPresaleStartBlock, publicPresaleEndBlock, startBlock, endBlock1, endBlock2);
 
-    let {publicPresaleRate, rate1, rate2, minCapEth, owner} = input.crowdsale,
+    let {publicPresaleRate, rate1, rate2, owner, setWeiLockBlocks} = input.crowdsale,
       ownerAddress = accounts[input.crowdsale.owner];
     let shouldThrow = (publicPresaleRate == 0) ||
       (rate1 == 0) ||
@@ -380,7 +466,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       (publicPresaleEndBlock >= startBlock) ||
       (startBlock >= endBlock1) ||
       (endBlock1 >= endBlock2) ||
-      (minCapEth == 0);
+      (setWeiLockBlocks == 0)
 
     var eventsWatcher;
 
@@ -392,10 +478,12 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         rate1: input.crowdsale.rate1,
         rate2: input.crowdsale.rate2,
         privatePresaleRate: input.crowdsale.privatePresaleRate,
+        setWeiLockBlocks: input.crowdsale.setWeiLockBlocks,
         foundationWallet: accounts[input.crowdsale.foundationWallet],
-        marketMaker: accounts[input.crowdsale.marketMaker],
-        minCap: web3.toWei(input.crowdsale.minCapEth, 'ether'),
-        maxPresaleWei: web3.toWei(input.crowdsale.maxPresaleEth, 'ether')
+        maxPresaleCapUSD: 1000000,
+        minCapUSD: 5000000,
+        maxFoundationCapUSD: 10000000,
+        marketMaker24PeriodsCapUSD: 40000000
       };
 
       let crowdsale = await LifCrowdsale.new(
@@ -408,10 +496,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         crowdsaleData.rate1,
         crowdsaleData.rate2,
         crowdsaleData.privatePresaleRate,
+        crowdsaleData.setWeiLockBlocks,
         crowdsaleData.foundationWallet,
-        crowdsaleData.marketMaker,
-        crowdsaleData.minCap,
-        crowdsaleData.maxPresaleWei,
         {from: ownerAddress}
       );
 
@@ -442,6 +528,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         crowdsalePaused: false,
         tokenPaused: true,
         crowdsaleFinalized: false,
+        weiPerUSDinPresale: 0,
+        weiPerUSDinICO: 0,
         owner: owner
       };
 
@@ -489,6 +577,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     let crowdsaleAndCommands = {
       commands: [
         { type: 'checkRate' },
+        { type: 'setWeiPerUSDinPresale', wei: 3000000000000000, fromAccount: 3 },
         { type: 'checkRate' },
         { type: 'waitBlock', blocks: 29 },
         { type: 'buyTokens', beneficiary: 3, account: 2, eth: 12 }
@@ -498,10 +587,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         rate1: 16,
         rate2: 14,
         privatePresaleRate: 14,
+        setWeiLockBlocks: 5,
         foundationWallet: 2,
-        marketMaker: 8,
-        minCapEth: 72.68016394227743,
-        maxPresaleEth: 24.53689146786928,
         owner: 3
       }
     };
@@ -509,28 +596,62 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
   });
 
-  it("should handle the exception correctly when trying to pause the token during the crowdsale", async function() {
+  it("Execute a normal presale and ICO", async function() {
     let crowdsaleAndCommands = {
       commands: [
-        {
-          "type":"pauseToken",
-          "pause":true,
-          "fromAccount":1
-        }
+        { type: 'checkRate' },
+        { type: 'setWeiPerUSDinPresale', wei: 3000000000000000, fromAccount: 3 },
+        { type: 'waitBlock', blocks: 10 },
+        { type: 'buyPresaleTokens', beneficiary: 3, account: 4, eth: 3000 },
+        { type: 'waitBlock', blocks: 8 },
+        { type: 'setWeiPerUSDinICO', wei: 1500000000000000, fromAccount: 3 },
+        { type: 'waitBlock', blocks: 12 },
+        { type: 'buyTokens', beneficiary: 3, account: 4, eth: 40000 },
+        { type: 'waitBlock', blocks: 10 },
+        { type: 'buyTokens', beneficiary: 3, account: 4, eth: 23000 },
+        { type: 'waitBlock', blocks: 10 },
+        { type: 'finalizeCrowdsale', fromAccount: 5 }
       ],
       crowdsale: {
-        publicPresaleRate: 20,
-        rate1: 6,
-        rate2: 5,
-        privatePresaleRate: 14,
-        foundationWallet: 10,
-        marketMaker: 6,
-        minCapEth: 120.9007621742785,
-        maxPresaleEth: 24.53689146786928,
-        owner: 1
+        publicPresaleRate: 11,
+        rate1: 10,
+        rate2: 9,
+        privatePresaleRate: 13,
+        setWeiLockBlocks: 5,
+        foundationWallet: 2,
+        owner: 3
       }
     };
 
+    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
+  });
+
+  it("should handle the exception correctly when trying to pause the token during and after the crowdsale", async function() {
+    let crowdsaleAndCommands = {
+    commands: [
+        { type: 'checkRate' },
+        { type: 'setWeiPerUSDinPresale', wei: 3000000000000000, fromAccount: 3 },
+        { type: 'waitBlock', blocks: 10 },
+        { type: 'buyPresaleTokens', beneficiary: 3, account: 4, eth: 3000 },
+        { type: 'waitBlock', blocks: 8 },
+        { type: 'pauseToken', 'pause':true, 'fromAccount':1 },
+        { type: 'setWeiPerUSDinICO', wei: 1500000000000000, fromAccount: 3 },
+        { type: 'waitBlock', blocks: 12 },
+        { type: 'buyTokens', beneficiary: 3, account: 4, eth: 60000 },
+        { type: 'waitBlock', blocks: 20 },
+        { type: 'finalizeCrowdsale', fromAccount: 5 },
+        { type: 'pauseToken', 'pause':true, 'fromAccount':1 }
+      ],
+      crowdsale: {
+        publicPresaleRate: 11,
+        rate1: 10,
+        rate2: 9,
+        privatePresaleRate: 13,
+        setWeiLockBlocks: 5,
+        foundationWallet: 2,
+        owner: 3
+      }
+    }
     await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
   });
 
