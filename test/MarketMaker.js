@@ -159,6 +159,42 @@ contract('marketMaker', function(accounts) {
     assert.equal(4, parseInt(await mm.getCurrentPeriodIndex()) );
   });
 
+  it("should return correct periods after pausing/unpausing using getCurrentPeriodIndex", async function() {
+    token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
+    const startBlock = web3.eth.blockNumber+10;
+    const blocksPerPeriod = 12;
+
+    mm = await LifMarketMaker.new(token.address, startBlock, blocksPerPeriod, 24, accounts[1],
+      100500, {from: accounts[0]});
+
+    await mm.fund({value: web3.toWei(8, 'ether'), from: accounts[0]});
+    await mm.calculateDistributionPeriods({from: accounts[5]});
+    await mm.calculateSellPricePeriods({from: accounts[6]});
+
+    assert.equal(0, parseInt(web3.eth.getBalance(token.address)));
+    assert.equal(startBlock, parseInt(await mm.startBlock()));
+    assert.equal(blocksPerPeriod, parseInt(await mm.blocksPerPeriod()));
+    assert.equal(accounts[1], parseInt(await mm.foundationAddr()));
+
+    await help.waitToBlock(startBlock);
+    assert.equal(0, parseInt(await mm.getCurrentPeriodIndex()));
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod);
+    assert.equal(1, parseInt(await mm.getCurrentPeriodIndex()));
+    await mm.pause();
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod*3);
+    await mm.unpause();
+    assert.equal(1, parseInt(await mm.getCurrentPeriodIndex()));
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod);
+    assert.equal(2, parseInt(await mm.getCurrentPeriodIndex()));
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod);
+    assert.equal(3, parseInt(await mm.getCurrentPeriodIndex()));
+    await mm.pause();
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod*2);
+    await mm.unpause();
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod);
+    assert.equal(4, parseInt(await mm.getCurrentPeriodIndex()));
+  });
+
   const periods = 24;
   const tokenTotalSupply = 100;
 
