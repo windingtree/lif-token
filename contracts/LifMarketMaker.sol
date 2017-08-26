@@ -189,14 +189,20 @@ contract LifMarketMaker is Ownable {
 
     uint256 periodIndex = getCurrentPeriodIndex();
 
+    // after the last period there's no sellPrice anymore so it's safe to just throw;
+    assert(periodIndex < totalPeriods);
+
     return initialSellPrice
       .mul(PRICE_FACTOR.add(marketMakerPeriods[periodIndex].accumSellPriceIncrement))
       .div(PRICE_FACTOR);
-
   }
 
   function getAccumulatedDistributionPercentage() public constant returns(uint256 percentage) {
-    return marketMakerPeriods[getCurrentPeriodIndex()].accumDistribution;
+    uint256 period = getCurrentPeriodIndex();
+
+    assert(period < totalPeriods);
+
+    return marketMakerPeriods[period].accumDistribution;
   }
 
   function getBuyPrice() public constant returns (uint256 price) {
@@ -213,15 +219,19 @@ contract LifMarketMaker is Ownable {
   // by buying and selling tokens
   function getMaxClaimableWeiAmount() constant public returns (uint256) {
 
-    uint256 totalSupply = lifToken.totalSupply();
-    uint256 totalCirculation = totalSupply.sub(lifToken.balanceOf(address(this)));
-    uint256 accumulatedDistributionPercentage = getAccumulatedDistributionPercentage();
+    if (isFinished()) {
+      return this.balance;
+    } else {
+      uint256 totalSupply = lifToken.totalSupply();
+      uint256 totalCirculation = totalSupply.sub(lifToken.balanceOf(address(this)));
+      uint256 accumulatedDistributionPercentage = getAccumulatedDistributionPercentage();
 
-    return initialWei.
-      mul(accumulatedDistributionPercentage).div(PERCENTAGE_FACTOR).
-      mul(totalCirculation).div(totalSupply).
-      add(totalWeiProfit).
-      sub(totalWeiClaimed);
+      return initialWei.
+        mul(accumulatedDistributionPercentage).div(PERCENTAGE_FACTOR).
+        mul(totalCirculation).div(totalSupply).
+        add(totalWeiProfit).
+        sub(totalWeiClaimed);
+    }
   }
 
   function() payable {
@@ -258,6 +268,10 @@ contract LifMarketMaker is Ownable {
     lifToken.transferFrom(msg.sender, address(this), tokens);
 
     msg.sender.transfer(totalWei);
+  }
+
+  function isFinished() public constant returns (bool finished) {
+    return getCurrentPeriodIndex() >= totalPeriods;
   }
 
   // Called from the foundation wallet to claim eth back from the Market Maker. Maximum amount
