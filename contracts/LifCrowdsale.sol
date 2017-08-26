@@ -4,6 +4,7 @@ import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "./LifToken.sol";
+import "./LifMarketMaker.sol";
 
 contract LifCrowdsale is Ownable, Pausable {
   using SafeMath for uint256;
@@ -22,7 +23,24 @@ contract LifCrowdsale is Ownable, Pausable {
 
   // address where funds are collected
   address public foundationWallet;
-  address public marketMaker;
+
+  // minimun amount of wei to be raised in order to succed, it starts in USD
+  uint256 public maxPresaleCapUSD = 1000000;
+
+  // minimun amount of wei to be raised in order to succed, it starts in USD
+  uint256 public minCapUSD = 5000000;
+
+  // maximun balance that the foundation can have, it starts in USD
+  uint256 public maxFoundationCapUSD = 10000000;
+
+  // maximun balance that the 24 month market maker can have
+  uint256 public marketMaker24PeriodsCapUSD = 40000000;
+
+  // how much a USD worth in wei in public presale
+  uint256 public weiPerUSDinPresale = 0;
+
+  // how much a USD worth in wei in ICO
+  uint256 public weiPerUSDinICO = 0;
 
   // how much wei a token unit costs to a buyer, during the private presale stage
   uint256 public privatePresaleRate;
@@ -43,11 +61,8 @@ contract LifCrowdsale is Ownable, Pausable {
   // total amount of wei received as presale payments (both private and public)
   uint256 public totalPresaleWei;
 
-  // maximun amount of ether that can be raised using presale payments in wei unit
-  uint256 public maxPresaleWei;
-
-  //  minimun amount of wei to be raised in order to succed
-  uint256 public minCap;
+  // the address of teh market maker created at the end of the crowdsale
+  address public marketMaker;
 
   mapping(address => uint256) public purchases;
 
@@ -79,10 +94,7 @@ contract LifCrowdsale is Ownable, Pausable {
     uint256 _rate1,
     uint256 _rate2,
     uint256 _privatePresaleRate,
-    address _foundationWallet,
-    address _marketMaker,
-    uint256 _minCap,
-    uint256 _maxPresaleWei
+    address _foundationWallet
   ) {
     require(_publicPresaleStartBlock >= block.number);
     require(_publicPresaleEndBlock > _publicPresaleStartBlock);
@@ -92,9 +104,7 @@ contract LifCrowdsale is Ownable, Pausable {
     require(_publicPresaleRate > 0);
     require(_rate1 > 0);
     require(_rate2 > 0);
-    require(_minCap > 0);
     require(_foundationWallet != 0x0);
-    require(_marketMaker != 0x0);
 
     token = new LifToken();
     token.pause();
@@ -109,9 +119,20 @@ contract LifCrowdsale is Ownable, Pausable {
     rate2 = _rate2;
     privatePresaleRate = _privatePresaleRate;
     foundationWallet = _foundationWallet;
-    marketMaker = _marketMaker;
-    minCap = _minCap;
-    maxPresaleWei = _maxPresaleWei;
+  }
+
+  // Set how the rate wei per USD for the public presale, necesary to calculate with more
+  // precision the maxCap on the presale.
+  function setWeiPerUSDinPresale(uint256 _weiPerUSD) onlyOwner {
+    require (block.number < publicPresaleStartBlock && block.number > publicPresaleStartBlock.sub(10));
+    weiPerUSDinPresale = _weiPerUSD;
+  }
+
+  // Set how the rate wei per USD for the ICO, necesary to calculate with more precision the
+  // maxCap on the distribution of funds on finalize.
+  function setWeiPerUSDinICO(uint256 _weiPerUSD) onlyOwner {
+    require (block.number < startBlock && block.number > startBlock.sub(10));
+    weiPerUSDinICO = _weiPerUSD;
   }
 
   // returns the current rate or 0 if current block is not within the crowdsale period
@@ -142,6 +163,7 @@ contract LifCrowdsale is Ownable, Pausable {
   function buyTokens(address beneficiary) payable {
     require(beneficiary != 0x0);
     require(validPurchase());
+    assert(weiPerUSDinICO > 0);
 
     uint256 weiAmount = msg.value;
 
@@ -166,6 +188,7 @@ contract LifCrowdsale is Ownable, Pausable {
   function buyPresaleTokens(address beneficiary) payable {
     require(beneficiary != 0x0);
     require(validPresalePurchase());
+    assert(weiPerUSDinPresale > 0);
 
     uint256 weiAmount = msg.value;
 
@@ -191,18 +214,43 @@ contract LifCrowdsale is Ownable, Pausable {
 
     uint256 tokens = weiSent.mul(privatePresaleRate);
 
-    require(totalPresaleWei.add(weiSent) <= maxPresaleWei);
-
     totalPresaleWei.add(weiSent);
 
     token.mint(beneficiary, tokens);
   }
 
   // send ether to the fund collection wallet
-  function forwardFunds() onlyOwner {
-    foundationWallet.transfer(this.balance);
-    // TODO
-    // marketMaker.transfer(marketMakerPercentage * this.balance);
+  function forwardFunds() internal {
+
+    // calculate the max amount of wei for the foundation
+    uint256 foundationBalanceCapWei = maxFoundationCapUSD.mul(weiPerUSDinICO);
+
+    // if the minimiun cap for the market maker is not reached transfer all funds to foundation
+    // else if the min cap for the market maker is reached, create it and send the remaining funds
+    if (this.balance < foundationBalanceCapWei) {
+
+      foundationWallet.transfer(this.balance);
+
+    } else {
+
+      uint256 mmFundBalance = this.balance.sub(foundationBalanceCapWei);
+
+      // check how much preiods we have to use on the market maker
+      uint8 marketMakerPeriods = 24;
+      if (mmFundBalance > marketMaker24PeriodsCapUSD.mul(weiPerUSDinICO))
+        marketMakerPeriods = 48;
+
+      foundationWallet.transfer(foundationBalanceCapWei);
+
+      // TODO: create the market maker with a start block that equals one month after crowdsale ends
+      LifMarketMaker newMarketMaker = new LifMarketMaker(
+        address(token), block.number.add(10), 20, marketMakerPeriods, foundationWallet, 105000
+      );
+      newMarketMaker.fund.value(mmFundBalance)();
+
+      marketMaker = address(newMarketMaker);
+
+    }
   }
 
   // @return true if the transaction can buy tokens on ICO
@@ -217,7 +265,7 @@ contract LifCrowdsale is Ownable, Pausable {
   function validPresalePurchase() internal constant returns (bool) {
     uint256 current = block.number;
     bool withinPublicPresalePeriod = current >= publicPresaleStartBlock && current <= publicPresaleEndBlock;
-    bool maxPresaleNotReached = totalPresaleWei.add(msg.value) <= maxPresaleWei;
+    bool maxPresaleNotReached = totalPresaleWei.add(msg.value) <= maxPresaleCapUSD.mul(weiPerUSDinPresale);
     bool nonZeroPurchase = msg.value != 0;
     return (withinPublicPresalePeriod && maxPresaleNotReached && nonZeroPurchase);
   }
@@ -228,14 +276,15 @@ contract LifCrowdsale is Ownable, Pausable {
   }
 
   function funded() public constant returns (bool) {
-    return weiRaised >= minCap;
+    assert(weiPerUSDinICO > 0);
+    return weiRaised >= minCapUSD.mul(weiPerUSDinICO);
   }
 
   // return the eth if the crowdsale didnt reach the minCap
   function claimEth() public {
     require(isFinalized);
     require(hasEnded());
-    require(funded());
+    require(!funded());
 
     uint256 toReturn = purchases[msg.sender];
     assert(toReturn > 0);
@@ -257,16 +306,16 @@ contract LifCrowdsale is Ownable, Pausable {
     // foward founds and unpause token only if minCap is reached
     if (funded()) {
 
+      // finish the minting of the token, unpause it and transfer the ownership to the foundation
       token.finishMinting();
-      forwardFunds();
       token.unpause();
-
       token.transferOwnership(owner);
+
+      forwardFunds();
 
     }
 
     Finalized();
-
     isFinalized = true;
   }
 
