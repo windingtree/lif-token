@@ -2,9 +2,8 @@ pragma solidity ^0.4.13;
 
 import "zeppelin-solidity/contracts/token/MintableToken.sol";
 import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
-import "./BurnableToken.sol";
 
-contract LifToken is MintableToken, Pausable, BurnableToken {
+contract LifToken is MintableToken, Pausable {
   // Token Name
   string public constant NAME = "Líf";
 
@@ -63,4 +62,20 @@ contract LifToken is MintableToken, Pausable, BurnableToken {
       TransferData(tx.origin, to, value, data);
 
   }
+
+  /**
+   * @dev Burns a specific amount of tokens.
+   * @param _value The amount of token to be burned.
+   */
+  function burn(uint256 _value) public whenNotPaused {
+    require(_value > 0);
+
+    address burner = msg.sender;
+    balances[burner] = balances[burner].sub(_value);
+    totalSupply = totalSupply.sub(_value);
+    Burn(burner, _value);
+  }
+
+  event Burn(address indexed burner, uint indexed value);
+
 }

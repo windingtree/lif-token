@@ -188,6 +188,21 @@ contract('LifToken', function(accounts) {
     initialBalance.should.be.bignumber.equal(await token.balanceOf(accounts[5]));
 
     let burned = web3.toWei(0.3);
+
+    // pause the token
+    await token.pause({from: accounts[0]});
+
+    let thrown = false;
+    try {
+      await token.burn(burned, {from: accounts[5]});
+    } catch(e) {
+      thrown = true;
+    }
+    assert.equal(true, thrown, "burn should have thrown because token was paused");
+
+    await token.unpause({from: accounts[0]});
+
+    // now burn should work
     await token.burn(burned, {from: accounts[5]});
 
     new BigNumber(initialBalance).minus(burned).
