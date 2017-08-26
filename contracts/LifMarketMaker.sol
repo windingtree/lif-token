@@ -45,6 +45,15 @@ contract LifMarketMaker is Ownable {
   // Has the Market Maker been funded by calling `fund`? It can be funded only once
   bool public funded = false;
 
+  // if the market maker is paused or not
+  bool public paused = false;
+
+  // total amount of blocks that the maret maker was paused
+  uint256 public totalBlocksPaused = 0;
+
+  // the block where the cmarket maker was paused
+  uint256 public blockPaused;
+
   struct MarketMakerPeriod {
     uint256 startBlock;
     uint256 endBlock;
@@ -55,6 +64,16 @@ contract LifMarketMaker is Ownable {
   }
 
   MarketMakerPeriod[] public marketMakerPeriods;
+
+  modifier whenNotPaused(){
+    assert(!paused);
+    _;
+  }
+
+  modifier whenPaused(){
+    assert(paused);
+    _;
+  }
 
   function LifMarketMaker(
     address lifAddr, uint256 _startBlock, uint256 _blocksPerPeriod,
@@ -138,7 +157,7 @@ contract LifMarketMaker is Ownable {
 
   function getCurrentPeriodIndex() constant public returns(uint256) {
     require(block.number >= startBlock);
-    return block.number.sub(startBlock).div(blocksPerPeriod);
+    return block.number.sub(startBlock).sub(totalBlocksPaused).div(blocksPerPeriod);
   }
 
   function getAccumulatedDistributionPercentage() public constant returns(uint256 percentage) {
@@ -178,7 +197,7 @@ contract LifMarketMaker is Ownable {
   }
 
   // sends tokens from Market Maker to the msg.sender, in exchange of Eth at the price of getBuyPrice
-  function sendTokens(uint256 tokens) {
+  function sendTokens(uint256 tokens) whenNotPaused {
     require(tokens > 0);
 
     uint256 price = getBuyPrice();
@@ -197,7 +216,9 @@ contract LifMarketMaker is Ownable {
 
   // Called from the foundation wallet to claim eth back from the Market Maker. Maximum amount
   // that can be claimed is determined by getMaxClaimableWeiAmount
-  function claimEth(uint256 weiAmount) {
+
+  function claimEth(uint256 weiAmount) whenNotPaused {
+
     require(msg.sender == foundationAddr);
 
     uint256 claimable = getMaxClaimableWeiAmount();
@@ -207,6 +228,23 @@ contract LifMarketMaker is Ownable {
     foundationAddr.transfer(weiAmount);
 
     totalWeiClaimed = totalWeiClaimed.add(weiAmount);
+  }
+
+  function pause() onlyOwner whenNotPaused {
+    paused = true;
+    blockPaused = block.number;
+  }
+
+  function unpause() onlyOwner whenPaused {
+    uint256 blocksPaused = block.number.sub(blockPaused);
+    uint256 periodPaused = blockPaused.sub(startBlock).div(blocksPerPeriod);
+    marketMakerPeriods[periodPaused].endBlock = marketMakerPeriods[periodPaused].endBlock.add(blocksPaused);
+    for (uint256 i = periodPaused+1; i < totalPeriods; i++) {
+      marketMakerPeriods[i].startBlock = marketMakerPeriods[i].startBlock.add(blocksPaused);
+      marketMakerPeriods[i].endBlock = marketMakerPeriods[i].endBlock.add(blocksPaused);
+    }
+    totalBlocksPaused = totalBlocksPaused.add(blocksPaused);
+    paused = false;
   }
 
 }
