@@ -205,7 +205,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
       await state.crowdsaleContract.sendTransaction({value: weiCost, from: account});
 
-      assert.equal(false, shouldThrow, "buyTokens should have thrown but it didn't");
+      assert.equal(false, shouldThrow, "sendTransaction should have thrown but it didn't");
       if (rate == rate1 || rate == rate2) {
         state.purchases = _.concat(state.purchases,
           {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
