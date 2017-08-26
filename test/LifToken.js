@@ -1,5 +1,11 @@
 var help = require("./helpers");
 
+var BigNumber = web3.BigNumber;
+
+const should = require('chai')
+  .use(require('chai-bignumber')(BigNumber))
+  .should();
+
 var LifToken = artifacts.require("./LifToken.sol");
 var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
 var Message = artifacts.require("./Message.sol");
@@ -170,6 +176,22 @@ contract('LifToken', function(accounts) {
     }
 
     await help.checkToken(token, accounts, 100, [40,30,20,10,0]);
+  });
+
+  it("can burn tokens", async function() {
+    let totalSupply0 = await token.totalSupply.call();
+    new BigNumber(0).should.be.bignumber.equal(await token.balanceOf(accounts[5]));
+
+    let initialBalance = web3.toWei(1);
+    await token.transfer(accounts[5], initialBalance, { from: accounts[1] });
+    initialBalance.should.be.bignumber.equal(await token.balanceOf(accounts[5]));
+
+    let burned = web3.toWei(0.3);
+    await token.burn(burned, {from: accounts[5]});
+
+    new BigNumber(initialBalance).minus(burned).
+      should.be.bignumber.equal(await token.balanceOf(accounts[5]));
+    totalSupply0.minus(burned).should.be.bignumber.equal(await token.totalSupply.call());
   });
 
 });

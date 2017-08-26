@@ -2,8 +2,9 @@ pragma solidity ^0.4.13;
 
 import "zeppelin-solidity/contracts/token/MintableToken.sol";
 import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
+import "./BurnableToken.sol";
 
-contract LifToken is MintableToken, Pausable {
+contract LifToken is MintableToken, Pausable, BurnableToken {
   // Token Name
   string public constant NAME = "Líf";
 
