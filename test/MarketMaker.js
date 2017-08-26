@@ -236,23 +236,30 @@ contract('marketMaker', function(accounts) {
     }
   });
 
+  const periods = 24;
+
   var checkScenarioProperties = async function(data, mm, customer) {
     help.debug("checking scenario", JSON.stringify(data));
 
-    data.totalProfit.should.be.bignumber.equal(await mm.totalWeiProfit());
+    assert.equal(data.month, await mm.getCurrentPeriodIndex());
+    data.totalProfit.should.be.bignumber.equal(await mm.totalWeiProfit.call());
     data.marketMakerEthBalance.should.be.bignumber.equal(web3.eth.getBalance(mm.address));
     data.marketMakerLifBalance.should.be.bignumber.equal(await token.balanceOf(mm.address));
-    data.marketMakerSellPrice.should.be.bignumber.equal(await mm.getSellPrice());
-    web3.eth.getBalance(customer).should.be.bignumber.equal(data.customerEthBalance);
 
+    if (data.month < periods) {
+      data.marketMakerSellPrice.should.be.bignumber.equal(await mm.getSellPrice());
+      data.marketMakerBuyPrice.should.be.bignumber.equal(await mm.getBuyPrice());
+      assert.equal(data.claimablePercentage, parseInt(await mm.getAccumulatedDistributionPercentage()));
+    }
+
+    assert.equal(data.month >= periods, await mm.isFinished());
+
+    data.customerEthBalance.should.be.bignumber.equal(web3.eth.getBalance(customer));
     data.customerLifBalance.should.be.bignumber.equal(await token.balanceOf(customer));
-    data.marketMakerBuyPrice.should.be.bignumber.equal(await mm.getBuyPrice());
 
-    assert.equal(data.claimablePercentage, parseInt(await mm.getAccumulatedDistributionPercentage()));
-    // TODO: Check the precision here is too low.
     data.maxClaimableEth.should.be.bignumber.equal(await mm.getMaxClaimableWeiAmount());
 
-    data.totalClaimedEth.should.be.bignumber.equal(await mm.totalWeiClaimed());
+    data.totalClaimedEth.should.be.bignumber.equal(await mm.totalWeiClaimed.call());
   };
 
   it("should go through scenario with some claims and sells on the Market Maker", async function() {
@@ -261,16 +268,17 @@ contract('marketMaker', function(accounts) {
     const tokenTotalSupply = 100;
     const sellPriceIncrement = 1.01;
     const initialPriceSpread = 1.05
+    const priceFactor = 100000;
 
     token = await simulateCrowdsale(tokenTotalSupply, [tokenTotalSupply], accounts);
 
     let customer = accounts[1];
-    const priceFactor = 100000;
     let startingMMBalance = new BigNumber(web3.toWei(200, 'ether'));
     const initialSellPrice = startingMMBalance.dividedBy(help.lif2LifWei(tokenTotalSupply)).mul(priceFactor).mul(initialPriceSpread);
     const initialBuyPrice = startingMMBalance.dividedBy(help.lif2LifWei(tokenTotalSupply));
 
     let state = {
+      month: 0,
       marketMakerEthBalance: startingMMBalance,
       marketMakerLifBalance: new BigNumber(0),
       totalProfit: new BigNumber(0),
@@ -282,11 +290,11 @@ contract('marketMaker', function(accounts) {
     };
 
     const startBlock = web3.eth.blockNumber + 10;
-    const blocksPerPeriod = 30;
+    const blocksPerPeriod = 20;
 
     const foundationWallet = accounts[9];
 
-    mm = await LifMarketMaker.new(token.address, startBlock, blocksPerPeriod, 24, foundationWallet,
+    mm = await LifMarketMaker.new(token.address, startBlock, blocksPerPeriod, periods, foundationWallet,
       priceFactor * initialPriceSpread, {from: accounts[0]});
 
     await mm.fund({value: state.marketMakerEthBalance, from: accounts[0]});
@@ -311,12 +319,24 @@ contract('marketMaker', function(accounts) {
     let waitForMonth = async function(month, startBlock, blocksPerPeriod) {
       await help.waitToBlock(startBlock+blocksPerPeriod*month, accounts);
 
-      state.claimablePercentage = _.sumBy(_.take(distributionDeltas, month + 1), (x) => x);
-      state.marketMakerSellPrice = initialSellPrice.mul(sellPriceIncrement ** month).round();
+      let period;
+
+      if (month >= periods) {
+        period = periods;
+        state.claimablePercentage = priceFactor;
+      } else {
+        period = month;
+        state.claimablePercentage = _.sumBy(_.take(distributionDeltas, period + 1), (x) => x);
+      }
+
+      help.debug("updating state on new month", month, "(period:", period, ")");
+      // we have to round at different points in calculation to mimmick what happens in contract
+      state.marketMakerSellPrice = initialSellPrice.mul(new BigNumber(sellPriceIncrement).pow(period).mul(priceFactor).round().div(priceFactor)).round();
       state.marketMakerBuyPrice = startingMMBalance.
         mul(priceFactor - state.claimablePercentage).
         dividedBy(help.lif2LifWei(tokenTotalSupply));
       state.maxClaimableEth = getMaxClaimableEth(state);
+      state.month = month;
 
       await checkScenarioProperties(state, mm, customer);
     };
@@ -421,9 +441,20 @@ contract('marketMaker', function(accounts) {
     help.debug("buying 60 tokens");
     await getTokens(60);
 
-    // MMETH = 254.3, TP = 84.3, MMT = 0,   TC = 100, SP = 2163 mETH/Lif, BP = 800,  CL 60%, maxClaimable = 120, claimed = 30
-    // await checkScenarioProperties(state, mm, customer);
+    await waitForMonth(12, startBlock, blocksPerPeriod);
+    await waitForMonth(14, startBlock, blocksPerPeriod);
+    await waitForMonth(15, startBlock, blocksPerPeriod);
 
+    await claimEth(5);
+
+    await waitForMonth(25, startBlock, blocksPerPeriod);
+
+    (await web3.eth.getBalance(mm.address)).should.be.bignumber.gt(web3.toWei(3, 'ether'));
+
+    help.debug("claiming remaining eth");
+    await claimEth(web3.fromWei(await web3.eth.getBalance(mm.address)));
+
+    assert.equal(0, await web3.eth.getBalance(mm.address));
   });
 
 });
