@@ -304,7 +304,8 @@ contract('marketMaker', function(accounts) {
       return startingMMBalance.
         mul(state.claimablePercentage).dividedBy(priceFactor).
         mul(tokenTotalSupply - help.lifWei2Lif(state.marketMakerLifBalance)).
-        dividedBy(tokenTotalSupply).plus(state.totalProfit);
+        dividedBy(tokenTotalSupply).plus(state.totalProfit).
+        minus(state.totalClaimedEth);
     }
 
     let waitForMonth = async function(month, startBlock, blocksPerPeriod) {
@@ -370,6 +371,7 @@ contract('marketMaker', function(accounts) {
 
       state.totalClaimedEth = state.totalClaimedEth.plus(weiToClaim);
       state.marketMakerEthBalance = state.marketMakerEthBalance.minus(weiToClaim);
+      state.maxClaimableEth = getMaxClaimableEth(state);
 
       await checkScenarioProperties(state, mm, customer);
     }
