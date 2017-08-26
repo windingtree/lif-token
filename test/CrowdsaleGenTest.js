@@ -18,9 +18,6 @@ if (isNaN(GEN_TESTS_TIMEOUT))
   GEN_TESTS_TIMEOUT = 240;
 
 contract('LifCrowdsale Property-based test', function(accounts) {
-  var token;
-  var eventsWatcher;
-
   let accountGen = jsc.nat(accounts.length - 1);
 
   let crowdsaleGen = jsc.record({
@@ -47,6 +44,11 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     account: accountGen,
     beneficiary: accountGen,
     eth: jsc.nat
+  });
+  let burnTokensCommandGen = jsc.record({
+    type: jsc.constant("burnTokens"),
+    account: accountGen,
+    tokens: jsc.nat
   });
   let buyPresaleTokensCommandGen = jsc.record({
     type: jsc.constant("buyPresaleTokens"),
@@ -131,12 +133,12 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       help.debug("buyTokens rate:", rate, "eth:", command.eth, "endBlocks:", crowdsale.endBlock1, endBlock2, "blockNumber:", nextBlock);
 
       await state.crowdsaleContract.buyTokens(beneficiaryAccount, {value: weiCost, from: account});
-      help.debug('yeah')
       assert.equal(false, shouldThrow, "buyTokens should have thrown but it didn't");
 
       state.purchases = _.concat(state.purchases,
         {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
       );
+      state.balances[command.beneficiary] = (state.balances[command.beneficiary] || 0) + tokens;
       state.weiRaised += weiCost;
 
     } catch(e) {
@@ -203,7 +205,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
       await state.crowdsaleContract.sendTransaction({value: weiCost, from: account});
 
-      assert.equal(false, shouldThrow, "buyTokens should have thrown but it didn't");
+      assert.equal(false, shouldThrow, "sendTransaction should have thrown but it didn't");
       if (rate == rate1 || rate == rate2) {
         state.purchases = _.concat(state.purchases,
           {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
@@ -212,6 +214,25 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       } else if (rate == publicPresaleRate) {
         state.totalPresaleWei += weiCost;
       }
+    } catch(e) {
+      if (!shouldThrow)
+        throw(new ExceptionRunningCommand(e, state, command));
+    }
+    return state;
+  }
+
+  let runBurnTokensCommand = async (command, state) => {
+    let account = accounts[command.account],
+      balance = state.balances[command.account];
+
+    let shouldThrow = state.tokenPaused || (balance < command.tokens);
+
+    try {
+      await state.token.burn(command.tokens, {from: account});
+      assert.equal(false, shouldThrow, "burn should have thrown but it didn't");
+
+      state.balances[account] = balance - command.tokens;
+
     } catch(e) {
       if (!shouldThrow)
         throw(new ExceptionRunningCommand(e, state, command));
@@ -330,6 +351,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     sendTransaction: {gen: sendTransactionCommandGen, run: runSendTransactionCommand},
     buyTokens: {gen: buyTokensCommandGen, run: runBuyTokensCommand},
     buyPresaleTokens: {gen: buyPresaleTokensCommandGen, run: runBuyPresaleTokensCommand},
+    burnTokens: {gen: burnTokensCommandGen, run: runBurnTokensCommand},
     pauseCrowdsale: {gen: pauseCrowdsaleCommandGen, run: runPauseCrowdsaleCommand},
     pauseToken: {gen: pauseTokenCommandGen, run: runPauseTokenCommand},
     finalizeCrowdsale: {gen: finalizeCrowdsaleCommandGen, run: runFinalizeCrowdsaleCommand},
@@ -431,12 +453,13 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         crowdsaleData: crowdsaleData,
         crowdsaleContract: crowdsale,
         token: token,
+        balances: [],
         purchases: [],
         presalePurchases: [],
         weiRaised: 0,
         totalPresaleWei: 0,
         crowdsalePaused: false,
-        tokenPaused: false,
+        tokenPaused: true,
         crowdsaleFinalized: false,
         owner: owner
       };
