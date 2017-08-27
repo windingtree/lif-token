@@ -212,7 +212,7 @@ contract('marketMaker', function(accounts) {
     };
 
     const startBlock = web3.eth.blockNumber + 10;
-    const blocksPerPeriod = 20;
+    const blocksPerPeriod = 15;
 
     const foundationWallet = accounts[9];
 
