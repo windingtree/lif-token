@@ -94,6 +94,12 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     eth: jsc.nat(0,200)
   });
 
+  let claimEthCommandGen = jsc.record({
+    type: jsc.constant("claimEth"),
+    eth: jsc.nat(0, 200),
+    fromAccount: accountGen
+  });
+
   let runWaitBlockCommand = async (command, state) => {
     await help.waitBlocks(command.blocks, accounts);
     return state;
@@ -371,6 +377,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
       assert.equal(false, shouldThrow);
       state.crowdsaleFinalized = true;
+      state.crowdsaleFunded = crowdsaleFunded;
     } catch(e) {
       if (!shouldThrow)
         throw(new ExceptionRunningCommand(e, state, command));
@@ -408,6 +415,32 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     return state;
   };
 
+  let runClaimEthCommand = async (command, state) => {
+
+    let crowdsale = state.crowdsaleData,
+      { publicPresaleStartBlock, maxPresaleWei, privatePresaleRate } = crowdsale,
+      nextBlock = web3.eth.blockNumber + 1,
+      account = accounts[command.fromAccount],
+      purchases = _.filter(state.purchases, (p) => p.account == command.fromAccount);
+
+    let shouldThrow = !state.crowdsaleFinalized ||
+      !state.crowdsaleFunded ||
+      (purchases.length == 0) ||
+      state.claimedEth[command.account] > 0;
+
+    try {
+      await state.crowdsaleContract.claimEth({from: account});
+
+      assert.equal(false, shouldThrow, "claimEth should have thrown but it didn't");
+
+      state.claimedEth[command.account] = _.sumBy(purchases, (p) => p.amount);
+    } catch(e) {
+      if (!shouldThrow)
+        throw(new ExceptionRunningCommand(e, state, command));
+    }
+    return state;
+  }
+
   let commands = {
     waitBlock: {gen: waitBlockCommandGen, run: runWaitBlockCommand},
     checkRate: {gen: checkRateCommandGen, run: runCheckRateCommand},
@@ -420,7 +453,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     pauseCrowdsale: {gen: pauseCrowdsaleCommandGen, run: runPauseCrowdsaleCommand},
     pauseToken: {gen: pauseTokenCommandGen, run: runPauseTokenCommand},
     finalizeCrowdsale: {gen: finalizeCrowdsaleCommandGen, run: runFinalizeCrowdsaleCommand},
-    addPrivatePresalePayment: {gen: addPrivatePresalePaymentCommandGen, run: runAddPrivatePresalePaymentCommand}
+    addPrivatePresalePayment: {gen: addPrivatePresalePaymentCommandGen, run: runAddPrivatePresalePaymentCommand},
+    claimEth: {gen: claimEthCommandGen, run: runClaimEthCommand}
   };
 
   let commandsGen = jsc.nonshrink(jsc.oneof(_.map(commands, (c) => c.gen)));
@@ -438,6 +472,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       0.000000001
     );
     /*
+     * TODO: add this and similar checks
     let inMemoryPresaleWei = web3.toWei(_.sumBy(state.presalePayments, (p) => p.amountEth), 'ether')
     assert.equal(inMemoryPresaleWei, parseInt(await crowdsale.totalPresaleWei.call()));
     */
@@ -445,7 +480,11 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     assert.equal(_.sumBy(state.purchases, (b) => b.wei), parseFloat(await crowdsale.weiRaised()));
 
     // Check presale tokens sold
-    assert.equal(state.totalPresaleWei, parseFloat(await crowdsale.totalPresaleWei()));
+    assert.equal(state.totalPresaleWei, parseFloat(await crowdsale.totalPresaleWei.call()));
+    assert.equal(state.crowdsaleFinalized, await crowdsale.isFinalized.call());
+    if (state.weiPerUSDinTGE > 0) {
+      assert.equal(state.crowdsaleFunded, await crowdsale.funded());
+    }
   }
 
   let runGeneratedCrowdsaleAndCommands = async function(input) {
@@ -523,6 +562,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         balances: [],
         purchases: [],
         presalePurchases: [],
+        claimedEth: {},
         weiRaised: 0,
         totalPresaleWei: 0,
         crowdsalePaused: false,
@@ -530,6 +570,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         crowdsaleFinalized: false,
         weiPerUSDinPresale: 0,
         weiPerUSDinTGE: 0,
+        crowdsaleFunded: false,
         owner: owner
       };
 
