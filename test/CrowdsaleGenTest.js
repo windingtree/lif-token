@@ -65,19 +65,18 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     pause: jsc.bool,
     fromAccount: accountGen
   });
+
   let pauseTokenCommandGen = jsc.record({
     type: jsc.constant("pauseToken"),
     pause: jsc.bool,
     fromAccount: accountGen
   });
+
   let finalizeCrowdsaleCommandGen = jsc.record({
     type: jsc.constant("finalizeCrowdsale"),
     fromAccount: accountGen
   });
-  let checkCrowdsaleCommandGen = jsc.record({
-    type: jsc.constant("checkCrowdsale"),
-    fromAccount: accountGen
-  });
+
   let addPrivatePresalePaymentCommandGen = jsc.record({
     type: jsc.constant("addPrivatePresalePayment"),
     beneficiaryAccount: accountGen,
@@ -260,22 +259,6 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     return state;
   };
 
-  let runCheckCrowdsaleCommand = async (command, state) => {
-    let shouldThrow = (state.status != 2) ||
-      (web3.eth.blockNumber <= state.crowdsaleData.endBlock);
-
-    try {
-      await state.crowdsaleContract.checkCrowdsale({from: accounts[command.fromAccount]});
-      assert.equal(false, shouldThrow);
-      state.status = 3;
-    } catch (e) {
-      if (!shouldThrow)
-        throw(new ExceptionRunningCommand(e, state, command));
-    }
-
-    return state;
-  };
-
   let runFinalizeCrowdsaleCommand = async (command, state) => {
     let shouldThrow = state.crowdsaleFinalized ||
       state.crowdsalePaused ||
@@ -334,8 +317,6 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     pauseToken: {gen: pauseTokenCommandGen, run: runPauseTokenCommand},
     finalizeCrowdsale: {gen: finalizeCrowdsaleCommandGen, run: runFinalizeCrowdsaleCommand},
     addPrivatePresalePayment: {gen: addPrivatePresalePaymentCommandGen, run: runAddPrivatePresalePaymentCommand}
-    // checkCrowdsale: {gen: checkCrowdsaleCommandGen, run: runCheckCrowdsaleCommand},
-
   };
 
   let commandsGen = jsc.nonshrink(jsc.oneof(_.map(commands, (c) => c.gen)));
