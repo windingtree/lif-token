@@ -157,6 +157,7 @@ contract('marketMaker', function(accounts) {
   });
 
   const periods = 24;
+  const tokenTotalSupply = 100;
 
   var checkScenarioProperties = async function(data, mm, customer) {
     help.debug("checking scenario", JSON.stringify(data));
@@ -164,6 +165,11 @@ contract('marketMaker', function(accounts) {
     assert.equal(data.month, await mm.getCurrentPeriodIndex());
     data.marketMakerEthBalance.should.be.bignumber.equal(web3.eth.getBalance(mm.address));
     data.marketMakerLifBalance.should.be.bignumber.equal(await token.balanceOf(mm.address));
+
+    new BigNumber(web3.toWei(tokenTotalSupply, 'ether')).
+      minus(data.burnedTokens).
+      should.be.bignumber.equal(await token.totalSupply.call());
+    data.burnedTokens.should.be.bignumber.equal(await mm.totalBurnedTokens.call());
 
     if (data.month < periods) {
       data.marketMakerBuyPrice.should.be.bignumber.equal(await mm.getBuyPrice());
@@ -182,7 +188,6 @@ contract('marketMaker', function(accounts) {
 
   it("should go through scenario with some claims and sells on the Market Maker", async function() {
     // Create MM with balance of 200 ETH and 100 tokens in circulation,
-    const tokenTotalSupply = 100
     const priceFactor = 100000;
 
     token = await simulateCrowdsale(tokenTotalSupply, [tokenTotalSupply], accounts);
@@ -193,6 +198,8 @@ contract('marketMaker', function(accounts) {
 
     let state = {
       month: 0,
+      burnedTokens: new BigNumber(0),
+      returnedWeiForBurnedTokens: new BigNumber(0),
       marketMakerEthBalance: startingMMBalance,
       marketMakerLifBalance: new BigNumber(0),
       customerEthBalance: web3.eth.getBalance(customer),
@@ -220,11 +227,21 @@ contract('marketMaker', function(accounts) {
     ];
 
     let getMaxClaimableEth = function(state) {
-      return startingMMBalance.
-        mul(state.claimablePercentage).dividedBy(priceFactor).
-        mul(tokenTotalSupply - help.lifWei2Lif(state.marketMakerLifBalance)).
-        dividedBy(tokenTotalSupply)
-        minus(state.totalClaimedEth);
+      if (state.month >= periods) {
+        help.debug("calculating maxClaimableEth with", startingMMBalance, state.totalClaimedEth,
+          state.returnedWeiForBurnedTokens);
+        return startingMMBalance.
+          minus(state.totalClaimedEth).
+          minus(state.returnedWeiForBurnedTokens);
+      } else {
+        const totalSupplyWei = web3.toWei(tokenTotalSupply, 'ether');
+        const maxClaimable = startingMMBalance.
+          mul(state.claimablePercentage).dividedBy(priceFactor).
+          mul(totalSupplyWei - state.burnedTokens).
+          dividedBy(totalSupplyWei).
+          minus(state.totalClaimedEth);
+        return _.max([0, maxClaimable]);
+      }
     }
 
     let waitForMonth = async function(month, startBlock, blocksPerPeriod) {
@@ -244,8 +261,8 @@ contract('marketMaker', function(accounts) {
       state.marketMakerBuyPrice = startingMMBalance.
         mul(priceFactor - state.claimablePercentage).
         dividedBy(help.lif2LifWei(tokenTotalSupply));
-      state.maxClaimableEth = getMaxClaimableEth(state);
       state.month = month;
+      state.maxClaimableEth = getMaxClaimableEth(state);
 
       await checkScenarioProperties(state, mm, customer);
     };
@@ -265,7 +282,8 @@ contract('marketMaker', function(accounts) {
       help.debug('Selling ',tokens, ' tokens in exchange of ', web3.fromWei(tokensCost, 'ether'), 'eth');
       state.customerEthBalance = state.customerEthBalance.plus(tokensCost).minus(gasPrice.mul(gas));
       state.marketMakerEthBalance = state.marketMakerEthBalance.minus(tokensCost);
-      state.marketMakerLifBalance = state.marketMakerLifBalance.plus(lifWei);
+      state.burnedTokens = state.burnedTokens.plus(lifWei);
+      state.returnedWeiForBurnedTokens = state.returnedWeiForBurnedTokens.plus(tokensCost);
       state.customerLifBalance = state.customerLifBalance.minus(lifWei);
       state.maxClaimableEth = getMaxClaimableEth(state);
 
@@ -322,9 +340,8 @@ contract('marketMaker', function(accounts) {
     // Month 3
     await waitForMonth(3, startBlock, blocksPerPeriod);
 
-    // Sell 50 tokens to the MM
-    await sendTokens(50);
-
+    // Sell 40 tokens to the MM
+    await sendTokens(40);
 
     await waitForMonth(12, startBlock, blocksPerPeriod);
     await waitForMonth(14, startBlock, blocksPerPeriod);
@@ -332,9 +349,14 @@ contract('marketMaker', function(accounts) {
 
     await claimEth(5);
 
+    // Sell 10 tokens to the MM
+    await sendTokens(10);
+
+    new BigNumber(0).should.be.bignumber.equal(await token.totalSupply.call());
+
     await waitForMonth(25, startBlock, blocksPerPeriod);
 
-    (await web3.eth.getBalance(mm.address)).should.be.bignumber.gt(web3.toWei(3, 'ether'));
+    (await web3.eth.getBalance(mm.address)).should.be.bignumber.gt(web3.toWei(0.3, 'ether'));
 
     help.debug("claiming remaining eth");
     await claimEth(web3.fromWei(await web3.eth.getBalance(mm.address)));

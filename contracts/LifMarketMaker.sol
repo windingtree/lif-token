@@ -2,13 +2,13 @@ pragma solidity ^0.4.13;
 
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
-import "zeppelin-solidity/contracts/token/ERC20.sol";
+import "./LifToken.sol";
 
 contract LifMarketMaker is Ownable {
   using SafeMath for uint256;
 
   // The Lif token contract
-  ERC20 public lifToken;
+  LifToken public lifToken;
 
   // The address of the foundation wallet. It can claim part of the eth funds following an
   // exponential curve until the end of the Market Maker lifetime (24 or 48 months). After
@@ -33,7 +33,11 @@ contract LifMarketMaker is Ownable {
   // The price at which the market maker buys tokens at the beginning of its lifetime
   uint256 public initialBuyPrice = 0;
 
+  // Amount of tokens that were burned by the market maker
+  uint256 public totalBurnedTokens = 0;
 
+  // Total supply of tokens when the Market Maker was created
+  uint256 public originalTotalSupply;
 
   uint256 constant PERCENTAGE_FACTOR = 100000;
   uint256 constant PRICE_FACTOR = 100000;
@@ -58,11 +62,12 @@ contract LifMarketMaker is Ownable {
 
     assert(_totalPeriods == 24 || _totalPeriods == 48);
 
-    lifToken = ERC20(lifAddr);
+    lifToken = LifToken(lifAddr);
     startBlock = _startBlock;
     blocksPerPeriod = _blocksPerPeriod;
     totalPeriods = _totalPeriods;
     foundationAddr = _foundationAddr;
+    originalTotalSupply = lifToken.totalSupply();
   }
 
   function fund() payable onlyOwner {
@@ -156,21 +161,23 @@ contract LifMarketMaker is Ownable {
   }
 
   // Get the maximum amount of wei that the foundation can claim. It's a portion of
-  // the ETH that was not claimed by token holders plus the profits made by the market maker
-  // by buying and selling tokens
+  // the ETH that was not claimed by token holders
   function getMaxClaimableWeiAmount() constant public returns (uint256) {
 
     if (isFinished()) {
       return this.balance;
     } else {
-      uint256 totalSupply = lifToken.totalSupply();
-      uint256 totalCirculation = totalSupply.sub(lifToken.balanceOf(address(this)));
+      uint256 currentCirculation = lifToken.totalSupply();
       uint256 accumulatedDistributionPercentage = getAccumulatedDistributionPercentage();
-
-      return initialWei.
+      uint256 maxClaimable = initialWei.
         mul(accumulatedDistributionPercentage).div(PERCENTAGE_FACTOR).
-        mul(totalCirculation).div(totalSupply).
-        sub(totalWeiClaimed);
+        mul(currentCirculation).div(originalTotalSupply);
+
+      if (maxClaimable > totalWeiClaimed) {
+        return maxClaimable.sub(totalWeiClaimed);
+      } else {
+        return 0;
+      }
     }
   }
 
@@ -182,6 +189,8 @@ contract LifMarketMaker is Ownable {
     uint256 totalWei = tokens.mul(price).div(PRICE_FACTOR);
 
     lifToken.transferFrom(msg.sender, address(this), tokens);
+    lifToken.burn(tokens);
+    totalBurnedTokens = totalBurnedTokens.add(tokens);
 
     msg.sender.transfer(totalWei);
   }
