@@ -2,13 +2,13 @@ pragma solidity ^0.4.13;
 
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
-import "zeppelin-solidity/contracts/token/ERC20.sol";
+import "./LifToken.sol";
 
 contract LifMarketMaker is Ownable {
   using SafeMath for uint256;
 
   // The Lif token contract
-  ERC20 public lifToken;
+  LifToken public lifToken;
 
   // The address of the foundation wallet. It can claim part of the eth funds following an
   // exponential curve until the end of the Market Maker lifetime (24 or 48 months). After
@@ -27,20 +27,17 @@ contract LifMarketMaker is Ownable {
   // Number of periods. It should be 24 or 48 (each period is roughly a month)
   uint8 public totalPeriods;
 
-  // The total amount of wei gained on buying/selling tokens
-  uint256 public totalWeiProfit = 0;
-
   // The total amount of wei that was claimed by the foundation
   uint256 public totalWeiClaimed = 0;
 
   // The price at which the market maker buys tokens at the beginning of its lifetime
   uint256 public initialBuyPrice = 0;
 
-  // The price at which the market maker sell tokens at the beginning of its lifetime
-  uint256 public initialSellPrice = 0;
+  // Amount of tokens that were burned by the market maker
+  uint256 public totalBurnedTokens = 0;
 
-  // Initial price difference factor from buy to sell price (scaled by PRICE_FACTOR)
-  uint256 public initialPriceSpread;
+  // Total supply of tokens when the Market Maker was created
+  uint256 public originalTotalSupply;
 
   uint256 constant PERCENTAGE_FACTOR = 100000;
   uint256 constant PRICE_FACTOR = 100000;
@@ -54,25 +51,23 @@ contract LifMarketMaker is Ownable {
     uint256 deltaDistribution;
     // accumulated % of the initialWei that can be claimed by the foundation on this period
     uint256 accumDistribution;
-    // accumulated % of the increment in the sell price in this period
-    uint256 accumSellPriceIncrement;
   }
 
   MarketMakerPeriod[] public marketMakerPeriods;
 
   function LifMarketMaker(
     address lifAddr, uint256 _startBlock, uint256 _blocksPerPeriod,
-    uint8 _totalPeriods, address _foundationAddr, uint256 _initialPriceSpread
+    uint8 _totalPeriods, address _foundationAddr
   ) {
 
     assert(_totalPeriods == 24 || _totalPeriods == 48);
 
-    lifToken = ERC20(lifAddr);
+    lifToken = LifToken(lifAddr);
     startBlock = _startBlock;
     blocksPerPeriod = _blocksPerPeriod;
     totalPeriods = _totalPeriods;
     foundationAddr = _foundationAddr;
-    initialPriceSpread = _initialPriceSpread;
+    originalTotalSupply = lifToken.totalSupply();
   }
 
   function fund() payable onlyOwner {
@@ -82,10 +77,6 @@ contract LifMarketMaker is Ownable {
     initialBuyPrice = initialWei.
       mul(PRICE_FACTOR).
       div(lifToken.totalSupply());
-
-    initialSellPrice = initialBuyPrice.
-      mul(initialPriceSpread).
-      div(PRICE_FACTOR);
 
     funded = true;
   }
@@ -139,8 +130,7 @@ contract LifMarketMaker is Ownable {
 
       marketMakerPeriods.push(MarketMakerPeriod(
         startBlockPeriod, startBlockPeriod.add(blocksPerPeriod).sub(1),
-        deltaDistribution, accumDistribution,
-        0
+        deltaDistribution, accumDistribution
       ));
 
       startBlockPeriod = startBlockPeriod.add(blocksPerPeriod);
@@ -148,53 +138,9 @@ contract LifMarketMaker is Ownable {
 
   }
 
-  function calculateSellPricePeriods() {
-
-    assert(totalPeriods == 24 || totalPeriods == 48);
-    require(startBlock >= block.number);
-    require(blocksPerPeriod > 0);
-
-    // The sellPriceIncrements represents how much is going to increase in % the sellPrice
-    // every period.
-
-    uint256[48] memory accumSellPriceIncrements = [
-      uint256(0), 1000, 2010, 3030, 4060, 5101,
-      6152, 7213, 8285, 9368, 10462,
-      11566, 12682, 13809, 14947, 16096,
-      17257, 18430, 19614, 20810, 22019,
-      23239, 24471, 25716, 26973, 28243,
-      29525, 30820, 32129, 33450, 34784,
-      36132, 37494, 38869, 40257, 41660,
-      43076, 44507, 45952, 47412, 48886,
-      50375, 51878, 53397, 54931, 56481,
-      58045, 59626
-    ];
-
-    for (uint8 i = 0; i < totalPeriods; i++) {
-
-      require(marketMakerPeriods[i].startBlock > 0);
-
-      marketMakerPeriods[i].accumSellPriceIncrement = accumSellPriceIncrements[i];
-
-    }
-
-  }
-
   function getCurrentPeriodIndex() constant public returns(uint256) {
     require(block.number >= startBlock);
     return block.number.sub(startBlock).div(blocksPerPeriod);
-  }
-
-  function getSellPrice() public constant returns (uint256) {
-
-    uint256 periodIndex = getCurrentPeriodIndex();
-
-    // after the last period there's no sellPrice anymore so it's safe to just throw;
-    assert(periodIndex < totalPeriods);
-
-    return initialSellPrice
-      .mul(PRICE_FACTOR.add(marketMakerPeriods[periodIndex].accumSellPriceIncrement))
-      .div(PRICE_FACTOR);
   }
 
   function getAccumulatedDistributionPercentage() public constant returns(uint256 percentage) {
@@ -215,43 +161,24 @@ contract LifMarketMaker is Ownable {
   }
 
   // Get the maximum amount of wei that the foundation can claim. It's a portion of
-  // the ETH that was not claimed by token holders plus the profits made by the market maker
-  // by buying and selling tokens
+  // the ETH that was not claimed by token holders
   function getMaxClaimableWeiAmount() constant public returns (uint256) {
 
     if (isFinished()) {
       return this.balance;
     } else {
-      uint256 totalSupply = lifToken.totalSupply();
-      uint256 totalCirculation = totalSupply.sub(lifToken.balanceOf(address(this)));
+      uint256 currentCirculation = lifToken.totalSupply();
       uint256 accumulatedDistributionPercentage = getAccumulatedDistributionPercentage();
-
-      return initialWei.
+      uint256 maxClaimable = initialWei.
         mul(accumulatedDistributionPercentage).div(PERCENTAGE_FACTOR).
-        mul(totalCirculation).div(totalSupply).
-        add(totalWeiProfit).
-        sub(totalWeiClaimed);
+        mul(currentCirculation).div(originalTotalSupply);
+
+      if (maxClaimable > totalWeiClaimed) {
+        return maxClaimable.sub(totalWeiClaimed);
+      } else {
+        return 0;
+      }
     }
-  }
-
-  function() payable {
-    getTokens();
-  }
-
-  function getTokens() payable {
-
-    require(msg.value > 0);
-
-    uint256 price = getSellPrice();
-    uint256 tokens = msg.value.
-      mul(PRICE_FACTOR).
-      div(price);
-
-    uint256 profitPerToken = price.sub(initialBuyPrice);
-    uint256 profit = profitPerToken.mul(tokens).div(PRICE_FACTOR);
-    totalWeiProfit = totalWeiProfit.add(profit);
-
-    lifToken.transfer(msg.sender, tokens);
   }
 
   // sends tokens from Market Maker to the msg.sender, in exchange of Eth at the price of getBuyPrice
@@ -259,13 +186,11 @@ contract LifMarketMaker is Ownable {
     require(tokens > 0);
 
     uint256 price = getBuyPrice();
-    uint256 profitPerToken = initialBuyPrice.sub(price);
     uint256 totalWei = tokens.mul(price).div(PRICE_FACTOR);
 
-    uint256 profit = profitPerToken.mul(tokens).div(PRICE_FACTOR);
-    totalWeiProfit = totalWeiProfit.add(profit);
-
     lifToken.transferFrom(msg.sender, address(this), tokens);
+    lifToken.burn(tokens);
+    totalBurnedTokens = totalBurnedTokens.add(tokens);
 
     msg.sender.transfer(totalWei);
   }
