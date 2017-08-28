@@ -42,6 +42,9 @@ contract LifCrowdsale is Ownable, Pausable {
   // how much a USD worth in wei in ICO
   uint256 public weiPerUSDinICO = 0;
 
+  // amount of blocks where the weiPerUSD cannot change before setWeiPerUSD functions
+  uint256 public setWeiLockBlocks = 0;
+
   // how much wei a token unit costs to a buyer, during the private presale stage
   uint256 public privatePresaleRate;
 
@@ -61,7 +64,7 @@ contract LifCrowdsale is Ownable, Pausable {
   // total amount of wei received as presale payments (both private and public)
   uint256 public totalPresaleWei;
 
-  // the address of teh market maker created at the end of the crowdsale
+  // the address of the market maker created at the end of the crowdsale
   address public marketMaker;
 
   mapping(address => uint256) public purchases;
@@ -94,6 +97,7 @@ contract LifCrowdsale is Ownable, Pausable {
     uint256 _rate1,
     uint256 _rate2,
     uint256 _privatePresaleRate,
+    uint256 _setWeiLockBlocks,
     address _foundationWallet
   ) {
     require(_publicPresaleStartBlock >= block.number);
@@ -104,6 +108,7 @@ contract LifCrowdsale is Ownable, Pausable {
     require(_publicPresaleRate > 0);
     require(_rate1 > 0);
     require(_rate2 > 0);
+    require(_setWeiLockBlocks > 0);
     require(_foundationWallet != 0x0);
 
     token = new LifToken();
@@ -118,20 +123,21 @@ contract LifCrowdsale is Ownable, Pausable {
     rate1 = _rate1;
     rate2 = _rate2;
     privatePresaleRate = _privatePresaleRate;
+    setWeiLockBlocks = _setWeiLockBlocks;
     foundationWallet = _foundationWallet;
   }
 
   // Set how the rate wei per USD for the public presale, necesary to calculate with more
   // precision the maxCap on the presale.
   function setWeiPerUSDinPresale(uint256 _weiPerUSD) onlyOwner {
-    require (block.number < publicPresaleStartBlock && block.number > publicPresaleStartBlock.sub(10));
+    require (block.number < publicPresaleStartBlock.sub(setWeiLockBlocks));
     weiPerUSDinPresale = _weiPerUSD;
   }
 
   // Set how the rate wei per USD for the ICO, necesary to calculate with more precision the
   // maxCap on the distribution of funds on finalize.
   function setWeiPerUSDinICO(uint256 _weiPerUSD) onlyOwner {
-    require (block.number < startBlock && block.number > startBlock.sub(10));
+    require (block.number < startBlock.sub(setWeiLockBlocks));
     weiPerUSDinICO = _weiPerUSD;
   }
 

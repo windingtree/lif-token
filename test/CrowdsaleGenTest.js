@@ -27,6 +27,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     rate2: jsc.nat,
     privatePresaleRate: jsc.nat,
     foundationWallet: accountGen,
+    setWeiLockBlocks: jsc.nat(1,10),
     owner: accountGen
   });
 
@@ -260,11 +261,10 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   let runSetWeiPerUSDinPresaleCommand = async (command, state) => {
 
     let crowdsale = state.crowdsaleData,
-      { publicPresaleStartBlock } = crowdsale,
+      { publicPresaleStartBlock, setWeiLockBlocks } = crowdsale,
       nextBlock = web3.eth.blockNumber + 1;
 
-    let shouldThrow = (nextBlock < publicPresaleStartBlock-10) ||
-      (nextBlock > publicPresaleStartBlock) ||
+    let shouldThrow = (nextBlock > publicPresaleStartBlock-setWeiLockBlocks) ||
       (command.fromAccount != state.owner) ||
       (command.wei == 0);
 
@@ -283,15 +283,14 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   let runSetWeiPerUSDinICOCommand = async (command, state) => {
 
     let crowdsale = state.crowdsaleData,
-      { startBlock } = crowdsale,
+      { startBlock, setWeiLockBlocks } = crowdsale,
       nextBlock = web3.eth.blockNumber + 1;
 
-    let shouldThrow = (nextBlock < startBlock-10) ||
-      (nextBlock > startBlock) ||
+    let shouldThrow = (nextBlock > startBlock-setWeiLockBlocks) ||
       (command.fromAccount != state.owner) ||
       (command.wei == 0);
 
-    help.debug("seting wei per usd in presale:", command.wei);
+    help.debug("seting wei per usd in ico:", command.wei);
     try {
       await state.crowdsaleContract.setWeiPerUSDinICO(command.wei, {from: accounts[command.fromAccount]});
       assert.equal(false, shouldThrow);
@@ -326,7 +325,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   let runPauseTokenCommand = async (command, state) => {
     let shouldThrow = (state.tokenPaused == command.pause) ||
       !state.crowdsaleFinalized ||
-      (state.crowdsaleFinalized && (command.fromAccount != state.owner));
+      (command.fromAccount != state.owner);
 
     help.debug("pausing token, previous state:", state.tokenPaused, "new state:", command.pause);
     try {
@@ -477,7 +476,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     help.debug("crowdsaleTestInput data:\n", input, publicPresaleStartBlock, publicPresaleEndBlock, startBlock, endBlock1, endBlock2);
 
-    let {publicPresaleRate, rate1, rate2, owner} = input.crowdsale,
+    let {publicPresaleRate, rate1, rate2, owner, setWeiLockBlocks} = input.crowdsale,
       ownerAddress = accounts[input.crowdsale.owner];
     let shouldThrow = (publicPresaleRate == 0) ||
       (rate1 == 0) ||
@@ -485,7 +484,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       (publicPresaleStartBlock >= publicPresaleEndBlock) ||
       (publicPresaleEndBlock >= startBlock) ||
       (startBlock >= endBlock1) ||
-      (endBlock1 >= endBlock2)
+      (endBlock1 >= endBlock2) ||
+      (setWeiLockBlocks == 0)
 
     var eventsWatcher;
 
@@ -497,6 +497,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         rate1: input.crowdsale.rate1,
         rate2: input.crowdsale.rate2,
         privatePresaleRate: input.crowdsale.privatePresaleRate,
+        setWeiLockBlocks: input.crowdsale.setWeiLockBlocks,
         foundationWallet: accounts[input.crowdsale.foundationWallet],
         maxPresaleCapUSD: 1000000,
         minCapUSD: 5000000,
@@ -514,6 +515,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         crowdsaleData.rate1,
         crowdsaleData.rate2,
         crowdsaleData.privatePresaleRate,
+        crowdsaleData.setWeiLockBlocks,
         crowdsaleData.foundationWallet,
         {from: ownerAddress}
       );
@@ -594,6 +596,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     let crowdsaleAndCommands = {
       commands: [
         { type: 'checkRate' },
+        { type: 'setWeiPerUSDinPresale', wei: 3000000000000000, fromAccount: 3 },
         { type: 'checkRate' },
         { type: 'waitBlock', blocks: 29 },
         { type: 'buyTokens', beneficiary: 3, account: 2, eth: 12 }
@@ -603,6 +606,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         rate1: 16,
         rate2: 14,
         privatePresaleRate: 14,
+        setWeiLockBlocks: 5,
         foundationWallet: 2,
         owner: 3
       }
@@ -632,6 +636,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         rate1: 10,
         rate2: 9,
         privatePresaleRate: 13,
+        setWeiLockBlocks: 5,
         foundationWallet: 2,
         owner: 3
       }
@@ -640,25 +645,32 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
   });
 
-  it("should handle the exception correctly when trying to pause the token during the crowdsale", async function() {
+  it("should handle the exception correctly when trying to pause the token during and after the crowdsale", async function() {
     let crowdsaleAndCommands = {
-      commands: [
-        {
-          "type":"pauseToken",
-          "pause":true,
-          "fromAccount":1
-        }
+    commands: [
+        { type: 'checkRate' },
+        { type: 'setWeiPerUSDinPresale', wei: 3000000000000000, fromAccount: 3 },
+        { type: 'waitBlock', blocks: 10 },
+        { type: 'buyPresaleTokens', beneficiary: 3, account: 4, eth: 3000 },
+        { type: 'waitBlock', blocks: 8 },
+        { type: 'pauseToken', 'pause':true, 'fromAccount':1 },
+        { type: 'setWeiPerUSDinICO', wei: 1500000000000000, fromAccount: 3 },
+        { type: 'waitBlock', blocks: 12 },
+        { type: 'buyTokens', beneficiary: 3, account: 4, eth: 60000 },
+        { type: 'waitBlock', blocks: 20 },
+        { type: 'finalizeCrowdsale', fromAccount: 5 },
+        { type: 'pauseToken', 'pause':true, 'fromAccount':1 }
       ],
       crowdsale: {
-        publicPresaleRate: 20,
-        rate1: 6,
-        rate2: 5,
-        privatePresaleRate: 14,
-        foundationWallet: 10,
-        owner: 1
+        publicPresaleRate: 11,
+        rate1: 10,
+        rate2: 9,
+        privatePresaleRate: 13,
+        setWeiLockBlocks: 5,
+        foundationWallet: 2,
+        owner: 3
       }
-    };
-
+    }
     await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
   });
 

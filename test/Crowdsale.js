@@ -20,7 +20,7 @@ contract('LifToken Crowdsale', function(accounts) {
     let crowdsale = await LifCrowdsale.new(
       publicPresaleStartBlock, publicPresaleEndBlock,
       startBlock, endBlock1, endBlock2,
-      130, 100, 110, 150,
+      130, 100, 110, 150, 5,
       accounts[0]
     );
 

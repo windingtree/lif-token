@@ -23,12 +23,12 @@ contract('marketMaker', function(accounts) {
   var simulateCrowdsale = async function(rate, balances, accounts) {
     if (web3.eth.blockNumber < 10)
       await help.waitToBlock(10-web3.eth.blockNumber, accounts);
-    var startBlock = web3.eth.blockNumber+2;
+    var startBlock = web3.eth.blockNumber+3;
     var endBlock = startBlock+15;
     var crowdsale = await LifCrowdsale.new(
       startBlock+1, startBlock+2,
       startBlock+3, startBlock+10, endBlock,
-      rate-1, rate, rate+10, rate+20,
+      rate-1, rate, rate+10, rate+20, 1,
       accounts[0]
     );
     crowdsale.setWeiPerUSDinICO(1);
