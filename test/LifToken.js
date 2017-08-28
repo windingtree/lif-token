@@ -177,7 +177,7 @@ contract('LifToken', function(accounts) {
   });
 
   it("can burn tokens", async function() {
-    let totalSupply0 = await token.totalSupply.call();
+    let totalSupply = await token.totalSupply.call();
     new BigNumber(0).should.be.bignumber.equal(await token.balanceOf(accounts[5]));
 
     let initialBalance = web3.toWei(1);
@@ -186,17 +186,16 @@ contract('LifToken', function(accounts) {
 
     let burned = web3.toWei(0.3);
 
+    assert.equal(accounts[0], await token.owner());
+
     // pause the token
     await token.pause({from: accounts[0]});
 
-    let thrown = false;
     try {
       await token.burn(burned, {from: accounts[5]});
-    } catch(e) {
-      thrown = true;
+    } catch (error) {
+      if (error.message.search('invalid opcode') == -1) throw error;
     }
-    assert.equal(true, thrown, "burn should have thrown because token was paused");
-
     await token.unpause({from: accounts[0]});
 
     // now burn should work
@@ -204,7 +203,7 @@ contract('LifToken', function(accounts) {
 
     new BigNumber(initialBalance).minus(burned).
       should.be.bignumber.equal(await token.balanceOf(accounts[5]));
-    totalSupply0.minus(burned).should.be.bignumber.equal(await token.totalSupply.call());
+    totalSupply.minus(burned).should.be.bignumber.equal(await token.totalSupply.call());
   });
 
 });
