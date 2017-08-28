@@ -577,6 +577,17 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     await runGeneratedCrowdsaleAndCommands({
       commands: [
+        {"type":"waitBlock","blocks":10},
+        {"type":"sendTransaction","account":3,"beneficiary":0,"eth":9}
+      ],
+      crowdsale: {
+        publicPresaleRate: 33, rate1: 18, rate2: 33, privatePresaleRate: 48,
+        foundationWallet: 1, setWeiLockBlocks: 1, owner: 7
+      }
+    });
+
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
         {"type":"waitBlock","blocks":27},
         {"type":"pauseCrowdsale","pause":true,"fromAccount":8},
         {"type":"sendTransaction","account":0,"beneficiary":9,"eth":39}
