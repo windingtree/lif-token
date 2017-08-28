@@ -206,12 +206,13 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       beneficiaryAccount = accounts[command.beneficiary],
       maxPresaleWei = crowdsale.maxPresaleCapUSD*state.weiPerUSDinPresale;
 
-    let shouldThrow = (nextBlock < publicPresaleStartBlock) ||
-      (nextBlock > publicPresaleEndBlock && nextBlock < startBlock) ||
-      (nextBlock > startBlock && nextBlock < endBlock2 && state.weiPerUSDinTGE == 0) ||
-      (nextBlock > publicPresaleStartBlock && nextBlock < publicPresaleEndBlock && state.weiPerUSDinPresale == 0) ||
-      (nextBlock <= publicPresaleEndBlock && nextBlock >= publicPresaleStartBlock && ((state.totalPresaleWei + weiCost) > maxPresaleWei)) ||
-      (nextBlock > endBlock2) ||
+    let inPresale = nextBlock >= publicPresaleStartBlock && nextBlock <= publicPresaleEndBlock,
+      inTGE = nextBlock >= startBlock && nextBlock <= endBlock2;
+
+    let shouldThrow = (!inPresale && !inTGE) ||
+      (inTGE && state.weiPerUSDinTGE == 0) ||
+      (inPresale && state.weiPerUSDinPresale == 0) ||
+      (inPresale && ((state.totalPresaleWei + weiCost) > maxPresaleWei)) ||
       (state.crowdsalePaused) ||
       (state.crowdsaleFinalized) ||
       (command.eth == 0);
@@ -571,6 +572,22 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     return true;
   }
+
+  it("doesn't fail on some specific examples that once failed", async function() {
+
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {"type":"waitBlock","blocks":27},
+        {"type":"pauseCrowdsale","pause":true,"fromAccount":8},
+        {"type":"sendTransaction","account":0,"beneficiary":9,"eth":39}
+      ],
+      crowdsale: {
+        publicPresaleRate: 1, rate1: 39, rate2: 13, privatePresaleRate: 35,
+        foundationWallet: 8, setWeiLockBlocks: 1, owner: 9
+      }
+    });
+
+  });
 
   it("calculates correct rate on the boundaries between endBlock1 and endBlock2", async function() {
     let crowdsaleAndCommands = {
