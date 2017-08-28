@@ -250,7 +250,7 @@ contract LifCrowdsale is Ownable, Pausable {
 
       // TODO: create the market maker with a start block that equals one month after crowdsale ends
       LifMarketMaker newMarketMaker = new LifMarketMaker(
-        address(token), block.number.add(10), 20, marketMakerPeriods, foundationWallet, 105000
+        address(token), block.number.add(10), 20, marketMakerPeriods, foundationWallet
       );
       newMarketMaker.fund.value(mmFundBalance)();
 
