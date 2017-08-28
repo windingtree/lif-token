@@ -39,8 +39,8 @@ contract LifCrowdsale is Ownable, Pausable {
   // how much a USD worth in wei in public presale
   uint256 public weiPerUSDinPresale = 0;
 
-  // how much a USD worth in wei in ICO
-  uint256 public weiPerUSDinICO = 0;
+  // how much a USD worth in wei in TGE
+  uint256 public weiPerUSDinTGE = 0;
 
   // amount of blocks where the weiPerUSD cannot change before setWeiPerUSD functions
   uint256 public setWeiLockBlocks = 0;
@@ -58,7 +58,7 @@ contract LifCrowdsale is Ownable, Pausable {
   // amount of raised money in wei
   uint256 public weiRaised;
 
-  // total amount of tokens sold on the ICO
+  // total amount of tokens sold on the TGE
   uint256 public tokensSold;
 
   // total amount of wei received as presale payments (both private and public)
@@ -134,11 +134,11 @@ contract LifCrowdsale is Ownable, Pausable {
     weiPerUSDinPresale = _weiPerUSD;
   }
 
-  // Set how the rate wei per USD for the ICO, necesary to calculate with more precision the
+  // Set how the rate wei per USD for the TGE, necesary to calculate with more precision the
   // maxCap on the distribution of funds on finalize.
-  function setWeiPerUSDinICO(uint256 _weiPerUSD) onlyOwner {
+  function setWeiPerUSDinTGE(uint256 _weiPerUSD) onlyOwner {
     require (block.number < startBlock.sub(setWeiLockBlocks));
-    weiPerUSDinICO = _weiPerUSD;
+    weiPerUSDinTGE = _weiPerUSD;
   }
 
   // returns the current rate or 0 if current block is not within the crowdsale period
@@ -165,11 +165,11 @@ contract LifCrowdsale is Ownable, Pausable {
       buyPresaleTokens(msg.sender);
   }
 
-  // low level token purchase function for ICO
+  // low level token purchase function for TGE
   function buyTokens(address beneficiary) payable {
     require(beneficiary != 0x0);
     require(validPurchase());
-    assert(weiPerUSDinICO > 0);
+    assert(weiPerUSDinTGE > 0);
 
     uint256 weiAmount = msg.value;
 
@@ -181,7 +181,7 @@ contract LifCrowdsale is Ownable, Pausable {
     // calculate token amount to be created
     uint256 tokens = weiAmount.mul(rate);
 
-    // store wei amount in case of ICO min cap not reached
+    // store wei amount in case of TGE min cap not reached
     weiRaised = weiRaised.add(weiAmount);
     purchases[beneficiary] = weiAmount;
     tokensSold = tokensSold.add(tokens);
@@ -229,7 +229,7 @@ contract LifCrowdsale is Ownable, Pausable {
   function forwardFunds() internal {
 
     // calculate the max amount of wei for the foundation
-    uint256 foundationBalanceCapWei = maxFoundationCapUSD.mul(weiPerUSDinICO);
+    uint256 foundationBalanceCapWei = maxFoundationCapUSD.mul(weiPerUSDinTGE);
 
     // if the minimiun cap for the market maker is not reached transfer all funds to foundation
     // else if the min cap for the market maker is reached, create it and send the remaining funds
@@ -243,7 +243,7 @@ contract LifCrowdsale is Ownable, Pausable {
 
       // check how much preiods we have to use on the market maker
       uint8 marketMakerPeriods = 24;
-      if (mmFundBalance > marketMaker24PeriodsCapUSD.mul(weiPerUSDinICO))
+      if (mmFundBalance > marketMaker24PeriodsCapUSD.mul(weiPerUSDinTGE))
         marketMakerPeriods = 48;
 
       foundationWallet.transfer(foundationBalanceCapWei);
@@ -259,7 +259,7 @@ contract LifCrowdsale is Ownable, Pausable {
     }
   }
 
-  // @return true if the transaction can buy tokens on ICO
+  // @return true if the transaction can buy tokens on TGE
   function validPurchase() internal constant returns (bool) {
     uint256 current = block.number;
     bool withinPeriod = current >= startBlock && current <= endBlock2;
@@ -282,8 +282,8 @@ contract LifCrowdsale is Ownable, Pausable {
   }
 
   function funded() public constant returns (bool) {
-    assert(weiPerUSDinICO > 0);
-    return weiRaised >= minCapUSD.mul(weiPerUSDinICO);
+    assert(weiPerUSDinTGE > 0);
+    return weiRaised >= minCapUSD.mul(weiPerUSDinTGE);
   }
 
   // return the eth if the crowdsale didnt reach the minCap

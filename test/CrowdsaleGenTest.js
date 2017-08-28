@@ -43,8 +43,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     wei: jsc.nat(0,10000000000000000), // between 0-0.01 ETH
     fromAccount: accountGen
   });
-  let setWeiPerUSDinICOCommandGen = jsc.record({
-    type: jsc.constant("setWeiPerUSDinICO"),
+  let setWeiPerUSDinTGECommandGen = jsc.record({
+    type: jsc.constant("setWeiPerUSDinTGE"),
     wei: jsc.nat(0,10000000000000000), // between 0-0.01 ETH
     fromAccount: accountGen
   });
@@ -124,7 +124,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   let runBuyTokensCommand = async (command, state) => {
     let crowdsale = state.crowdsaleData,
-      { startBlock, endBlock2, weiPerUSDinICO} = crowdsale,
+      { startBlock, endBlock2, weiPerUSDinTGE} = crowdsale,
       weiCost = parseInt(web3.toWei(command.eth, 'ether')),
       nextBlock = web3.eth.blockNumber + 1,
       rate = help.getCrowdsaleExpectedRate(crowdsale, nextBlock),
@@ -136,7 +136,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       (nextBlock > endBlock2) ||
       (state.crowdsalePaused) ||
       (state.crowdsaleFinalized) ||
-      (state.weiPerUSDinICO == 0) ||
+      (state.weiPerUSDinTGE == 0) ||
       (command.eth == 0);
 
     try {
@@ -210,7 +210,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     let shouldThrow = (nextBlock < publicPresaleStartBlock) ||
       (nextBlock > publicPresaleEndBlock && nextBlock < startBlock) ||
-      (nextBlock > startBlock && nextBlock < endBlock2 && state.weiPerUSDinICO == 0) ||
+      (nextBlock > startBlock && nextBlock < endBlock2 && state.weiPerUSDinTGE == 0) ||
       (nextBlock > publicPresaleStartBlock && nextBlock < publicPresaleEndBlock && state.weiPerUSDinPresale == 0) ||
       (nextBlock <= publicPresaleEndBlock && nextBlock >= publicPresaleStartBlock && ((state.totalPresaleWei + weiCost) > maxPresaleWei)) ||
       (nextBlock > endBlock2) ||
@@ -280,7 +280,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     return state;
   };
 
-  let runSetWeiPerUSDinICOCommand = async (command, state) => {
+  let runSetWeiPerUSDinTGECommand = async (command, state) => {
 
     let crowdsale = state.crowdsaleData,
       { startBlock, setWeiLockBlocks } = crowdsale,
@@ -290,11 +290,11 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       (command.fromAccount != state.owner) ||
       (command.wei == 0);
 
-    help.debug("seting wei per usd in ico:", command.wei);
+    help.debug("seting wei per usd in tge:", command.wei);
     try {
-      await state.crowdsaleContract.setWeiPerUSDinICO(command.wei, {from: accounts[command.fromAccount]});
+      await state.crowdsaleContract.setWeiPerUSDinTGE(command.wei, {from: accounts[command.fromAccount]});
       assert.equal(false, shouldThrow);
-      state.weiPerUSDinICO = command.wei;
+      state.weiPerUSDinTGE = command.wei;
     } catch(e) {
       if (!shouldThrow)
         throw(new ExceptionRunningCommand(e, state, command));
@@ -362,12 +362,12 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   let runFinalizeCrowdsaleCommand = async (command, state) => {
     let nextBlock = web3.eth.blockNumber + 1;
     let shouldThrow = state.crowdsaleFinalized ||
-      state.crowdsalePaused || (state.weiPerUSDinICO == 0) ||
+      state.crowdsalePaused || (state.weiPerUSDinTGE == 0) ||
       (web3.eth.blockNumber <= state.crowdsaleData.endBlock2);
 
     try {
 
-      let crowdsaleFunded = (state.weiRaised > state.crowdsaleData.minCapUSD*state.weiPerUSDinICO);
+      let crowdsaleFunded = (state.weiRaised > state.crowdsaleData.minCapUSD*state.weiPerUSDinTGE);
 
       help.debug("finishing crowdsale on block", nextBlock, ", from address:", accounts[command.fromAccount], ", funded:", crowdsaleFunded);
 
@@ -375,8 +375,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
       if (crowdsaleFunded) {
 
-        let marketMakerInitialBalance = state.weiRaised - (state.crowdsaleData.minCapUSD*state.weiPerUSDinICO);
-        let marketMakerPeriods = (marketMakerInitialBalance > (state.crowdsaleData.marketMaker24PeriodsCapUSD*state.weiPerUSDinICO)) ? 48 : 24;
+        let marketMakerInitialBalance = state.weiRaised - (state.crowdsaleData.minCapUSD*state.weiPerUSDinTGE);
+        let marketMakerPeriods = (marketMakerInitialBalance > (state.crowdsaleData.marketMaker24PeriodsCapUSD*state.weiPerUSDinTGE)) ? 48 : 24;
         let mmAddress = await state.crowdsaleContract.marketMaker();
         help.debug('MarketMaker contract address', mmAddress);
 
@@ -430,7 +430,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     checkRate: {gen: checkRateCommandGen, run: runCheckRateCommand},
     sendTransaction: {gen: sendTransactionCommandGen, run: runSendTransactionCommand},
     setWeiPerUSDinPresale: {gen: setWeiPerUSDinPresaleCommandGen, run: runSetWeiPerUSDinPresaleCommand},
-    setWeiPerUSDinICO: {gen: setWeiPerUSDinICOCommandGen, run: runSetWeiPerUSDinICOCommand},
+    setWeiPerUSDinTGE: {gen: setWeiPerUSDinTGECommandGen, run: runSetWeiPerUSDinTGECommand},
     buyTokens: {gen: buyTokensCommandGen, run: runBuyTokensCommand},
     buyPresaleTokens: {gen: buyPresaleTokensCommandGen, run: runBuyPresaleTokensCommand},
     burnTokens: {gen: burnTokensCommandGen, run: runBurnTokensCommand},
@@ -548,7 +548,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         tokenPaused: true,
         crowdsaleFinalized: false,
         weiPerUSDinPresale: 0,
-        weiPerUSDinICO: 0,
+        weiPerUSDinTGE: 0,
         owner: owner
       };
 
@@ -615,7 +615,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
   });
 
-  it("Execute a normal presale and ICO", async function() {
+  it("Execute a normal presale and TGE", async function() {
     let crowdsaleAndCommands = {
       commands: [
         { type: 'checkRate' },
@@ -623,7 +623,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         { type: 'waitBlock', blocks: 10 },
         { type: 'buyPresaleTokens', beneficiary: 3, account: 4, eth: 3000 },
         { type: 'waitBlock', blocks: 8 },
-        { type: 'setWeiPerUSDinICO', wei: 1500000000000000, fromAccount: 3 },
+        { type: 'setWeiPerUSDinTGE', wei: 1500000000000000, fromAccount: 3 },
         { type: 'waitBlock', blocks: 12 },
         { type: 'buyTokens', beneficiary: 3, account: 4, eth: 40000 },
         { type: 'waitBlock', blocks: 10 },
@@ -654,7 +654,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         { type: 'buyPresaleTokens', beneficiary: 3, account: 4, eth: 3000 },
         { type: 'waitBlock', blocks: 8 },
         { type: 'pauseToken', 'pause':true, 'fromAccount':1 },
-        { type: 'setWeiPerUSDinICO', wei: 1500000000000000, fromAccount: 3 },
+        { type: 'setWeiPerUSDinTGE', wei: 1500000000000000, fromAccount: 3 },
         { type: 'waitBlock', blocks: 12 },
         { type: 'buyTokens', beneficiary: 3, account: 4, eth: 60000 },
         { type: 'waitBlock', blocks: 20 },

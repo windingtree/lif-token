@@ -28,7 +28,7 @@ contract('LifToken', function(accounts) {
       rate-1, rate, rate+10, rate+20, 1,
       accounts[0]
     );
-    crowdsale.setWeiPerUSDinICO(1);
+    crowdsale.setWeiPerUSDinTGE(1);
     await help.waitToBlock(startBlock+3, accounts);
     for(i = 0; i < 5; i++) {
       if (balances[i] > 0)
