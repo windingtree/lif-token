@@ -40,7 +40,7 @@ contract('LifToken', function(accounts) {
   };
 
   beforeEach(async function() {
-    rate = 100;
+    rate = 100000000000;
     token = await simulateCrowdsale(rate, [40,30,20,10,0], accounts);
     eventsWatcher = token.allEvents();
     eventsWatcher.watch(function(error, log){
