@@ -1,5 +1,11 @@
 var help = require("./helpers");
 
+var BigNumber = web3.BigNumber;
+
+const should = require('chai')
+  .use(require('chai-bignumber')(BigNumber))
+  .should();
+
 var LifToken = artifacts.require("./LifToken.sol");
 var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
 var Message = artifacts.require("./Message.sol");
@@ -12,32 +18,30 @@ contract('LifToken', function(accounts) {
   var eventsWatcher;
 
   var simulateCrowdsale = async function(rate, balances, accounts) {
-    var startBlock = web3.eth.blockNumber;
-    var endBlock = web3.eth.blockNumber+11;
+    if (web3.eth.blockNumber < 10)
+      await help.waitToBlock(10-web3.eth.blockNumber, accounts);
+    var startBlock = web3.eth.blockNumber+3;
+    var endBlock = startBlock+15;
     var crowdsale = await LifCrowdsale.new(
       startBlock+1, startBlock+2,
       startBlock+3, startBlock+10, endBlock,
-      rate-1, rate, rate+10, rate+20,
-      accounts[0], accounts[1], 1, 1
+      rate-1, rate, rate+10, rate+20, 1,
+      accounts[0]
     );
+    crowdsale.setWeiPerUSDinTGE(1);
     await help.waitToBlock(startBlock+3, accounts);
-    if (balances[0] > 0)
-      await crowdsale.sendTransaction({ value: web3.toWei(balances[0]/rate, 'ether'), from: accounts[1] });
-    if (balances[1] > 0)
-      await crowdsale.sendTransaction({ value: web3.toWei(balances[1]/rate, 'ether'), from: accounts[2] });
-    if (balances[2] > 0)
-      await crowdsale.sendTransaction({ value: web3.toWei(balances[2]/rate, 'ether'), from: accounts[3] });
-    if (balances[3] > 0)
-      await crowdsale.sendTransaction({ value: web3.toWei(balances[3]/rate, 'ether'), from: accounts[4] });
-    if (balances[4] > 0)
-      await crowdsale.sendTransaction({ value: web3.toWei(balances[4]/rate, 'ether'), from: accounts[5] });
+    for(i = 0; i < 5; i++) {
+      if (balances[i] > 0)
+        await crowdsale.sendTransaction({ value: web3.toWei(balances[i]/rate, 'ether'), from: accounts[i + 1]});
+    }
     await help.waitToBlock(endBlock+1, accounts);
     await crowdsale.finalize();
-    return LifToken.at( await crowdsale.token() );
+    return LifToken.at(await crowdsale.token());
   };
 
   beforeEach(async function() {
-    token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
+    rate = 100;
+    token = await simulateCrowdsale(rate, [40,30,20,10,0], accounts);
     eventsWatcher = token.allEvents();
     eventsWatcher.watch(function(error, log){
       if (LOG_EVENTS)
@@ -170,6 +174,37 @@ contract('LifToken', function(accounts) {
     }
 
     await help.checkToken(token, accounts, 100, [40,30,20,10,0]);
+  });
+
+  it("can burn tokens", async function() {
+    let totalSupply0 = await token.totalSupply.call();
+    new BigNumber(0).should.be.bignumber.equal(await token.balanceOf(accounts[5]));
+
+    let initialBalance = web3.toWei(1);
+    await token.transfer(accounts[5], initialBalance, { from: accounts[1] });
+    initialBalance.should.be.bignumber.equal(await token.balanceOf(accounts[5]));
+
+    let burned = web3.toWei(0.3);
+
+    // pause the token
+    await token.pause({from: accounts[0]});
+
+    let thrown = false;
+    try {
+      await token.burn(burned, {from: accounts[5]});
+    } catch(e) {
+      thrown = true;
+    }
+    assert.equal(true, thrown, "burn should have thrown because token was paused");
+
+    await token.unpause({from: accounts[0]});
+
+    // now burn should work
+    await token.burn(burned, {from: accounts[5]});
+
+    new BigNumber(initialBalance).minus(burned).
+      should.be.bignumber.equal(await token.balanceOf(accounts[5]));
+    totalSupply0.minus(burned).should.be.bignumber.equal(await token.totalSupply.call());
   });
 
 });
