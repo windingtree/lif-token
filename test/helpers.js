@@ -2,9 +2,11 @@ var advanceToBlock = require('./helpers/advanceToBlock');
 
 var LifToken = artifacts.require("./LifToken.sol");
 var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
+var LifMarketMaker = artifacts.require("./LifMarketMaker.sol");
 var abiDecoder = require('abi-decoder');
 abiDecoder.addABI(LifToken._json.abi);
 abiDecoder.addABI(LifCrowdsale._json.abi);
+abiDecoder.addABI(LifMarketMaker._json.abi);
 
 const TOKEN_DECIMALS = 18;
 const DEBUG_MODE = (process.env.WT_DEBUG == "true") || false;

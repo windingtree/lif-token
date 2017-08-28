@@ -21,14 +21,17 @@ contract('marketMaker', function(accounts) {
   var eventsWatcher;
 
   var simulateCrowdsale = async function(rate, balances, accounts) {
-    var startBlock = web3.eth.blockNumber;
-    var endBlock = web3.eth.blockNumber+11;
+    if (web3.eth.blockNumber < 10)
+      await help.waitToBlock(10-web3.eth.blockNumber, accounts);
+    var startBlock = web3.eth.blockNumber+3;
+    var endBlock = startBlock+15;
     var crowdsale = await LifCrowdsale.new(
       startBlock+1, startBlock+2,
       startBlock+3, startBlock+10, endBlock,
-      rate-1, rate, rate+10, rate+20,
-      accounts[0], accounts[1], 1, 1
+      rate-1, rate, rate+10, rate+20, 1,
+      accounts[0]
     );
+    crowdsale.setWeiPerUSDinICO(1);
     await help.waitToBlock(startBlock+3, accounts);
     for(i = 0; i < 5; i++) {
       if (balances[i] > 0)
@@ -36,7 +39,7 @@ contract('marketMaker', function(accounts) {
     }
     await help.waitToBlock(endBlock+1, accounts);
     await crowdsale.finalize();
-    return LifToken.at( await crowdsale.token() );
+    return LifToken.at(await crowdsale.token());
   };
 
   it("Create 24 months MM", async function() {
