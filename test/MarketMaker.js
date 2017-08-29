@@ -318,14 +318,22 @@ contract('marketMaker', function(accounts) {
     await sendTokens(10);
 
     // try to claim more than the max claimable and it should fail
+    let thrown;
     try {
+      thrown = false;
       await claimEth(state.maxClaimableEth + 1);
-      throw(new Error("claimEth should have failed"));
-    } catch(e) {} // all good
+    } catch(e) {
+      thrown = true;
+    }
+    assert.equal(true, thrown, "claimEth should have thrown");
+
     try {
+      thrown = false;
       await claimEth(0.03);
-      throw(new Error("claimEth should have failed"));
-    } catch(e) {} // all good
+    } catch(e) {
+      thrown = true;
+    }
+    assert.equal(true, thrown, "claimEth should have thrown");
 
     // Claim 0.012 eth
     await claimEth(0.012);
