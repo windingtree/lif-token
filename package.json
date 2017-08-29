@@ -30,8 +30,8 @@
   },
   "devDependencies": {
     "chai-bignumber": "^2.0.1",
-    "ethereumjs-testrpc": "3.0.3",
-    "truffle": "3.4.6"
+    "ethereumjs-testrpc": "4.1.1",
+    "truffle": "3.4.8"
   },
   "jshintConfig": {
     "esversion": 6
