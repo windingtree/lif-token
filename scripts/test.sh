@@ -21,7 +21,7 @@ if [ ! $trpc_running ]; then
 fi
 
 ./node_modules/.bin/truffle compile
-./node_modules/.bin/truffle test $1
+./node_modules/.bin/truffle test $@
 test_result=$?
 
 if [ ! $trpc_running ]; then
