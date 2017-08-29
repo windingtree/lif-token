@@ -45,9 +45,16 @@ contract LifMarketMaker is Ownable {
   // Has the Market Maker been funded by calling `fund`? It can be funded only once
   bool public funded = false;
 
+  // if the market maker is paused or not
+  bool public paused = false;
+
+  // total amount of blocks that the market maker was paused
+  uint256 public totalPausedBlocks = 0;
+
+  // the block where the market maker was paused
+  uint256 public pausedBlock;
+
   struct MarketMakerPeriod {
-    uint256 startBlock;
-    uint256 endBlock;
     // delta % of the initialWei that can be claimed by the foundation from this period
     uint256 deltaDistribution;
     // accumulated % of the initialWei that can be claimed by the foundation on this period
@@ -56,10 +63,21 @@ contract LifMarketMaker is Ownable {
 
   MarketMakerPeriod[] public marketMakerPeriods;
 
+  modifier whenNotPaused(){
+    assert(!paused);
+    _;
+  }
+
+  modifier whenPaused(){
+    assert(paused);
+    _;
+  }
+
   function LifMarketMaker(
     address lifAddr, uint256 _startBlock, uint256 _blocksPerPeriod,
     uint8 _totalPeriods, address _foundationAddr
   ) {
+
     require(_totalPeriods == 24 || _totalPeriods == 48);
 
     lifToken = LifToken(lifAddr);
@@ -83,8 +101,6 @@ contract LifMarketMaker is Ownable {
 
   function calculateDistributionPeriods() {
     assert(totalPeriods == 24 || totalPeriods == 48);
-    assert(startBlock >= block.number);
-    assert(blocksPerPeriod > 0);
 
     // Table with the max delta % that can be distributed back to the foundation on
     // each period. It follows an exponential curve (starts with lower % and ends
@@ -113,7 +129,6 @@ contract LifMarketMaker is Ownable {
 
     uint256 accumDistribution = 0;
     uint256 deltaDistribution = 0;
-    uint256 startBlockPeriod = startBlock;
 
     require(marketMakerPeriods.length == 0);
 
@@ -128,17 +143,15 @@ contract LifMarketMaker is Ownable {
       accumDistribution = accumDistribution.add(deltaDistribution);
 
       marketMakerPeriods.push(MarketMakerPeriod(
-        startBlockPeriod, startBlockPeriod.add(blocksPerPeriod).sub(1),
         deltaDistribution, accumDistribution
       ));
 
-      startBlockPeriod = startBlockPeriod.add(blocksPerPeriod);
     }
   }
 
   function getCurrentPeriodIndex() constant public returns(uint256) {
-    require(block.number >= startBlock);
-    return block.number.sub(startBlock).div(blocksPerPeriod);
+    assert(block.number >= startBlock);
+    return block.number.sub(startBlock).sub(totalPausedBlocks).div(blocksPerPeriod);
   }
 
   function getAccumulatedDistributionPercentage() public constant returns(uint256 percentage) {
@@ -178,7 +191,7 @@ contract LifMarketMaker is Ownable {
   }
 
   // sends tokens from Market Maker to the msg.sender, in exchange of Eth at the price of getBuyPrice
-  function sendTokens(uint256 tokens) {
+  function sendTokens(uint256 tokens) whenNotPaused {
     require(tokens > 0);
 
     uint256 price = getBuyPrice();
@@ -197,7 +210,7 @@ contract LifMarketMaker is Ownable {
 
   // Called from the foundation wallet to claim eth back from the Market Maker. Maximum amount
   // that can be claimed is determined by getMaxClaimableWeiAmount
-  function claimEth(uint256 weiAmount) {
+  function claimEth(uint256 weiAmount) whenNotPaused {
     require(msg.sender == foundationAddr);
 
     uint256 claimable = getMaxClaimableWeiAmount();
@@ -207,6 +220,17 @@ contract LifMarketMaker is Ownable {
     foundationAddr.transfer(weiAmount);
 
     totalWeiClaimed = totalWeiClaimed.add(weiAmount);
+  }
+
+  function pause() onlyOwner whenNotPaused {
+    paused = true;
+    pausedBlock = block.number;
+  }
+
+  function unpause() onlyOwner whenPaused {
+    uint256 pausedBlocks = block.number.sub(pausedBlock);
+    totalPausedBlocks = totalPausedBlocks.add(pausedBlocks);
+    paused = false;
   }
 
 }

@@ -71,16 +71,16 @@ contract('marketMaker', function(accounts) {
     ];
 
     for (var i = 0; i < distributionDeltas.length; i++) {
-      assert.equal(distributionDeltas[i], parseInt((await mm.marketMakerPeriods.call(i))[2]))
+      assert.equal(distributionDeltas[i], parseInt((await mm.marketMakerPeriods.call(i))[0]))
     }
 
     // a few specific examples to double-check
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(0))[2]), 0 )
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(1))[2]), 18 )
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(9))[2]), 1905 )
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(15))[2]), 4766 )
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(16))[2]), 5345 )
-    assert.equal( parseInt((await mm.marketMakerPeriods.call(23))[2]), 10138 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(0))[0]), 0 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(1))[0]), 18 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(9))[0]), 1905 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(15))[0]), 4766 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(16))[0]), 5345 )
+    assert.equal( parseInt((await mm.marketMakerPeriods.call(23))[0]), 10138 )
   });
 
   it("Create 48 months MM", async function() {
@@ -111,20 +111,20 @@ contract('marketMaker', function(accounts) {
     ];
 
     for (var i = 0; i < distributionDeltas.length; i++) {
-      assert.equal(distributionDeltas[i], parseInt((await mm.marketMakerPeriods.call(i))[2]))
+      assert.equal(distributionDeltas[i], parseInt((await mm.marketMakerPeriods.call(i))[0]))
     }
 
     // just a few examples to double-check
-    assert.equal(97, parseInt((await mm.marketMakerPeriods.call(5))[2]))
-    assert.equal(416, parseInt((await mm.marketMakerPeriods.call(11))[2]))
-    assert.equal(1425, parseInt((await mm.marketMakerPeriods.call(22))[2]))
-    assert.equal(2746, parseInt((await mm.marketMakerPeriods.call(32))[2]))
-    assert.equal(2898, parseInt((await mm.marketMakerPeriods.call(33))[2]))
-    assert.equal(4595, parseInt((await mm.marketMakerPeriods.call(43))[2]))
-    assert.equal(4782, parseInt((await mm.marketMakerPeriods.call(44))[2]))
-    assert.equal(4972, parseInt((await mm.marketMakerPeriods.call(45))[2]))
-    assert.equal(5166, parseInt((await mm.marketMakerPeriods.call(46))[2]))
-    assert.equal(5363, parseInt((await mm.marketMakerPeriods.call(47))[2]))
+    assert.equal(97, parseInt((await mm.marketMakerPeriods.call(5))[0]))
+    assert.equal(416, parseInt((await mm.marketMakerPeriods.call(11))[0]))
+    assert.equal(1425, parseInt((await mm.marketMakerPeriods.call(22))[0]))
+    assert.equal(2746, parseInt((await mm.marketMakerPeriods.call(32))[0]))
+    assert.equal(2898, parseInt((await mm.marketMakerPeriods.call(33))[0]))
+    assert.equal(4595, parseInt((await mm.marketMakerPeriods.call(43))[0]))
+    assert.equal(4782, parseInt((await mm.marketMakerPeriods.call(44))[0]))
+    assert.equal(4972, parseInt((await mm.marketMakerPeriods.call(45))[0]))
+    assert.equal(5166, parseInt((await mm.marketMakerPeriods.call(46))[0]))
+    assert.equal(5363, parseInt((await mm.marketMakerPeriods.call(47))[0]))
   });
 
   it("should return correct periods using getCurrentPeriodIndex", async function() {
@@ -157,6 +157,41 @@ contract('marketMaker', function(accounts) {
     assert.equal(3, parseInt(await mm.getCurrentPeriodIndex()) );
     await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod)
     assert.equal(4, parseInt(await mm.getCurrentPeriodIndex()) );
+  });
+
+  it("should return correct periods after pausing/unpausing using getCurrentPeriodIndex", async function() {
+    token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
+    const startBlock = web3.eth.blockNumber+10;
+    const blocksPerPeriod = 12;
+
+    mm = await LifMarketMaker.new(token.address, startBlock, blocksPerPeriod, 24,
+      accounts[1], {from: accounts[0]});
+
+    await mm.fund({value: web3.toWei(8, 'ether'), from: accounts[0]});
+    await mm.calculateDistributionPeriods({from: accounts[5]});
+
+    assert.equal(0, parseInt(web3.eth.getBalance(token.address)));
+    assert.equal(startBlock, parseInt(await mm.startBlock()));
+    assert.equal(blocksPerPeriod, parseInt(await mm.blocksPerPeriod()));
+    assert.equal(accounts[1], parseInt(await mm.foundationAddr()));
+
+    await help.waitToBlock(startBlock);
+    assert.equal(0, parseInt(await mm.getCurrentPeriodIndex()));
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod);
+    assert.equal(1, parseInt(await mm.getCurrentPeriodIndex()));
+    await mm.pause({from: accounts[0]});
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod*3);
+    await mm.unpause({from: accounts[0]});
+    assert.equal(1, parseInt(await mm.getCurrentPeriodIndex()));
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod);
+    assert.equal(2, parseInt(await mm.getCurrentPeriodIndex()));
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod);
+    assert.equal(3, parseInt(await mm.getCurrentPeriodIndex()));
+    await mm.pause({from: accounts[0]});
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod*2);
+    await mm.unpause({from: accounts[0]});
+    await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod);
+    assert.equal(4, parseInt(await mm.getCurrentPeriodIndex()));
   });
 
   const periods = 24;
