@@ -43,7 +43,7 @@ contract('marketMaker', function(accounts) {
   };
 
   it("Create 24 months MM", async function() {
-    token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
+    token = await simulateCrowdsale(100000000000, [40,30,20,10,0], accounts);
     await help.checkToken(token, accounts, 100, [40,30,20,10,0]);
 
     mm = await LifMarketMaker.new(
@@ -84,7 +84,7 @@ contract('marketMaker', function(accounts) {
   });
 
   it("Create 48 months MM", async function() {
-    token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
+    token = await simulateCrowdsale(100000000000, [40,30,20,10,0], accounts);
     mm = await LifMarketMaker.new(token.address, web3.eth.blockNumber+10, 100, 48,
       accounts[1], {from: accounts[0]});
 
@@ -128,7 +128,7 @@ contract('marketMaker', function(accounts) {
   });
 
   it("should return correct periods using getCurrentPeriodIndex", async function() {
-    token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
+    token = await simulateCrowdsale(100000000000, [40,30,20,10,0], accounts);
     const startBlock = web3.eth.blockNumber+10;
     const blocksPerPeriod = 12;
 

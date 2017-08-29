@@ -11,4 +11,5 @@ cache:
 script:
   - set -e
   - jshint --show-non-errors test/*.js || echo "Errors in jshint ignored bc it doesn't support async/await"
-  - GEN_TESTS_QTY=20 yarn test
+  - GEN_TESTS_QTY=20 yarn test test/LifToken.js test/Crowdsale.js test/CrowdsaleGenTest.js
+  - yarn test test/MarketMaker.js
