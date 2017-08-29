@@ -42,6 +42,7 @@ contract LifMarketMaker is Ownable {
   uint256 constant PERCENTAGE_FACTOR = 100000;
   uint256 constant PRICE_FACTOR = 100000;
 
+  // Has the Market Maker been funded by calling `fund`? It can be funded only once
   bool public funded = false;
 
   struct MarketMakerPeriod {
