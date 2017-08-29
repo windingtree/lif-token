@@ -1,12 +1,4 @@
-
-var _ = require('lodash');
-
-var help = require("./helpers");
-
-var LifToken = artifacts.require("./LifToken.sol");
 var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
-
-const LOG_EVENTS = true;
 
 contract('LifToken Crowdsale', function(accounts) {
 
