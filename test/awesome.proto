@@ -1,6 +1,0 @@
-package awesomepackage;
-syntax = "proto3";
-
-message AwesomeMessage {
-    string awesome_field = 1; // becomes awesomeField
-}
