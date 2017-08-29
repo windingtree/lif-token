@@ -42,6 +42,7 @@ contract LifMarketMaker is Ownable {
   uint256 constant PERCENTAGE_FACTOR = 100000;
   uint256 constant PRICE_FACTOR = 100000;
 
+  // Has the Market Maker been funded by calling `fund`? It can be funded only once
   bool public funded = false;
 
   struct MarketMakerPeriod {
@@ -59,8 +60,7 @@ contract LifMarketMaker is Ownable {
     address lifAddr, uint256 _startBlock, uint256 _blocksPerPeriod,
     uint8 _totalPeriods, address _foundationAddr
   ) {
-
-    assert(_totalPeriods == 24 || _totalPeriods == 48);
+    require(_totalPeriods == 24 || _totalPeriods == 48);
 
     lifToken = LifToken(lifAddr);
     startBlock = _startBlock;
@@ -82,10 +82,9 @@ contract LifMarketMaker is Ownable {
   }
 
   function calculateDistributionPeriods() {
-
     assert(totalPeriods == 24 || totalPeriods == 48);
-    require(startBlock >= block.number);
-    require(blocksPerPeriod > 0);
+    assert(startBlock >= block.number);
+    assert(blocksPerPeriod > 0);
 
     // Table with the max delta % that can be distributed back to the foundation on
     // each period. It follows an exponential curve (starts with lower % and ends
@@ -135,7 +134,6 @@ contract LifMarketMaker is Ownable {
 
       startBlockPeriod = startBlockPeriod.add(blocksPerPeriod);
     }
-
   }
 
   function getCurrentPeriodIndex() constant public returns(uint256) {
@@ -152,7 +150,6 @@ contract LifMarketMaker is Ownable {
   }
 
   function getBuyPrice() public constant returns (uint256 price) {
-
     uint256 accumulatedDistributionPercentage = getAccumulatedDistributionPercentage();
 
     return initialBuyPrice.
@@ -163,7 +160,6 @@ contract LifMarketMaker is Ownable {
   // Get the maximum amount of wei that the foundation can claim. It's a portion of
   // the ETH that was not claimed by token holders
   function getMaxClaimableWeiAmount() constant public returns (uint256) {
-
     if (isFinished()) {
       return this.balance;
     } else {
@@ -202,7 +198,6 @@ contract LifMarketMaker is Ownable {
   // Called from the foundation wallet to claim eth back from the Market Maker. Maximum amount
   // that can be claimed is determined by getMaxClaimableWeiAmount
   function claimEth(uint256 weiAmount) {
-
     require(msg.sender == foundationAddr);
 
     uint256 claimable = getMaxClaimableWeiAmount();
@@ -212,15 +207,6 @@ contract LifMarketMaker is Ownable {
     foundationAddr.transfer(weiAmount);
 
     totalWeiClaimed = totalWeiClaimed.add(weiAmount);
-
-    // TODO: allow to claim all the remaining ETH after the market maker lifetim (24/48 mo.)
-    // require(block.number > endBlock);
-
-    // uint256 lifBalance = lifToken.balanceOf(address(this));
-
-    // lifToken.approve(foundationAddr, lifBalance);
-
-    // foundationAddr.transfer(this.balance);
   }
 
 }
