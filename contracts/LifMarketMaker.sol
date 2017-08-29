@@ -60,8 +60,7 @@ contract LifMarketMaker is Ownable {
     address lifAddr, uint256 _startBlock, uint256 _blocksPerPeriod,
     uint8 _totalPeriods, address _foundationAddr
   ) {
-
-    assert(_totalPeriods == 24 || _totalPeriods == 48);
+    require(_totalPeriods == 24 || _totalPeriods == 48);
 
     lifToken = LifToken(lifAddr);
     startBlock = _startBlock;
@@ -85,8 +84,8 @@ contract LifMarketMaker is Ownable {
   function calculateDistributionPeriods() {
 
     assert(totalPeriods == 24 || totalPeriods == 48);
-    require(startBlock >= block.number);
-    require(blocksPerPeriod > 0);
+    assert(startBlock >= block.number);
+    assert(blocksPerPeriod > 0);
 
     // Table with the max delta % that can be distributed back to the foundation on
     // each period. It follows an exponential curve (starts with lower % and ends
