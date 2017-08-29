@@ -1,6 +1,5 @@
 var _ = require('lodash');
 var jsc = require("jsverify");
-var chai = require("chai");
 
 var help = require("./helpers");
 

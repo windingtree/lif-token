@@ -31,7 +31,7 @@ contract('marketMaker', function(accounts) {
       rate-1, rate, rate+10, rate+20, 1,
       accounts[0]
     );
-    crowdsale.setWeiPerUSDinTGE(1);
+    await crowdsale.setWeiPerUSDinTGE(1);
     await help.waitToBlock(startBlock+3, accounts);
     for(i = 0; i < 5; i++) {
       if (balances[i] > 0)
@@ -53,7 +53,7 @@ contract('marketMaker', function(accounts) {
     await mm.fund({value: web3.toWei(8, 'ether'), from: accounts[0]});
     await mm.calculateDistributionPeriods({from: accounts[4]});
 
-    help.debug('Total Token Supply:', help.lifWei2Lif(parseFloat( await token.totalSupply())));
+    help.debug('Total Token Supply:', help.lifWei2Lif(parseFloat(await token.totalSupply.call())));
     help.debug('MM balance:', parseInt( web3.eth.getBalance(mm.address) ));
     help.debug('Start block', parseInt( await mm.startBlock.call() ));
     help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
@@ -91,7 +91,7 @@ contract('marketMaker', function(accounts) {
     await mm.fund({value: web3.toWei(8, 'ether'), from: accounts[0]});
     await mm.calculateDistributionPeriods({from: accounts[4]});
 
-    help.debug('Total Token Supply:', help.lifWei2Lif(parseFloat( await token.totalSupply())));
+    help.debug('Total Token Supply:', help.lifWei2Lif(parseFloat( await token.totalSupply.call())));
     help.debug('MM balance:', parseInt( web3.eth.getBalance(mm.address) ));
     help.debug('Start block', parseInt( await mm.startBlock.call() ));
     help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
@@ -143,12 +143,12 @@ contract('marketMaker', function(accounts) {
     help.debug('Blocks per period', parseInt( await mm.blocksPerPeriod.call() ));
     help.debug('Foundation address', await mm.foundationAddr.call() );
     assert.equal(0, parseInt(web3.eth.getBalance(token.address)) );
-    assert.equal(startBlock, parseInt(await mm.startBlock()) );
-    assert.equal(blocksPerPeriod, parseInt(await mm.blocksPerPeriod()) );
-    assert.equal(accounts[1], parseInt(await mm.foundationAddr()) );
+    assert.equal(startBlock, parseInt(await mm.startBlock.call()) );
+    assert.equal(blocksPerPeriod, parseInt(await mm.blocksPerPeriod.call()) );
+    assert.equal(accounts[1], parseInt(await mm.foundationAddr.call()) );
 
     await help.waitToBlock(startBlock);
-    assert.equal(0, parseInt(await mm.getCurrentPeriodIndex()) );
+    assert.equal(0, parseInt(await mm.getCurrentPeriodIndex.call()) );
     await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod)
     assert.equal(1, parseInt(await mm.getCurrentPeriodIndex()) );
     await help.waitToBlock(web3.eth.blockNumber+blocksPerPeriod)
@@ -353,14 +353,22 @@ contract('marketMaker', function(accounts) {
     await sendTokens(10);
 
     // try to claim more than the max claimable and it should fail
+    let thrown;
     try {
+      thrown = false;
       await claimEth(state.maxClaimableEth + 1);
-      throw(new Error("claimEth should have failed"));
-    } catch(e) {} // all good
+    } catch(e) {
+      thrown = true;
+    }
+    assert.equal(true, thrown, "claimEth should have thrown");
+
     try {
+      thrown = false;
       await claimEth(0.03);
-      throw(new Error("claimEth should have failed"));
-    } catch(e) {} // all good
+    } catch(e) {
+      thrown = true;
+    }
+    assert.equal(true, thrown, "claimEth should have thrown");
 
     // Claim 0.012 eth
     await claimEth(0.012);

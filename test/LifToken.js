@@ -36,7 +36,7 @@ contract('LifToken', function(accounts) {
     }
     await help.waitToBlock(endBlock+1, accounts);
     await crowdsale.finalize();
-    return LifToken.at(await crowdsale.token());
+    return LifToken.at(await crowdsale.token.call());
   };
 
   beforeEach(async function() {
