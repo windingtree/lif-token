@@ -7,6 +7,8 @@ var LifToken = artifacts.require("./LifToken.sol");
 var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
 var LifMarketMaker = artifacts.require("./LifMarketMaker.sol");
 
+let gen = require("./generators");
+
 const LOG_EVENTS = true;
 
 let GEN_TESTS_QTY = parseInt(process.env.GEN_TESTS_QTY);
@@ -18,88 +20,6 @@ if (isNaN(GEN_TESTS_TIMEOUT))
   GEN_TESTS_TIMEOUT = 240;
 
 contract('LifCrowdsale Property-based test', function(accounts) {
-  let accountGen = jsc.nat(accounts.length - 1);
-
-  let crowdsaleGen = jsc.record({
-    publicPresaleRate: jsc.nat,
-    rate1: jsc.nat,
-    rate2: jsc.nat,
-    privatePresaleRate: jsc.nat,
-    foundationWallet: accountGen,
-    setWeiLockBlocks: jsc.nat(1,10),
-    owner: accountGen
-  });
-
-  let waitBlockCommandGen = jsc.record({
-    type: jsc.constant("waitBlock"),
-    blocks: jsc.nat
-  });
-  let checkRateCommandGen = jsc.record({
-    type: jsc.constant("checkRate")
-  });
-  let setWeiPerUSDinPresaleCommandGen = jsc.record({
-    type: jsc.constant("setWeiPerUSDinPresale"),
-    wei: jsc.nat(0,10000000000000000), // between 0-0.01 ETH
-    fromAccount: accountGen
-  });
-  let setWeiPerUSDinTGECommandGen = jsc.record({
-    type: jsc.constant("setWeiPerUSDinTGE"),
-    wei: jsc.nat(0,10000000000000000), // between 0-0.01 ETH
-    fromAccount: accountGen
-  });
-  let buyTokensCommandGen = jsc.record({
-    type: jsc.constant("buyTokens"),
-    account: accountGen,
-    beneficiary: accountGen,
-    eth: jsc.nat
-  });
-  let burnTokensCommandGen = jsc.record({
-    type: jsc.constant("burnTokens"),
-    account: accountGen,
-    tokens: jsc.nat
-  });
-  let buyPresaleTokensCommandGen = jsc.record({
-    type: jsc.constant("buyPresaleTokens"),
-    account: accountGen,
-    beneficiary: accountGen,
-    eth: jsc.nat
-  });
-  let sendTransactionCommandGen = jsc.record({
-    type: jsc.constant("sendTransaction"),
-    account: accountGen,
-    beneficiary: accountGen,
-    eth: jsc.nat
-  });
-  let pauseCrowdsaleCommandGen = jsc.record({
-    type: jsc.constant("pauseCrowdsale"),
-    pause: jsc.bool,
-    fromAccount: accountGen
-  });
-
-  let pauseTokenCommandGen = jsc.record({
-    type: jsc.constant("pauseToken"),
-    pause: jsc.bool,
-    fromAccount: accountGen
-  });
-
-  let finalizeCrowdsaleCommandGen = jsc.record({
-    type: jsc.constant("finalizeCrowdsale"),
-    fromAccount: accountGen
-  });
-
-  let addPrivatePresalePaymentCommandGen = jsc.record({
-    type: jsc.constant("addPrivatePresalePayment"),
-    beneficiaryAccount: accountGen,
-    fromAccount: accountGen,
-    eth: jsc.nat(0,200)
-  });
-
-  let claimEthCommandGen = jsc.record({
-    type: jsc.constant("claimEth"),
-    eth: jsc.nat(0, 200),
-    fromAccount: accountGen
-  });
-
   let runWaitBlockCommand = async (command, state) => {
     await help.waitBlocks(command.blocks, accounts);
     return state;
@@ -442,26 +362,26 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   }
 
   let commands = {
-    waitBlock: {gen: waitBlockCommandGen, run: runWaitBlockCommand},
-    checkRate: {gen: checkRateCommandGen, run: runCheckRateCommand},
-    sendTransaction: {gen: sendTransactionCommandGen, run: runSendTransactionCommand},
-    setWeiPerUSDinPresale: {gen: setWeiPerUSDinPresaleCommandGen, run: runSetWeiPerUSDinPresaleCommand},
-    setWeiPerUSDinTGE: {gen: setWeiPerUSDinTGECommandGen, run: runSetWeiPerUSDinTGECommand},
-    buyTokens: {gen: buyTokensCommandGen, run: runBuyTokensCommand},
-    buyPresaleTokens: {gen: buyPresaleTokensCommandGen, run: runBuyPresaleTokensCommand},
-    burnTokens: {gen: burnTokensCommandGen, run: runBurnTokensCommand},
-    pauseCrowdsale: {gen: pauseCrowdsaleCommandGen, run: runPauseCrowdsaleCommand},
-    pauseToken: {gen: pauseTokenCommandGen, run: runPauseTokenCommand},
-    finalizeCrowdsale: {gen: finalizeCrowdsaleCommandGen, run: runFinalizeCrowdsaleCommand},
-    addPrivatePresalePayment: {gen: addPrivatePresalePaymentCommandGen, run: runAddPrivatePresalePaymentCommand},
-    claimEth: {gen: claimEthCommandGen, run: runClaimEthCommand}
+    waitBlock: {gen: gen.waitBlockCommandGen, run: runWaitBlockCommand},
+    checkRate: {gen: gen.checkRateCommandGen, run: runCheckRateCommand},
+    sendTransaction: {gen: gen.sendTransactionCommandGen, run: runSendTransactionCommand},
+    setWeiPerUSDinPresale: {gen: gen.setWeiPerUSDinPresaleCommandGen, run: runSetWeiPerUSDinPresaleCommand},
+    setWeiPerUSDinTGE: {gen: gen.setWeiPerUSDinTGECommandGen, run: runSetWeiPerUSDinTGECommand},
+    buyTokens: {gen: gen.buyTokensCommandGen, run: runBuyTokensCommand},
+    buyPresaleTokens: {gen: gen.buyPresaleTokensCommandGen, run: runBuyPresaleTokensCommand},
+    burnTokens: {gen: gen.burnTokensCommandGen, run: runBurnTokensCommand},
+    pauseCrowdsale: {gen: gen.pauseCrowdsaleCommandGen, run: runPauseCrowdsaleCommand},
+    pauseToken: {gen: gen.pauseTokenCommandGen, run: runPauseTokenCommand},
+    finalizeCrowdsale: {gen: gen.finalizeCrowdsaleCommandGen, run: runFinalizeCrowdsaleCommand},
+    addPrivatePresalePayment: {gen: gen.addPrivatePresalePaymentCommandGen, run: runAddPrivatePresalePaymentCommand},
+    claimEth: {gen: gen.claimEthCommandGen, run: runClaimEthCommand}
   };
 
   let commandsGen = jsc.nonshrink(jsc.oneof(_.map(commands, (c) => c.gen)));
 
   let crowdsaleTestInputGen = jsc.record({
     commands: jsc.array(commandsGen),
-    crowdsale: jsc.nonshrink(crowdsaleGen)
+    crowdsale: jsc.nonshrink(gen.crowdsaleGen)
   });
 
   let checkCrowdsaleState = async function(state, crowdsaleData, crowdsale) {
