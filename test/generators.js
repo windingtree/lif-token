@@ -95,7 +95,12 @@ module.exports = {
     type: jsc.constant("claimEth"),
     eth: jsc.nat(0, 200),
     fromAccount: accountGen
-  })
+  }),
 
+  transferCommandGen: jsc.record({
+    type: jsc.constant("transfer"),
+    lif: jsc.nat(0, 200),
+    fromAccount: accountGen
+  })
 }
 

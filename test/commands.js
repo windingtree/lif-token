@@ -1,5 +1,11 @@
 var LifMarketMaker = artifacts.require("./LifMarketMaker.sol");
 
+var BigNumber = web3.BigNumber;
+
+const should = require('chai')
+  .use(require('chai-bignumber')(BigNumber))
+  .should();
+
 var _ = require('lodash');
 var jsc = require("jsverify");
 var help = require("./helpers");
@@ -342,6 +348,34 @@ let runClaimEthCommand = async (command, state) => {
   return state;
 }
 
+let getBalance = (state, account) => {
+  return state.balances[account] || new BigNumber(0);
+}
+
+let runTransferCommand = async (command, state) => {
+
+  let token = state.token,
+    fromAddress = accounts[command.fromAccount],
+    toAddress = accounts[command.toAccount],
+    fromBalance = getBalance(state, command.fromAccount),
+    lifWei = help.lif2LifWei(command.lif),
+    shouldThrow = state.tokenPaused || fromBalance.lt(command.wei);
+
+  try {
+    await state.token.transfer(toAddress, lifWei, {from: fromAddress});
+
+    assert.equal(false, shouldThrow, "transfer should have thrown but it didn't");
+
+    // TODO: take spent gas into account?
+    state.balances[command.fromAccount] = fromBalance.minus(wei);
+    state.balances[command.toAccount] = getBalance(state, command.toAccount).plus(wei);
+  } catch(e) {
+    if (!shouldThrow)
+      throw(new ExceptionRunningCommand(e, state, command));
+  }
+  return state;
+}
+
 const commands = {
   waitBlock: {gen: gen.waitBlockCommandGen, run: runWaitBlockCommand},
   checkRate: {gen: gen.checkRateCommandGen, run: runCheckRateCommand},
@@ -355,7 +389,8 @@ const commands = {
   pauseToken: {gen: gen.pauseTokenCommandGen, run: runPauseTokenCommand},
   finalizeCrowdsale: {gen: gen.finalizeCrowdsaleCommandGen, run: runFinalizeCrowdsaleCommand},
   addPrivatePresalePayment: {gen: gen.addPrivatePresalePaymentCommandGen, run: runAddPrivatePresalePaymentCommand},
-  claimEth: {gen: gen.claimEthCommandGen, run: runClaimEthCommand}
+  claimEth: {gen: gen.claimEthCommandGen, run: runClaimEthCommand},
+  transfer: {gen: gen.transferCommandGen, run: runTransferCommand}
 };
 
 module.exports = {
