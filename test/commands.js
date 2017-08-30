@@ -70,7 +70,7 @@ let runBuyTokensCommand = async (command, state) => {
     state.purchases = _.concat(state.purchases,
       {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
     );
-    state.balances[command.beneficiary] = (state.balances[command.beneficiary] || 0) + tokens;
+    state.balances[command.beneficiary] = (state.balances[command.beneficiary] || 0) + help.lif2LifWei(tokens);
     state.weiRaised += weiCost;
 
   } catch(e) {
@@ -359,7 +359,7 @@ let runTransferCommand = async (command, state) => {
     toAddress = accounts[command.toAccount],
     fromBalance = getBalance(state, command.fromAccount),
     lifWei = help.lif2LifWei(command.lif),
-    shouldThrow = state.tokenPaused || fromBalance.lt(command.wei);
+    shouldThrow = state.tokenPaused || fromBalance.lt(lifWei);
 
   try {
     await state.token.transfer(toAddress, lifWei, {from: fromAddress});
@@ -367,8 +367,8 @@ let runTransferCommand = async (command, state) => {
     assert.equal(false, shouldThrow, "transfer should have thrown but it didn't");
 
     // TODO: take spent gas into account?
-    state.balances[command.fromAccount] = fromBalance.minus(wei);
-    state.balances[command.toAccount] = getBalance(state, command.toAccount).plus(wei);
+    state.balances[command.fromAccount] = fromBalance.minus(lifWei);
+    state.balances[command.toAccount] = getBalance(state, command.toAccount).plus(lifWei);
   } catch(e) {
     if (!shouldThrow)
       throw(new ExceptionRunningCommand(e, state, command));
