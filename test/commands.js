@@ -370,8 +370,29 @@ let runTransferCommand = async (command, state) => {
     state.balances[command.fromAccount] = fromBalance.minus(lifWei);
     state.balances[command.toAccount] = getBalance(state, command.toAccount).plus(lifWei);
   } catch(e) {
-    if (!shouldThrow)
-      throw(new ExceptionRunningCommand(e, state, command));
+    assertExpectedException(e, shouldThrow, state, command);
+  }
+  return state;
+}
+
+let runApproveCommand = async (command, state) => {
+
+  let token = state.token,
+    fromAddress = accounts[command.fromAccount],
+    spenderAddress = accounts[command.spenderAccount],
+    lifWei = help.lif2LifWei(command.lif),
+    shouldThrow = state.tokenPaused;
+
+  try {
+    await state.token.approve(spenderAddress, lifWei, {from: account});
+
+    assert.equal(false, shouldThrow, "approve should have thrown but it didn't");
+
+    // TODO: take spent gas into account?
+    let allowedMap = state.allowed[command.spenderAccount] || {};
+    allowedMap[command.fromAccount] = lifWei;
+  } catch(e) {
+    assertExpectedException(e, shouldThrow, state, command);
   }
   return state;
 }
@@ -390,7 +411,8 @@ const commands = {
   finalizeCrowdsale: {gen: gen.finalizeCrowdsaleCommandGen, run: runFinalizeCrowdsaleCommand},
   addPrivatePresalePayment: {gen: gen.addPrivatePresalePaymentCommandGen, run: runAddPrivatePresalePaymentCommand},
   claimEth: {gen: gen.claimEthCommandGen, run: runClaimEthCommand},
-  transfer: {gen: gen.transferCommandGen, run: runTransferCommand}
+  transfer: {gen: gen.transferCommandGen, run: runTransferCommand},
+  approve: {gen: gen.approveCommandGen, run: runApproveCommand}
 };
 
 module.exports = {

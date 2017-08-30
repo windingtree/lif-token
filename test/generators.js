@@ -100,7 +100,15 @@ module.exports = {
   transferCommandGen: jsc.record({
     type: jsc.constant("transfer"),
     lif: jsc.nat(0, 200),
-    fromAccount: accountGen
+    fromAccount: accountGen,
+    toAccount: accountGen
+  }),
+
+  approveCommandGen: jsc.record({
+    type: jsc.constant("approve"),
+    lif: jsc.nat(0, 200),
+    fromAccount: accountGen,
+    spenderAccount: accountGen
   })
 }
 

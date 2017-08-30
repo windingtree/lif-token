@@ -17,6 +17,10 @@ contract LifToken is MintableToken, Pausable {
   event TransferData(address indexed from, address indexed to, uint value, bytes data);
   event ApprovalData(address indexed from, address indexed spender, uint value, bytes data);
 
+  function transfer(address _to, uint256 _value) whenNotPaused returns (bool) {
+    return super.transfer(_to, _value);
+  }
+
   // approveData is an addition to ERC20 token methods. It allows approving the transference of value and execute a data call on the approval transaction
   function approveData(address spender, uint value, bytes data) whenNotPaused {
 
