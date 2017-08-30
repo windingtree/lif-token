@@ -76,7 +76,7 @@ contract('LifToken', function(accounts) {
     try {
       await token.transfer(accounts[2], help.lif2LifWei(21));
     } catch (error) {
-      if (error.message.search('invalid opcode') == -1) throw error;
+      if (!help.isInvalidOpcodeEx(error)) throw error;
     }
     await help.checkToken(token, accounts, 100, [40,30,20,10,0]);
   });
@@ -92,7 +92,7 @@ contract('LifToken', function(accounts) {
     try {
       await token.transferFrom(accounts[1], accounts[3], help.lif2LifWei(11), {from: accounts[3]});
     } catch (error) {
-      if (error.message.search('invalid opcode') == -1) throw error;
+      if (!help.isInvalidOpcodeEx(error)) throw error;
     }
     await help.checkToken(token, accounts, 100, [40,30,20,10,0]);
   });
@@ -157,7 +157,7 @@ contract('LifToken', function(accounts) {
     try {
       await token.transferData(token.contract.address, help.lif2LifWei(1000), web3.toHex(0), {from: accounts[1]});
     } catch (error) {
-      if (error.message.search('invalid opcode') == -1) throw error;
+      if (!help.isInvalidOpcodeEx(error)) throw error;
     }
 
     await help.checkToken(token, accounts, 100, [40,30,20,10,0]);
@@ -170,7 +170,7 @@ contract('LifToken', function(accounts) {
     try {
       await token.transferDataFrom(accounts[3], token.contract.address, help.lif2LifWei(1), web3.toHex(0), {from: accounts[1]});
     } catch (error) {
-      if (error.message.search('invalid opcode') == -1) throw error;
+      if (!help.isInvalidOpcodeEx(error)) throw error;
     }
 
     await help.checkToken(token, accounts, 100, [40,30,20,10,0]);
@@ -194,7 +194,7 @@ contract('LifToken', function(accounts) {
     try {
       await token.burn(burned, {from: accounts[5]});
     } catch (error) {
-      if (error.message.search('invalid opcode') == -1) throw error;
+      if (!help.isInvalidOpcodeEx(error)) throw error;
     }
     await token.unpause({from: accounts[0]});
 

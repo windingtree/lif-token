@@ -50,6 +50,10 @@ module.exports = {
     return web3.toWei(parseFloat(ether), 'wei');
   },
 
+  isInvalidOpcodeEx: function(e) {
+    return e.message.search('invalid opcode') >= 0;
+  },
+
   waitBlocks: function(toWait, accounts){
     return this.waitToBlock(parseInt(web3.eth.blockNumber) + toWait, accounts);
   },
