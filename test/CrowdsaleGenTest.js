@@ -121,7 +121,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         crowdsaleData: crowdsaleData,
         crowdsaleContract: crowdsale,
         token: token,
-        balances: [],
+        balances: {},
         allowances: {},
         purchases: [],
         presalePurchases: [],
