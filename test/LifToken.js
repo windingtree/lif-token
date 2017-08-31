@@ -75,6 +75,7 @@ contract('LifToken', function(accounts) {
   it("should throw an error when trying to transfer more than balance", async function() {
     try {
       await token.transfer(accounts[2], help.lif2LifWei(21));
+      assert(false, "transfer should have thrown");
     } catch (error) {
       if (!help.isInvalidOpcodeEx(error)) throw error;
     }
@@ -91,6 +92,7 @@ contract('LifToken', function(accounts) {
     await token.approve(accounts[3], help.lif2LifWei(10), {from: accounts[1]});
     try {
       await token.transferFrom(accounts[1], accounts[3], help.lif2LifWei(11), {from: accounts[3]});
+      assert(false, "transferFrom should have thrown");
     } catch (error) {
       if (!help.isInvalidOpcodeEx(error)) throw error;
     }
@@ -156,6 +158,7 @@ contract('LifToken', function(accounts) {
 
     try {
       await token.transferData(token.contract.address, help.lif2LifWei(1000), web3.toHex(0), {from: accounts[1]});
+      assert(false, "transferData should have thrown");
     } catch (error) {
       if (!help.isInvalidOpcodeEx(error)) throw error;
     }
@@ -169,6 +172,7 @@ contract('LifToken', function(accounts) {
 
     try {
       await token.transferDataFrom(accounts[3], token.contract.address, help.lif2LifWei(1), web3.toHex(0), {from: accounts[1]});
+      assert(false, "transferDataFrom should have thrown");
     } catch (error) {
       if (!help.isInvalidOpcodeEx(error)) throw error;
     }
@@ -193,6 +197,7 @@ contract('LifToken', function(accounts) {
 
     try {
       await token.burn(burned, {from: accounts[5]});
+      assert(false, "burn should have thrown");
     } catch (error) {
       if (!help.isInvalidOpcodeEx(error)) throw error;
     }
