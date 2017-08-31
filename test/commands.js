@@ -375,6 +375,18 @@ let runTransferCommand = async (command, state) => {
   return state;
 }
 
+let getAllowance = (state, sender, from) => {
+  if (!state.allowances[sender])
+    state.allowances[sender] = {};
+  return state.allowances[sender][from] || 0;
+}
+
+let setAllowance = (state, sender, from, allowance) => {
+  if (!state.allowances[sender])
+    state.allowances[sender] = {};
+  return state.allowances[sender][from] = allowance;
+}
+
 let runApproveCommand = async (command, state) => {
 
   let token = state.token,
@@ -389,8 +401,36 @@ let runApproveCommand = async (command, state) => {
     assert.equal(false, shouldThrow, "approve should have thrown but it didn't");
 
     // TODO: take spent gas into account?
-    let allowedMap = state.allowed[command.spenderAccount] || {};
-    allowedMap[command.fromAccount] = lifWei;
+    setAllowance(state, command.fromAccount, command.spenderAccount, lifWei);
+  } catch(e) {
+    assertExpectedException(e, shouldThrow, state, command);
+  }
+  return state;
+}
+
+let runTransferFromCommand = async (command, state) => {
+
+  let token = state.token,
+    senderAddress = accounts[command.senderAccount],
+    fromAddress = accounts[command.fromAccount],
+    toAddress = accounts[command.toAccount],
+    fromBalance = getBalance(state, command.fromAccount),
+    lifWei = help.lif2LifWei(command.lif),
+    allowance = getAllowance(state, command.senderAccount, command.fromAccount);
+
+  let shouldThrow = state.tokenPaused ||
+    fromBalance.lt(lifWei) ||
+    (allowance < lifWei);
+
+  try {
+    await state.token.transferFrom(fromAddress, toAddress, lifWei, {from: senderAddress});
+
+    assert.equal(false, shouldThrow, "transferFrom should have thrown but it didn't");
+
+    // TODO: take spent gas into account?
+    state.balances[command.fromAccount] = fromBalance.minus(lifWei);
+    state.balances[command.toAccount] = getBalance(state, command.toAccount).plus(lifWei);
+    setAllowance(state, command.senderAccount, command.fromAccount, allowance.sub(lifWei));
   } catch(e) {
     assertExpectedException(e, shouldThrow, state, command);
   }
@@ -412,7 +452,8 @@ const commands = {
   addPrivatePresalePayment: {gen: gen.addPrivatePresalePaymentCommandGen, run: runAddPrivatePresalePaymentCommand},
   claimEth: {gen: gen.claimEthCommandGen, run: runClaimEthCommand},
   transfer: {gen: gen.transferCommandGen, run: runTransferCommand},
-  approve: {gen: gen.approveCommandGen, run: runApproveCommand}
+  approve: {gen: gen.approveCommandGen, run: runApproveCommand},
+  transferFrom: {gen: gen.transferFromCommandGen, run: runTransferFromCommand}
 };
 
 module.exports = {

@@ -109,6 +109,15 @@ module.exports = {
     lif: jsc.nat(0, 200),
     fromAccount: accountGen,
     spenderAccount: accountGen
-  })
+  }),
+
+  transferFromCommandGen: jsc.record({
+    type: jsc.constant("transferFrom"),
+    lif: jsc.nat(0, 200),
+    senderAccount: accountGen,
+    fromAccount: accountGen,
+    toAccount: accountGen
+  }),
+
 }
 
