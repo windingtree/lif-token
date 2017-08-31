@@ -130,14 +130,18 @@ contract LifCrowdsale is Ownable, Pausable {
   // Set how the rate wei per USD for the public presale, necesary to calculate with more
   // precision the maxCap on the presale.
   function setWeiPerUSDinPresale(uint256 _weiPerUSD) onlyOwner {
-    require (block.number < publicPresaleStartBlock.sub(setWeiLockBlocks));
+    require(_weiPerUSD > 0);
+    assert(block.number < publicPresaleStartBlock.sub(setWeiLockBlocks));
+
     weiPerUSDinPresale = _weiPerUSD;
   }
 
   // Set how the rate wei per USD for the TGE, necesary to calculate with more precision the
   // maxCap on the distribution of funds on finalize.
   function setWeiPerUSDinTGE(uint256 _weiPerUSD) onlyOwner {
-    require (block.number < startBlock.sub(setWeiLockBlocks));
+    require(_weiPerUSD > 0);
+    assert(block.number < startBlock.sub(setWeiLockBlocks));
+
     weiPerUSDinTGE = _weiPerUSD;
   }
 
