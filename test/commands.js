@@ -7,6 +7,11 @@ var gen = require("./generators");
 
 const accounts = web3.eth.accounts;
 
+let assertExpectedException = (e, shouldThrow, state, command) => {
+  if (!shouldThrow || !help.isInvalidOpcodeEx(e))
+    throw(new ExceptionRunningCommand(e, state, command));
+}
+
 let runWaitBlockCommand = async (command, state) => {
   await help.waitBlocks(command.blocks, accounts);
   return state;
@@ -63,8 +68,7 @@ let runBuyTokensCommand = async (command, state) => {
     state.weiRaised += weiCost;
 
   } catch(e) {
-    if (!shouldThrow)
-      throw(new ExceptionRunningCommand(e, state, command));
+    assertExpectedException(e, shouldThrow, state, command);
   }
   return state;
 }
@@ -99,8 +103,7 @@ let runBuyPresaleTokensCommand = async (command, state) => {
     state.totalPresaleWei += weiCost;
 
   } catch(e) {
-    if (!shouldThrow)
-      throw(new ExceptionRunningCommand(e, state, command));
+    assertExpectedException(e, shouldThrow, state, command);
   }
   return state;
 }
@@ -145,8 +148,7 @@ let runSendTransactionCommand = async (command, state) => {
       state.totalPresaleWei += weiCost;
     }
   } catch(e) {
-    if (!shouldThrow)
-      throw(new ExceptionRunningCommand(e, state, command));
+    assertExpectedException(e, shouldThrow, state, command);
   }
   return state;
 }
@@ -164,8 +166,7 @@ let runBurnTokensCommand = async (command, state) => {
     state.balances[account] = balance - command.tokens;
 
   } catch(e) {
-    if (!shouldThrow)
-      throw(new ExceptionRunningCommand(e, state, command));
+    assertExpectedException(e, shouldThrow, state, command);
   }
   return state;
 };
@@ -186,8 +187,7 @@ let runSetWeiPerUSDinPresaleCommand = async (command, state) => {
     assert.equal(false, shouldThrow);
     state.weiPerUSDinPresale = command.wei;
   } catch(e) {
-    if (!shouldThrow)
-      throw(new ExceptionRunningCommand(e, state, command));
+    assertExpectedException(e, shouldThrow, state, command);
   }
   return state;
 };
@@ -208,8 +208,7 @@ let runSetWeiPerUSDinTGECommand = async (command, state) => {
     assert.equal(false, shouldThrow);
     state.weiPerUSDinTGE = command.wei;
   } catch(e) {
-    if (!shouldThrow)
-      throw(new ExceptionRunningCommand(e, state, command));
+    assertExpectedException(e, shouldThrow, state, command);
   }
   return state;
 };
@@ -228,8 +227,7 @@ let runPauseCrowdsaleCommand = async (command, state) => {
     assert.equal(false, shouldThrow);
     state.crowdsalePaused = command.pause;
   } catch(e) {
-    if (!shouldThrow)
-      throw(new ExceptionRunningCommand(e, state, command));
+    assertExpectedException(e, shouldThrow, state, command);
   }
   return state;
 };
@@ -249,8 +247,7 @@ let runPauseTokenCommand = async (command, state) => {
     assert.equal(false, shouldThrow);
     state.tokenPaused = command.pause;
   } catch(e) {
-    if (!shouldThrow)
-      throw(new ExceptionRunningCommand(e, state, command));
+    assertExpectedException(e, shouldThrow, state, command);
   }
   return state;
 };
@@ -286,8 +283,7 @@ let runFinalizeCrowdsaleCommand = async (command, state) => {
     state.crowdsaleFinalized = true;
     state.crowdsaleFunded = crowdsaleFunded;
   } catch(e) {
-    if (!shouldThrow)
-      throw(new ExceptionRunningCommand(e, state, command));
+    assertExpectedException(e, shouldThrow, state, command);
   }
   return state;
 };
@@ -316,8 +312,7 @@ let runAddPrivatePresalePaymentCommand = async (command, state) => {
 
     state.totalPresaleWei += weiToSend;
   } catch(e) {
-    if (!shouldThrow)
-      throw(new ExceptionRunningCommand(e, state, command));
+    assertExpectedException(e, shouldThrow, state, command);
   }
   return state;
 };
@@ -342,8 +337,7 @@ let runClaimEthCommand = async (command, state) => {
 
     state.claimedEth[command.account] = _.sumBy(purchases, (p) => p.amount);
   } catch(e) {
-    if (!shouldThrow)
-      throw(new ExceptionRunningCommand(e, state, command));
+    assertExpectedException(e, shouldThrow, state, command);
   }
   return state;
 }
