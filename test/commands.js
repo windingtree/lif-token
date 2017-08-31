@@ -44,6 +44,10 @@ let runCheckRateCommand = async (command, state) => {
   return state;
 }
 
+let getBalance = (state, account) => {
+  return state.balances[account] || new BigNumber(0);
+}
+
 let runBuyTokensCommand = async (command, state) => {
   let crowdsale = state.crowdsaleData,
     { startBlock, endBlock2, weiPerUSDinTGE} = crowdsale,
@@ -70,7 +74,7 @@ let runBuyTokensCommand = async (command, state) => {
     state.purchases = _.concat(state.purchases,
       {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
     );
-    state.balances[command.beneficiary] = (state.balances[command.beneficiary] || 0) + help.lif2LifWei(tokens);
+    state.balances[command.beneficiary] = getBalance(state, command.beneficiary).plus(help.lif2LifWei(tokens));
     state.weiRaised += weiCost;
 
   } catch(e) {
@@ -346,10 +350,6 @@ let runClaimEthCommand = async (command, state) => {
     assertExpectedException(e, shouldThrow, state, command);
   }
   return state;
-}
-
-let getBalance = (state, account) => {
-  return state.balances[account] || new BigNumber(0);
 }
 
 let runTransferCommand = async (command, state) => {
