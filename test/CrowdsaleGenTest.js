@@ -278,9 +278,26 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
   });
 
-  it("should not fail when setting wei for presale before presale starts", async function() {
+  it.only("should not fail when setting wei for presale or tge before each stage starts", async function() {
+    // trying multiple commands with different reasons to fail: wrong owner or wei==0
     await runGeneratedCrowdsaleAndCommands({
-      commands: [{"type":"setWeiPerUSDinPresale","wei":0,"fromAccount":10}],
+      commands: [
+        {"type":"setWeiPerUSDinPresale","wei":3,"fromAccount":10},
+        {"type":"setWeiPerUSDinPresale","wei":0,"fromAccount":6},
+        {"type":"setWeiPerUSDinPresale","wei":5,"fromAccount":6}
+      ],
+      crowdsale: {
+        publicPresaleRate: 27, rate1: 10, rate2: 31, privatePresaleRate: 35,
+        foundationWallet: 10, setWeiLockBlocks: 1, owner: 6
+      }
+    });
+
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {"type":"setWeiPerUSDinTGE","wei":0,"fromAccount":10},
+        {"type":"setWeiPerUSDinTGE","wei":0,"fromAccount":6},
+        {"type":"setWeiPerUSDinTGE","wei":3,"fromAccount":6}
+      ],
       crowdsale: {
         publicPresaleRate: 27, rate1: 10, rate2: 31, privatePresaleRate: 35,
         foundationWallet: 10, setWeiLockBlocks: 1, owner: 6
