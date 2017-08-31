@@ -198,14 +198,14 @@ let runSetWeiPerUSDinTGECommand = async (command, state) => {
     { startBlock, setWeiLockBlocks } = crowdsale,
     nextBlock = web3.eth.blockNumber + 1;
 
-  let shouldThrow = (nextBlock > startBlock-setWeiLockBlocks) ||
+  let shouldThrow = (nextBlock >= startBlock-setWeiLockBlocks) ||
     (command.fromAccount != state.owner) ||
     (command.wei == 0);
 
   help.debug("seting wei per usd in tge:", command.wei);
   try {
     await state.crowdsaleContract.setWeiPerUSDinTGE(command.wei, {from: accounts[command.fromAccount]});
-    assert.equal(false, shouldThrow);
+    assert.equal(false, shouldThrow, "setWeiPerUSDinTGE should have thrown but it didn't");
     state.weiPerUSDinTGE = command.wei;
   } catch(e) {
     assertExpectedException(e, shouldThrow, state, command);
