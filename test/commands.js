@@ -384,7 +384,7 @@ let runApproveCommand = async (command, state) => {
     shouldThrow = state.tokenPaused;
 
   try {
-    await state.token.approve(spenderAddress, lifWei, {from: account});
+    await state.token.approve(spenderAddress, lifWei, {from: fromAddress});
 
     assert.equal(false, shouldThrow, "approve should have thrown but it didn't");
 

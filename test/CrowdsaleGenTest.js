@@ -122,6 +122,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         crowdsaleContract: crowdsale,
         token: token,
         balances: [],
+        allowances: {},
         purchases: [],
         presalePurchases: [],
         claimedEth: {},
@@ -301,6 +302,16 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       crowdsale: {
         publicPresaleRate: 27, rate1: 10, rate2: 31, privatePresaleRate: 35,
         foundationWallet: 10, setWeiLockBlocks: 1, owner: 6
+      }
+    });
+  });
+
+  it("should handle the thrown exc. when trying to approve on the paused token", async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [{"type":"approve","lif":0,"fromAccount":3,"spenderAccount":5}],
+      crowdsale: {
+        publicPresaleRate: 23, rate1: 24, rate2: 15, privatePresaleRate: 15,
+        foundationWallet: 2, setWeiLockBlocks: 1, owner: 5
       }
     });
   });
