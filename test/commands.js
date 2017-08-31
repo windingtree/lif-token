@@ -177,7 +177,7 @@ let runSetWeiPerUSDinPresaleCommand = async (command, state) => {
     { publicPresaleStartBlock, setWeiLockBlocks } = crowdsale,
     nextBlock = web3.eth.blockNumber + 1;
 
-  let shouldThrow = (nextBlock > publicPresaleStartBlock-setWeiLockBlocks) ||
+  let shouldThrow = (nextBlock >= publicPresaleStartBlock-setWeiLockBlocks) ||
     (command.fromAccount != state.owner) ||
     (command.wei == 0);
 
