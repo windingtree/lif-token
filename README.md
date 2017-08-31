@@ -73,7 +73,9 @@ No return value. Throws when not successful
 
 There are also two environment variables (`GEN_TESTS_QTY` and `GEN_TESTS_TIMEOUT`) that regulate the duration/depth of the property-based tests, so for example:
 
-    GEN_TESTS_QTY=50 GEN_TESTS_TIMEOUT=300 npm test
+```sh
+GEN_TESTS_QTY=50 GEN_TESTS_TIMEOUT=300 npm test
+```
 
 will make the property-based tests in `test/CrowdsaleGenTest.js` to run 50 examples in a maximum of 5 minutes
 
