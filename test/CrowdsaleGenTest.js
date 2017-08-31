@@ -278,6 +278,16 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
   });
 
+  it("should not fail when setting wei for presale before presale starts", async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [{"type":"setWeiPerUSDinPresale","wei":0,"fromAccount":10}],
+      crowdsale: {
+        publicPresaleRate: 27, rate1: 10, rate2: 31, privatePresaleRate: 35,
+        foundationWallet: 10, setWeiLockBlocks: 1, owner: 6
+      }
+    });
+  });
+
   it("distributes tokens correctly on any combination of bids", async function() {
     // stateful prob based tests can take a long time to finish when shrinking...
     this.timeout(GEN_TESTS_TIMEOUT * 1000);

@@ -31,7 +31,7 @@ module.exports = {
   setWeiPerUSDinPresaleCommandGen: jsc.record({
     type: jsc.constant("setWeiPerUSDinPresale"),
     wei: jsc.nat(0,10000000000000000), // between 0-0.01 ETH
-    fromAccouna: accountGen
+    fromAccount: accountGen
   }),
 
   setWeiPerUSDinTGECommandGen: jsc.record({
