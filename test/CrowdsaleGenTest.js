@@ -279,7 +279,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
   });
 
-  it.only("should not fail when setting wei for presale or tge before each stage starts", async function() {
+  it("should not fail when setting wei for presale or tge before each stage starts", async function() {
     // trying multiple commands with different reasons to fail: wrong owner or wei==0
     await runGeneratedCrowdsaleAndCommands({
       commands: [
