@@ -295,6 +295,8 @@ let runFinalizeCrowdsaleCommand = async (command, state) => {
 
       assert.equal(24, parseInt(await marketMaker.totalPeriods()));
       assert.equal(state.crowdsaleData.foundationWallet, await marketMaker.foundationAddr());
+
+      state.marketMaker = marketMaker;
     }
 
     assert.equal(false, shouldThrow);
@@ -445,6 +447,76 @@ let runTransferFromCommand = async (command, state) => {
   return state;
 }
 
+
+//
+// Market Maker commands
+//
+
+let priceFactor = 100000
+
+let getMMMaxClaimableEth = function(state) {
+  if (state.month >= periods) {
+    help.debug("calculating maxClaimableEth with", startingMMBalance, state.totalMarketMakerClaimedEth,
+      state.returnedWeiForBurnedTokens);
+    return state.startingMMBalance.
+      minus(state.totalClaimedEth).
+      minus(state.returnedWeiForBurnedTokens);
+  } else {
+    const totalSupplyWei = web3.toWei(tokenTotalSupply, 'ether');
+    const maxClaimable = startingMMBalance.
+      mul(state.claimablePercentage).dividedBy(priceFactor).
+      mul(totalSupplyWei - state.marketMakerBurnedTokens).
+      dividedBy(totalSupplyWei).
+      minus(state.totalClaimedEth);
+    return _.max([0, maxClaimable]);
+  }
+}
+
+// TODO: implement finished
+let isMarketMakerFinished = (state) => false
+
+let runMarketMakerSendTokensCommand = async (command, state) => {
+  if (state.marketMaker === undefined) {
+    // doesn't make sense to execute the actual command, let's just assert
+    // that the crowdsale was not funded (in which case there should be MM)
+    assert.equal(false, state.crowdsaleFinalized && state.crowdsaleFunded,
+      "if there's no market Maker, crowdsale should not have been funded");
+  } else {
+    let lifWei = help.lif2LifWei(command.tokens),
+      lifBuyPrice = state.marketMakerBuyPrice.div(priceFactor),
+      tokensCost = new BigNumber(lifWei).mul(lifBuyPrice),
+      fromAddress = accounts[command.from],
+      initialEthBalance = state.ethBalances[command.from] || new BigNumber(0),
+      initialLifBalance = getBalance(state, command.from);
+
+    let shouldThrow = !state.crowdsaleFinalized ||
+      !state.crowdsaleFunded ||
+      state.marketMakerPaused ||
+      (command.tokens == 0) ||
+      isMarketMakerFinished(state);
+
+    try {
+      tx1 = await state.token.approve(state.marketMaker.address, lifWei, {from: fromAddress}),
+        tx2 = await state.marketMaker.sendTokens(lifWei, {from: fromAddress}),
+        gas = tx1.receipt.gasUsed + tx2.receipt.gasUsed;
+
+      help.debug('Selling ',tokens, ' tokens in exchange of ', web3.fromWei(tokensCost, 'ether'), 'eth');
+      state.ethBalances[command.from] = balance.plus(tokensCost).minus(gasPrice.mul(gas));
+      state.marketMakerEthBalance = state.marketMakerEthBalance.minus(tokensCost);
+      state.burnedTokens = state.burnedTokens.plus(lifWei);
+      state.marketMakerBurnedTokens = state.marketMakerBurnedTokens.plus(lifWei);
+      state.returnedWeiForBurnedTokens = state.returnedWeiForBurnedTokens.plus(tokensCost);
+      state.balances[command.from] = state.customerLifBalance.minus(lifWei);
+      state.marketMakerMaxClaimableEth = getMMMaxClaimableEth(state);
+
+    } catch(e) {
+      assertExpectedException(e, shouldThrow, state, command);
+    }
+  }
+
+  return state;
+}
+
 const commands = {
   // waitBlock: {gen: gen.waitBlockCommandGen, run: runWaitBlockCommand},
   waitTime: {gen: gen.waitTimeCommandGen, run: runWaitTimeCommand},
@@ -462,7 +534,8 @@ const commands = {
   claimEth: {gen: gen.claimEthCommandGen, run: runClaimEthCommand},
   transfer: {gen: gen.transferCommandGen, run: runTransferCommand},
   approve: {gen: gen.approveCommandGen, run: runApproveCommand},
-  transferFrom: {gen: gen.transferFromCommandGen, run: runTransferFromCommand}
+  transferFrom: {gen: gen.transferFromCommandGen, run: runTransferFromCommand},
+  marketMakerSendTokens: {gen: gen.marketMakerSendTokensCommandGen, run: runMarketMakerSendTokensCommand}
 };
 
 module.exports = {
