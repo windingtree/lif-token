@@ -1,5 +1,11 @@
 var LifMarketMaker = artifacts.require("./LifMarketMaker.sol");
 
+var BigNumber = web3.BigNumber;
+
+const should = require('chai')
+  .use(require('chai-bignumber')(BigNumber))
+  .should();
+
 var _ = require('lodash');
 var jsc = require("jsverify");
 var help = require("./helpers");
@@ -38,6 +44,10 @@ let runCheckRateCommand = async (command, state) => {
   return state;
 }
 
+let getBalance = (state, account) => {
+  return state.balances[account] || new BigNumber(0);
+}
+
 let runBuyTokensCommand = async (command, state) => {
   let crowdsale = state.crowdsaleData,
     { startBlock, endBlock2, weiPerUSDinTGE} = crowdsale,
@@ -64,7 +74,7 @@ let runBuyTokensCommand = async (command, state) => {
     state.purchases = _.concat(state.purchases,
       {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
     );
-    state.balances[command.beneficiary] = (state.balances[command.beneficiary] || 0) + tokens;
+    state.balances[command.beneficiary] = getBalance(state, command.beneficiary).plus(help.lif2LifWei(tokens));
     state.weiRaised += weiCost;
 
   } catch(e) {
@@ -342,6 +352,91 @@ let runClaimEthCommand = async (command, state) => {
   return state;
 }
 
+let runTransferCommand = async (command, state) => {
+
+  let token = state.token,
+    fromAddress = accounts[command.fromAccount],
+    toAddress = accounts[command.toAccount],
+    fromBalance = getBalance(state, command.fromAccount),
+    lifWei = help.lif2LifWei(command.lif),
+    shouldThrow = state.tokenPaused || fromBalance.lt(lifWei);
+
+  try {
+    await state.token.transfer(toAddress, lifWei, {from: fromAddress});
+
+    assert.equal(false, shouldThrow, "transfer should have thrown but it didn't");
+
+    // TODO: take spent gas into account?
+    state.balances[command.fromAccount] = fromBalance.minus(lifWei);
+    state.balances[command.toAccount] = getBalance(state, command.toAccount).plus(lifWei);
+  } catch(e) {
+    assertExpectedException(e, shouldThrow, state, command);
+  }
+  return state;
+}
+
+let getAllowance = (state, sender, from) => {
+  if (!state.allowances[sender])
+    state.allowances[sender] = {};
+  return state.allowances[sender][from] || 0;
+}
+
+let setAllowance = (state, sender, from, allowance) => {
+  if (!state.allowances[sender])
+    state.allowances[sender] = {};
+  return state.allowances[sender][from] = allowance;
+}
+
+let runApproveCommand = async (command, state) => {
+
+  let token = state.token,
+    fromAddress = accounts[command.fromAccount],
+    spenderAddress = accounts[command.spenderAccount],
+    lifWei = help.lif2LifWei(command.lif),
+    shouldThrow = state.tokenPaused;
+
+  try {
+    await state.token.approve(spenderAddress, lifWei, {from: fromAddress});
+
+    assert.equal(false, shouldThrow, "approve should have thrown but it didn't");
+
+    // TODO: take spent gas into account?
+    setAllowance(state, command.fromAccount, command.spenderAccount, lifWei);
+  } catch(e) {
+    assertExpectedException(e, shouldThrow, state, command);
+  }
+  return state;
+}
+
+let runTransferFromCommand = async (command, state) => {
+
+  let token = state.token,
+    senderAddress = accounts[command.senderAccount],
+    fromAddress = accounts[command.fromAccount],
+    toAddress = accounts[command.toAccount],
+    fromBalance = getBalance(state, command.fromAccount),
+    lifWei = help.lif2LifWei(command.lif),
+    allowance = getAllowance(state, command.senderAccount, command.fromAccount);
+
+  let shouldThrow = state.tokenPaused ||
+    fromBalance.lt(lifWei) ||
+    (allowance < lifWei);
+
+  try {
+    await state.token.transferFrom(fromAddress, toAddress, lifWei, {from: senderAddress});
+
+    assert.equal(false, shouldThrow, "transferFrom should have thrown but it didn't");
+
+    // TODO: take spent gas into account?
+    state.balances[command.fromAccount] = fromBalance.minus(lifWei);
+    state.balances[command.toAccount] = getBalance(state, command.toAccount).plus(lifWei);
+    setAllowance(state, command.senderAccount, command.fromAccount, allowance.sub(lifWei));
+  } catch(e) {
+    assertExpectedException(e, shouldThrow, state, command);
+  }
+  return state;
+}
+
 const commands = {
   waitBlock: {gen: gen.waitBlockCommandGen, run: runWaitBlockCommand},
   checkRate: {gen: gen.checkRateCommandGen, run: runCheckRateCommand},
@@ -355,7 +450,10 @@ const commands = {
   pauseToken: {gen: gen.pauseTokenCommandGen, run: runPauseTokenCommand},
   finalizeCrowdsale: {gen: gen.finalizeCrowdsaleCommandGen, run: runFinalizeCrowdsaleCommand},
   addPrivatePresalePayment: {gen: gen.addPrivatePresalePaymentCommandGen, run: runAddPrivatePresalePaymentCommand},
-  claimEth: {gen: gen.claimEthCommandGen, run: runClaimEthCommand}
+  claimEth: {gen: gen.claimEthCommandGen, run: runClaimEthCommand},
+  transfer: {gen: gen.transferCommandGen, run: runTransferCommand},
+  approve: {gen: gen.approveCommandGen, run: runApproveCommand},
+  transferFrom: {gen: gen.transferFromCommandGen, run: runTransferFromCommand}
 };
 
 module.exports = {
