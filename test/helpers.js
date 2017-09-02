@@ -109,18 +109,20 @@ module.exports = {
     }
   },
 
-  getCrowdsaleExpectedRate: function(crowdsale, blockNumber) {
-    let { publicPresaleStartBlock, publicPresaleEndBlock, startBlock, endBlock1, endBlock2, publicPresaleRate, rate1, rate2 } = crowdsale;
+  getCrowdsaleExpectedRate: function(crowdsale, time) {
+    let {
+      publicPresaleStartTime, publicPresaleEndTime, startTime,
+      endTime1, endTime2, publicPresaleRate, rate1, rate2 } = crowdsale;
 
-    if (blockNumber < publicPresaleStartBlock) {
+    if (time < publicPresaleStartTime) {
       return 0;
-    } else if (blockNumber <= publicPresaleEndBlock) {
+    } else if (time <= publicPresaleEndTime) {
       return publicPresaleRate;
-    } else if (blockNumber < startBlock) {
+    } else if (time < startTime) {
       return 0;
-    } else if (blockNumber <= endBlock1) {
+    } else if (time <= endTime1) {
       return rate1;
-    } else if (blockNumber <= endBlock2) {
+    } else if (time <= endTime2) {
       return rate2;
     } else {
       return 0;

@@ -2,6 +2,8 @@ var _ = require('lodash');
 var jsc = require("jsverify");
 
 var help = require("./helpers");
+var latestTime = require('./helpers/latestTime');
+var {increaseTimeTestRPC, increaseTimeTestRPCTo, duration} = require('./helpers/increaseTime');
 
 var LifToken = artifacts.require("./LifToken.sol");
 var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
@@ -50,31 +52,32 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   }
 
   let runGeneratedCrowdsaleAndCommands = async function(input) {
-    let publicPresaleStartBlock = web3.eth.blockNumber + 10;
-    let publicPresaleEndBlock = publicPresaleStartBlock + 10;
-    let startBlock = publicPresaleEndBlock + 10;
-    let endBlock1 = startBlock + 10;
-    let endBlock2 = endBlock1 + 10;
+    await increaseTimeTestRPC(60);
+    let publicPresaleStartTime = latestTime() + duration.days(1);
+    let publicPresaleEndTime = publicPresaleStartTime + duration.days(1);
+    let startTime = publicPresaleEndTime + duration.days(1);
+    let endTime1 = startTime + duration.days(1);
+    let endTime2 = endTime1 + duration.days(1);
 
-    help.debug("crowdsaleTestInput data:\n", input, publicPresaleStartBlock, publicPresaleEndBlock, startBlock, endBlock1, endBlock2);
+    help.debug("crowdsaleTestInput data:\n", input, publicPresaleStartTime, publicPresaleEndTime, startTime, endTime1, endTime2);
 
     let {publicPresaleRate, rate1, rate2, owner, setWeiLockBlocks} = input.crowdsale,
       ownerAddress = accounts[input.crowdsale.owner];
     let shouldThrow = (publicPresaleRate == 0) ||
       (rate1 == 0) ||
       (rate2 == 0) ||
-      (publicPresaleStartBlock >= publicPresaleEndBlock) ||
-      (publicPresaleEndBlock >= startBlock) ||
-      (startBlock >= endBlock1) ||
-      (endBlock1 >= endBlock2) ||
+      (publicPresaleStartTime >= publicPresaleEndTime) ||
+      (publicPresaleEndTime >= startTime) ||
+      (startTime >= endTime1) ||
+      (endTime1 >= endTime2) ||
       (setWeiLockBlocks == 0)
 
     var eventsWatcher;
 
     try {
       let crowdsaleData = {
-        publicPresaleStartBlock: publicPresaleStartBlock, publicPresaleEndBlock: publicPresaleEndBlock,
-        startBlock: startBlock, endBlock1: endBlock1, endBlock2: endBlock2,
+        publicPresaleStartTime: publicPresaleStartTime, publicPresaleEndTime: publicPresaleEndTime,
+        startTime: startTime, endTime1: endTime1, endTime2: endTime2,
         publicPresaleRate: input.crowdsale.publicPresaleRate,
         rate1: input.crowdsale.rate1,
         rate2: input.crowdsale.rate2,
@@ -88,11 +91,11 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       };
 
       let crowdsale = await LifCrowdsale.new(
-        crowdsaleData.publicPresaleStartBlock,
-        crowdsaleData.publicPresaleEndBlock,
-        crowdsaleData.startBlock,
-        crowdsaleData.endBlock1,
-        crowdsaleData.endBlock2,
+        crowdsaleData.publicPresaleStartTime,
+        crowdsaleData.publicPresaleEndTime,
+        crowdsaleData.startTime,
+        crowdsaleData.endTime1,
+        crowdsaleData.endTime2,
         crowdsaleData.publicPresaleRate,
         crowdsaleData.rate1,
         crowdsaleData.rate2,
@@ -143,7 +146,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
           state = await command.run(commandParams, state);
         }
         catch(error) {
-          help.debug("An error occurred, block number: " + web3.eth.blockNumber + "\nError: " + error);
+          help.debug("An error occurred, block timestamp: " + latestTime() + "\nError: " + error);
           if (error instanceof commands.ExceptionRunningCommand) {
             throw(new Error("command " + JSON.stringify(commandParams) + " has thrown."
               + "\nError: " + error.error));
@@ -174,44 +177,45 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {"type":"waitBlock","blocks":10},
-        {"type":"sendTransaction","account":3,"beneficiary":0,"eth":9}
+        { type: "waitTime","seconds":duration.days(1)},
+        { type:"sendTransaction","account":3,"beneficiary":0,"eth":9}
       ],
       crowdsale: {
         publicPresaleRate: 33, rate1: 18, rate2: 33, privatePresaleRate: 48,
-        foundationWallet: 1, setWeiLockBlocks: 1, owner: 7
+        foundationWallet: 1, setWeiLockBlocks: 600, owner: 7
       }
     });
 
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {"type":"waitBlock","blocks":27},
-        {"type":"pauseCrowdsale","pause":true,"fromAccount":8},
-        {"type":"sendTransaction","account":0,"beneficiary":9,"eth":39}
+        { type: "waitTime","seconds":duration.days(2.6)},
+        { type:"pauseCrowdsale","pause":true,"fromAccount":8},
+        { type:"sendTransaction","account":0,"beneficiary":9,"eth":39}
       ],
       crowdsale: {
         publicPresaleRate: 1, rate1: 39, rate2: 13, privatePresaleRate: 35,
-        foundationWallet: 8, setWeiLockBlocks: 1, owner: 9
+        foundationWallet: 8, setWeiLockBlocks: 600, owner: 9
       }
     });
 
   });
 
-  it("calculates correct rate on the boundaries between endBlock1 and endBlock2", async function() {
+  it("calculates correct rate on the boundaries between endTime1 and endTime2", async function() {
     let crowdsaleAndCommands = {
       commands: [
-        { type: 'checkRate' },
-        { type: 'setWeiPerUSDinPresale', wei: 3000000000000000, fromAccount: 3 },
-        { type: 'checkRate' },
-        { type: 'waitBlock', blocks: 29 },
-        { type: 'buyTokens', beneficiary: 3, account: 2, eth: 12 }
+        { type: "checkRate" },
+        { type: "waitTime","seconds":duration.minutes(1430)},
+        { type: "setWeiPerUSDinPresale", wei: 3000000000000000, fromAccount: 3 },
+        { type: "checkRate" },
+        { type: "waitTime","seconds":duration.days(2.9)},
+        { type: "buyTokens", beneficiary: 3, account: 2, eth: 12 }
       ],
       crowdsale: {
         publicPresaleRate: 20,
         rate1: 16,
         rate2: 14,
         privatePresaleRate: 14,
-        setWeiLockBlocks: 5,
+        setWeiLockBlocks: 3600,
         foundationWallet: 2,
         owner: 3
       }
@@ -223,25 +227,24 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it("Execute a normal presale and TGE", async function() {
     let crowdsaleAndCommands = {
       commands: [
-        { type: 'checkRate' },
-        { type: 'setWeiPerUSDinPresale', wei: 3000000000000000, fromAccount: 3 },
-        { type: 'waitBlock', blocks: 10 },
-        { type: 'buyPresaleTokens', beneficiary: 3, account: 4, eth: 3000 },
-        { type: 'waitBlock', blocks: 8 },
-        { type: 'setWeiPerUSDinTGE', wei: 1500000000000000, fromAccount: 3 },
-        { type: 'waitBlock', blocks: 12 },
-        { type: 'buyTokens', beneficiary: 3, account: 4, eth: 40000 },
-        { type: 'waitBlock', blocks: 10 },
-        { type: 'buyTokens', beneficiary: 3, account: 4, eth: 23000 },
-        { type: 'waitBlock', blocks: 10 },
-        { type: 'finalizeCrowdsale', fromAccount: 5 }
+        { type: "checkRate" },
+        { type: "setWeiPerUSDinPresale", wei: 3000000000000000, fromAccount: 3 },
+        { type: "waitTime","seconds":duration.days(2)},
+        { type: "buyPresaleTokens", beneficiary: 3, account: 4, eth: 3000 },
+        { type: "setWeiPerUSDinTGE", wei: 1500000000000000, fromAccount: 3 },
+        { type: "waitTime","seconds":duration.days(1)},
+        { type: "buyTokens", beneficiary: 3, account: 4, eth: 40000 },
+        { type: "waitTime","seconds":duration.days(1)},
+        { type: "buyTokens", beneficiary: 3, account: 4, eth: 23000 },
+        { type: "waitTime","seconds":duration.days(1)},
+        { type: "finalizeCrowdsale", fromAccount: 5 }
       ],
       crowdsale: {
         publicPresaleRate: 11,
         rate1: 10,
         rate2: 9,
         privatePresaleRate: 13,
-        setWeiLockBlocks: 5,
+        setWeiLockBlocks: 3600,
         foundationWallet: 2,
         owner: 3
       }
@@ -253,18 +256,18 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it("should handle the exception correctly when trying to pause the token during and after the crowdsale", async function() {
     let crowdsaleAndCommands = {
     commands: [
-        { type: 'checkRate' },
-        { type: 'setWeiPerUSDinPresale', wei: 3000000000000000, fromAccount: 3 },
-        { type: 'waitBlock', blocks: 10 },
-        { type: 'buyPresaleTokens', beneficiary: 3, account: 4, eth: 3000 },
-        { type: 'waitBlock', blocks: 8 },
-        { type: 'pauseToken', 'pause':true, 'fromAccount':1 },
-        { type: 'setWeiPerUSDinTGE', wei: 1500000000000000, fromAccount: 3 },
-        { type: 'waitBlock', blocks: 12 },
-        { type: 'buyTokens', beneficiary: 3, account: 4, eth: 60000 },
-        { type: 'waitBlock', blocks: 20 },
-        { type: 'finalizeCrowdsale', fromAccount: 5 },
-        { type: 'pauseToken', 'pause':true, 'fromAccount':1 }
+        { type: "checkRate" },
+        { type: "setWeiPerUSDinPresale", wei: 3000000000000000, fromAccount: 3 },
+        { type: "waitTime","seconds":duration.days(1)},
+        { type: "buyPresaleTokens", beneficiary: 3, account: 4, eth: 3000 },
+        { type: "waitTime","seconds":duration.days(0.8)},
+        { type: "pauseToken", "pause":true, 'fromAccount':1 },
+        { type: "setWeiPerUSDinTGE", wei: 1500000000000000, fromAccount: 3 },
+        { type: "waitTime","seconds":duration.days(1.1)},
+        { type: "buyTokens", beneficiary: 3, account: 4, eth: 60000 },
+        { type: "waitTime","seconds":duration.days(2)},
+        { type: "finalizeCrowdsale", fromAccount: 5 },
+        { type: "pauseToken", "pause":true, 'fromAccount':1 }
       ],
       crowdsale: {
         publicPresaleRate: 11,
@@ -283,9 +286,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     // trying multiple commands with different reasons to fail: wrong owner or wei==0
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {"type":"setWeiPerUSDinPresale","wei":3,"fromAccount":10},
-        {"type":"setWeiPerUSDinPresale","wei":0,"fromAccount":6},
-        {"type":"setWeiPerUSDinPresale","wei":5,"fromAccount":6}
+        { type:"setWeiPerUSDinPresale","wei":3,"fromAccount":10},
+        { type:"setWeiPerUSDinPresale","wei":0,"fromAccount":6},
+        { type:"setWeiPerUSDinPresale","wei":5,"fromAccount":6}
       ],
       crowdsale: {
         publicPresaleRate: 27, rate1: 10, rate2: 31, privatePresaleRate: 35,
@@ -295,9 +298,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {"type":"setWeiPerUSDinTGE","wei":0,"fromAccount":10},
-        {"type":"setWeiPerUSDinTGE","wei":0,"fromAccount":6},
-        {"type":"setWeiPerUSDinTGE","wei":3,"fromAccount":6}
+        { type:"setWeiPerUSDinTGE","wei":0,"fromAccount":10},
+        { type:"setWeiPerUSDinTGE","wei":0,"fromAccount":6},
+        { type:"setWeiPerUSDinTGE","wei":3,"fromAccount":6}
       ],
       crowdsale: {
         publicPresaleRate: 27, rate1: 10, rate2: 31, privatePresaleRate: 35,
@@ -308,7 +311,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   it("should handle the thrown exc. when trying to approve on the paused token", async function() {
     await runGeneratedCrowdsaleAndCommands({
-      commands: [{"type":"approve","lif":0,"fromAccount":3,"spenderAccount":5}],
+      commands: [{ type:"approve","lif":0,"fromAccount":3,"spenderAccount":5}],
       crowdsale: {
         publicPresaleRate: 23, rate1: 24, rate2: 15, privatePresaleRate: 15,
         foundationWallet: 2, setWeiLockBlocks: 1, owner: 5
