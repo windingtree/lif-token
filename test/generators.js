@@ -15,7 +15,7 @@ module.exports = {
     rate2: jsc.nat,
     privatePresaleRate: jsc.nat,
     foundationWallet: accountGen,
-    setWeiLockBlocks: jsc.nat(600,3600),
+    setWeiLockSeconds: jsc.nat(600,3600),
     owner: accountGen
   }),
 

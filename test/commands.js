@@ -45,8 +45,8 @@ let runCheckRateCommand = async (command, state) => {
 
   assert.equal(expectedRate, rate,
     "expected rate is different! Expected: " + expectedRate + ", actual: " + rate + ". blocks: " + web3.eth.blockTimestamp +
-    ", public presale start/end: " + state.crowdsaleData.publicPresaleStartTime + "/" + state.crowdsaleData.publicPresaleEndTime +
-    ", start/end1/end2: " + state.crowdsaleData.startTime + "/" + state.crowdsaleData.endTime1 + "/" + state.crowdsaleData.endTime2);
+    ", public presale start/end: " + state.crowdsaleData.publicPresaleStartTimestamp + "/" + state.crowdsaleData.publicPresaleEndTimestamp +
+    ", start/end1/end2: " + state.crowdsaleData.startTimestamp + "/" + state.crowdsaleData.end1Timestamp + "/" + state.crowdsaleData.end2Timestamp);
 
   return state;
 }
@@ -57,7 +57,7 @@ let getBalance = (state, account) => {
 
 let runBuyTokensCommand = async (command, state) => {
   let crowdsale = state.crowdsaleData,
-    { startTime, endTime2, weiPerUSDinTGE} = crowdsale,
+    { startTimestamp, end2Timestamp, weiPerUSDinTGE} = crowdsale,
     weiCost = parseInt(web3.toWei(command.eth, 'ether')),
     nextTimestamp = latestTime(),
     rate = help.getCrowdsaleExpectedRate(crowdsale, nextTimestamp),
@@ -65,15 +65,15 @@ let runBuyTokensCommand = async (command, state) => {
     account = accounts[command.account],
     beneficiaryAccount = accounts[command.beneficiary];
 
-  let shouldThrow = (nextTimestamp < startTime) ||
-    (nextTimestamp > endTime2) ||
+  let shouldThrow = (nextTimestamp < startTimestamp) ||
+    (nextTimestamp > end2Timestamp) ||
     (state.crowdsalePaused) ||
     (state.crowdsaleFinalized) ||
     (state.weiPerUSDinTGE == 0) ||
     (command.eth == 0);
 
   try {
-    help.debug("buyTokens rate:", rate, "eth:", command.eth, "endBlocks:", crowdsale.endTime1, endTime2, "blockTimestamp:", nextTimestamp);
+    help.debug("buyTokens rate:", rate, "eth:", command.eth, "endBlocks:", crowdsale.end1Timestamp, end2Timestamp, "blockTimestamp:", nextTimestamp);
 
     await state.crowdsaleContract.buyTokens(beneficiaryAccount, {value: weiCost, from: account});
     assert.equal(false, shouldThrow, "buyTokens should have thrown but it didn't");
@@ -92,8 +92,8 @@ let runBuyTokensCommand = async (command, state) => {
 
 let runBuyPresaleTokensCommand = async (command, state) => {
   let crowdsale = state.crowdsaleData,
-    { publicPresaleStartTime, publicPresaleEndTime,
-      startTime, publicPresaleRate } = crowdsale,
+    { publicPresaleStartTimestamp, publicPresaleEndTimestamp,
+      startTimestamp, publicPresaleRate } = crowdsale,
     weiCost = parseInt(web3.toWei(command.eth, 'ether')),
     nextTimestamp = latestTime(),
     rate = help.getCrowdsaleExpectedRate(crowdsale, nextTimestamp),
@@ -102,17 +102,17 @@ let runBuyPresaleTokensCommand = async (command, state) => {
     beneficiaryAccount = accounts[command.beneficiary],
     maxPresaleWei = crowdsale.maxPresaleCapUSD*state.weiPerUSDinPresale;
 
-  console.log('now', nextTimestamp, 'start', publicPresaleStartTime);
-  let shouldThrow = (nextTimestamp < publicPresaleStartTime) ||
+  console.log('now', nextTimestamp, 'start', publicPresaleStartTimestamp);
+  let shouldThrow = (nextTimestamp < publicPresaleStartTimestamp) ||
     ((state.totalPresaleWei + weiCost) > maxPresaleWei) ||
-    (nextTimestamp > publicPresaleEndTime) ||
+    (nextTimestamp > publicPresaleEndTimestamp) ||
     (state.crowdsalePaused) ||
     (state.crowdsaleFinalized) ||
     (state.weiPerUSDinPresale == 0) ||
     (command.eth == 0);
 
   try {
-    help.debug("buying presale tokens, rate:", rate, "eth:", command.eth, "endBlock:", crowdsale.publicPresaleEndTime, "blockTimestamp:", nextTimestamp);
+    help.debug("buying presale tokens, rate:", rate, "eth:", command.eth, "endBlock:", crowdsale.publicPresaleEndTimestamp, "blockTimestamp:", nextTimestamp);
 
     await state.crowdsaleContract.buyPresaleTokens(beneficiaryAccount, {value: weiCost, from: account});
 
@@ -129,8 +129,8 @@ let runBuyPresaleTokensCommand = async (command, state) => {
 
 let runSendTransactionCommand = async (command, state) => {
   let crowdsale = state.crowdsaleData,
-    { publicPresaleStartTime, publicPresaleEndTime,
-      startTime, endTime2, publicPresaleRate,
+    { publicPresaleStartTimestamp, publicPresaleEndTimestamp,
+      startTimestamp, end2Timestamp, publicPresaleRate,
       rate1, rate2 } = crowdsale,
     weiCost = parseInt(web3.toWei(command.eth, 'ether')),
     nextTimestamp = latestTime(),
@@ -140,8 +140,8 @@ let runSendTransactionCommand = async (command, state) => {
     beneficiaryAccount = accounts[command.beneficiary],
     maxPresaleWei = crowdsale.maxPresaleCapUSD*state.weiPerUSDinPresale;
 
-  let inPresale = nextTimestamp >= publicPresaleStartTime && nextTimestamp <= publicPresaleEndTime,
-    inTGE = nextTimestamp >= startTime && nextTimestamp <= endTime2;
+  let inPresale = nextTimestamp >= publicPresaleStartTimestamp && nextTimestamp <= publicPresaleEndTimestamp,
+    inTGE = nextTimestamp >= startTimestamp && nextTimestamp <= end2Timestamp;
 
   let shouldThrow = (!inPresale && !inTGE) ||
     (inTGE && state.weiPerUSDinTGE == 0) ||
@@ -152,7 +152,7 @@ let runSendTransactionCommand = async (command, state) => {
     (command.eth == 0);
 
   try {
-    // help.debug("buyTokens rate:", rate, "eth:", command.eth, "endBlocks:", crowdsale.endTime1, endTime2, "blockTimestamp:", nextTimestamp);
+    // help.debug("buyTokens rate:", rate, "eth:", command.eth, "endBlocks:", crowdsale.end1Timestamp, end2Timestamp, "blockTimestamp:", nextTimestamp);
 
     await state.crowdsaleContract.sendTransaction({value: weiCost, from: account});
 
@@ -192,10 +192,10 @@ let runBurnTokensCommand = async (command, state) => {
 let runSetWeiPerUSDinPresaleCommand = async (command, state) => {
 
   let crowdsale = state.crowdsaleData,
-    { publicPresaleStartTime, setWeiLockBlocks } = crowdsale,
+    { publicPresaleStartTimestamp, setWeiLockSeconds } = crowdsale,
     nextTimestamp = latestTime();
 
-  let shouldThrow = (nextTimestamp >= publicPresaleStartTime-setWeiLockBlocks) ||
+  let shouldThrow = (nextTimestamp >= publicPresaleStartTimestamp-setWeiLockSeconds) ||
     (command.fromAccount != state.owner) ||
     (command.wei == 0);
 
@@ -213,10 +213,10 @@ let runSetWeiPerUSDinPresaleCommand = async (command, state) => {
 let runSetWeiPerUSDinTGECommand = async (command, state) => {
 
   let crowdsale = state.crowdsaleData,
-    { startTime, setWeiLockBlocks } = crowdsale,
+    { startTimestamp, setWeiLockSeconds } = crowdsale,
     nextTimestamp = latestTime();
 
-  let shouldThrow = (nextTimestamp >= startTime-setWeiLockBlocks) ||
+  let shouldThrow = (nextTimestamp >= startTimestamp-setWeiLockSeconds) ||
     (command.fromAccount != state.owner) ||
     (command.wei == 0);
 
@@ -274,7 +274,7 @@ let runFinalizeCrowdsaleCommand = async (command, state) => {
   let nextTimestamp = latestTime();
   let shouldThrow = state.crowdsaleFinalized ||
     state.crowdsalePaused || (state.weiPerUSDinTGE == 0) ||
-    (nextTimestamp <= state.crowdsaleData.endTime2);
+    (nextTimestamp <= state.crowdsaleData.end2Timestamp);
 
   try {
 
@@ -309,13 +309,13 @@ let runFinalizeCrowdsaleCommand = async (command, state) => {
 let runAddPrivatePresalePaymentCommand = async (command, state) => {
 
   let crowdsale = state.crowdsaleData,
-    { publicPresaleStartTime, privatePresaleRate } = crowdsale,
+    { publicPresaleStartTimestamp, privatePresaleRate } = crowdsale,
     nextTimestamp = latestTime(),
     weiToSend = web3.toWei(command.eth, 'ether'),
     account = accounts[command.fromAccount],
     beneficiary = accounts[command.beneficiaryAccount];
 
-  let shouldThrow = (nextTimestamp >= publicPresaleStartTime) ||
+  let shouldThrow = (nextTimestamp >= publicPresaleStartTimestamp) ||
     (state.crowdsalePaused) ||
     (account != accounts[state.owner]) ||
     (state.crowdsaleFinalized) ||
@@ -338,7 +338,7 @@ let runAddPrivatePresalePaymentCommand = async (command, state) => {
 let runClaimEthCommand = async (command, state) => {
 
   let crowdsale = state.crowdsaleData,
-    { publicPresaleStartTime, maxPresaleWei, privatePresaleRate } = crowdsale,
+    { publicPresaleStartTimestamp, maxPresaleWei, privatePresaleRate } = crowdsale,
     nextTimestamp = latestTime(),
     account = accounts[command.fromAccount],
     purchases = _.filter(state.purchases, (p) => p.account == command.fromAccount);
