@@ -23,30 +23,8 @@ contract('marketMaker', function(accounts) {
   var token;
   var eventsWatcher;
 
-  var simulateCrowdsale = async function(rate, balances, accounts) {
-    if (web3.eth.blockNumber < 10)
-      await help.waitToBlock(10-web3.eth.blockNumber, accounts);
-    var startTime = latestTime() + 2;
-    var endTime = startTime + 20;
-    var crowdsale = await LifCrowdsale.new(
-      startTime, startTime+2,
-      startTime+3, startTime+9, endTime,
-      rate-1, rate, rate+10, rate+20, 1,
-      accounts[0]
-    );
-    await crowdsale.setWeiPerUSDinTGE(1);
-    await increaseTimeTestRPCTo(startTime+3);
-    for(i = 0; i < 5; i++) {
-      if (balances[i] > 0)
-        await crowdsale.sendTransaction({ value: web3.toWei(balances[i]/rate, 'ether'), from: accounts[i + 1]});
-    }
-    await increaseTimeTestRPCTo(endTime+1);
-    await crowdsale.finalize();
-    return LifToken.at(await crowdsale.token.call());
-  };
-
   it("Create 24 months MM", async function() {
-    token = await simulateCrowdsale(100000000000, [40,30,20,10,0], accounts);
+    token = await help.simulateCrowdsale(100000000000, [40,30,20,10,0], accounts);
     await help.checkToken(token, accounts, 100, [40,30,20,10,0]);
 
     mm = await LifMarketMaker.new(
@@ -87,7 +65,7 @@ contract('marketMaker', function(accounts) {
   });
 
   it("Create 48 months MM", async function() {
-    token = await simulateCrowdsale(100000000000, [40,30,20,10,0], accounts);
+    token = await help.simulateCrowdsale(100000000000, [40,30,20,10,0], accounts);
     mm = await LifMarketMaker.new(token.address, web3.eth.blockNumber+10, 100, 48,
       accounts[1], {from: accounts[0]});
 
@@ -131,7 +109,7 @@ contract('marketMaker', function(accounts) {
   });
 
   it("should return correct periods using getCurrentPeriodIndex", async function() {
-    token = await simulateCrowdsale(100000000000, [40,30,20,10,0], accounts);
+    token = await help.simulateCrowdsale(100000000000, [40,30,20,10,0], accounts);
     const startBlock = web3.eth.blockNumber+10;
     const blocksPerPeriod = 12;
 
@@ -163,7 +141,7 @@ contract('marketMaker', function(accounts) {
   });
 
   it("should return correct periods after pausing/unpausing using getCurrentPeriodIndex", async function() {
-    token = await simulateCrowdsale(100, [40,30,20,10,0], accounts);
+    token = await help.simulateCrowdsale(100, [40,30,20,10,0], accounts);
     const startBlock = web3.eth.blockNumber+10;
     const blocksPerPeriod = 12;
 
@@ -231,7 +209,7 @@ contract('marketMaker', function(accounts) {
     // Create MM with balance of 200 ETH and 100 tokens in circulation,
     const priceFactor = 100000;
 
-    token = await simulateCrowdsale(tokenTotalSupply, [tokenTotalSupply], accounts);
+    token = await help.simulateCrowdsale(tokenTotalSupply, [tokenTotalSupply], accounts);
 
     let customer = accounts[1];
     let startingMMBalance = new BigNumber(web3.toWei(200, 'ether'));
