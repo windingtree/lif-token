@@ -455,19 +455,19 @@ let runTransferFromCommand = async (command, state) => {
 let priceFactor = 100000
 
 let getMMMaxClaimableEth = function(state) {
-  if (state.month >= periods) {
-    help.debug("calculating maxClaimableEth with", startingMMBalance, state.totalMarketMakerClaimedEth,
+  if (state.marketMakerMonth >= state.marketMakerPeriods) {
+    help.debug("calculating maxClaimableEth with", state.marketMakerStartingBalance,
+      state.marketMakerClaimedEth,
       state.returnedWeiForBurnedTokens);
-    return state.startingMMBalance.
-      minus(state.totalClaimedEth).
+    return state.marketMakerStartingBalance.
+      minus(state.marketMakerClaimedEth).
       minus(state.returnedWeiForBurnedTokens);
   } else {
-    const totalSupplyWei = web3.toWei(tokenTotalSupply, 'ether');
-    const maxClaimable = startingMMBalance.
+    const maxClaimable = state.marketMakerStartingBalance.
       mul(state.claimablePercentage).dividedBy(priceFactor).
-      mul(totalSupplyWei - state.marketMakerBurnedTokens).
-      dividedBy(totalSupplyWei).
-      minus(state.totalClaimedEth);
+      mul(state.initialTokenSupply - state.marketMakerBurnedTokens).
+      dividedBy(state.initialTokenSupply).
+      minus(state.marketMakerClaimedEth);
     return _.max([0, maxClaimable]);
   }
 }
@@ -496,17 +496,19 @@ let runMarketMakerSendTokensCommand = async (command, state) => {
       isMarketMakerFinished(state);
 
     try {
+      help.debug('Selling ',command.tokens, ' tokens in exchange of ', web3.fromWei(tokensCost, 'ether'), 'eth');
       tx1 = await state.token.approve(state.marketMaker.address, lifWei, {from: fromAddress}),
         tx2 = await state.marketMaker.sendTokens(lifWei, {from: fromAddress}),
         gas = tx1.receipt.gasUsed + tx2.receipt.gasUsed;
 
-      help.debug('Selling ',tokens, ' tokens in exchange of ', web3.fromWei(tokensCost, 'ether'), 'eth');
-      state.ethBalances[command.from] = balance.plus(tokensCost).minus(gasPrice.mul(gas));
+      help.debug("sold tokens to market Maker");
+
+      state.ethBalances[command.from] = initialEthBalance.plus(tokensCost).minus(help.gasPrice.mul(gas));
       state.marketMakerEthBalance = state.marketMakerEthBalance.minus(tokensCost);
       state.burnedTokens = state.burnedTokens.plus(lifWei);
       state.marketMakerBurnedTokens = state.marketMakerBurnedTokens.plus(lifWei);
       state.returnedWeiForBurnedTokens = state.returnedWeiForBurnedTokens.plus(tokensCost);
-      state.balances[command.from] = state.customerLifBalance.minus(lifWei);
+      state.balances[command.from] = getBalance(state, command.from).minus(lifWei);
       state.marketMakerMaxClaimableEth = getMMMaxClaimableEth(state);
 
     } catch(e) {

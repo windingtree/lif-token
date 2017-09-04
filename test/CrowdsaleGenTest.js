@@ -142,7 +142,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         crowdsaleFunded: false,
         owner: owner,
         marketMakerBuyPrice: new BigNumber(0),
-        marketMakerBurnedTokens: new BigNumber(0)
+        marketMakerBurnedTokens: new BigNumber(0),
+        returnedWeiForBurnedTokens: new BigNumber(0)
       };
 
       for (let commandParams of input.commands) {
