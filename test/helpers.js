@@ -8,6 +8,9 @@ abiDecoder.addABI(LifToken._json.abi);
 abiDecoder.addABI(LifCrowdsale._json.abi);
 abiDecoder.addABI(LifMarketMaker._json.abi);
 
+var latestTime = require('./helpers/latestTime');
+var {increaseTimeTestRPC, increaseTimeTestRPCTo, duration} = require('./helpers/increaseTime');
+
 const TOKEN_DECIMALS = 18;
 const DEBUG_MODE = (process.env.WT_DEBUG == "true") || false;
 
@@ -56,6 +59,28 @@ module.exports = {
 
   waitBlocks: function(toWait, accounts){
     return this.waitToBlock(parseInt(web3.eth.blockNumber) + toWait, accounts);
+  },
+
+  simulateCrowdsale: async function(rate, balances, accounts) {
+    await increaseTimeTestRPC(1);
+    var startTime = latestTime() + 5;
+    var endTime = startTime + 20;
+    var crowdsale = await LifCrowdsale.new(
+      startTime, startTime+2,
+      startTime+3, startTime+15, endTime,
+      rate-1, rate, rate+10, rate+20, 1,
+      accounts[0]
+    );
+    await increaseTimeTestRPCTo(latestTime()+1);
+    await crowdsale.setWeiPerUSDinTGE(1);
+    await increaseTimeTestRPCTo(startTime+3);
+    for(i = 0; i < 5; i++) {
+      if (balances[i] > 0)
+        await crowdsale.sendTransaction({ value: web3.toWei(balances[i]/rate, 'ether'), from: accounts[i + 1]});
+    }
+    await increaseTimeTestRPCTo(endTime+1);
+    await crowdsale.finalize();
+    return LifToken.at(await crowdsale.token.call());
   },
 
   debug: DEBUG_MODE ? console.log : function() {},
@@ -109,18 +134,20 @@ module.exports = {
     }
   },
 
-  getCrowdsaleExpectedRate: function(crowdsale, blockNumber) {
-    let { publicPresaleStartBlock, publicPresaleEndBlock, startBlock, endBlock1, endBlock2, publicPresaleRate, rate1, rate2 } = crowdsale;
+  getCrowdsaleExpectedRate: function(crowdsale, time) {
+    let {
+      publicPresaleStartTime, publicPresaleEndTime, startTimestamp,
+      end1Timestamp, end2Timestamp, publicPresaleRate, rate1, rate2 } = crowdsale;
 
-    if (blockNumber < publicPresaleStartBlock) {
+    if (time < publicPresaleStartTime) {
       return 0;
-    } else if (blockNumber <= publicPresaleEndBlock) {
+    } else if (time <= publicPresaleEndTime) {
       return publicPresaleRate;
-    } else if (blockNumber < startBlock) {
+    } else if (time < startTimestamp) {
       return 0;
-    } else if (blockNumber <= endBlock1) {
+    } else if (time <= end1Timestamp) {
       return rate1;
-    } else if (blockNumber <= endBlock2) {
+    } else if (time <= end2Timestamp) {
       return rate2;
     } else {
       return 0;

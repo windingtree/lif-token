@@ -12,14 +12,14 @@ contract LifCrowdsale is Ownable, Pausable {
   // The token being sold
   LifToken public token;
 
-  // start and end of the public presale
-  uint256 public publicPresaleStartBlock;
-  uint256 public publicPresaleEndBlock;
+  // start and end timestamps of the public presale
+  uint256 public publicPresaleStartTimestamp;
+  uint256 public publicPresaleEndTimestamp;
 
-  // start and end block where investments are allowed (both inclusive)
-  uint256 public startBlock;
-  uint256 public endBlock1;
-  uint256 public endBlock2;
+  // start and end timestamps where investments are allowed (both inclusive)
+  uint256 public startTimestamp;
+  uint256 public end1Timestamp;
+  uint256 public end2Timestamp;
 
   // address where funds are collected
   address public foundationWallet;
@@ -42,8 +42,8 @@ contract LifCrowdsale is Ownable, Pausable {
   // how much a USD worth in wei in TGE
   uint256 public weiPerUSDinTGE = 0;
 
-  // amount of blocks where the weiPerUSD cannot change before setWeiPerUSD functions
-  uint256 public setWeiLockBlocks = 0;
+  // amount of seconds where the weiPerUSD cannot change before setWeiPerUSD functions
+  uint256 public setWeiLockSeconds = 0;
 
   // how much wei a token unit costs to a buyer, during the private presale stage
   uint256 public privatePresaleRate;
@@ -88,42 +88,43 @@ contract LifCrowdsale is Ownable, Pausable {
   );
 
   function LifCrowdsale(
-    uint256 _publicPresaleStartBlock,
-    uint256 _publicPresaleEndBlock,
-    uint256 _startBlock,
-    uint256 _endBlock1,
-    uint256 _endBlock2,
+    uint256 _publicPresaleStartTimestamp,
+    uint256 _publicPresaleEndTimestamp,
+    uint256 _startTimestamp,
+    uint256 _end1Timestamp,
+    uint256 _end2Timestamp,
     uint256 _publicPresaleRate,
     uint256 _rate1,
     uint256 _rate2,
     uint256 _privatePresaleRate,
-    uint256 _setWeiLockBlocks,
+    uint256 _setWeiLockSeconds,
     address _foundationWallet
   ) {
-    require(_publicPresaleStartBlock >= block.number);
-    require(_publicPresaleEndBlock > _publicPresaleStartBlock);
-    require(_startBlock > _publicPresaleEndBlock);
-    require(_endBlock1 > _startBlock);
-    require(_endBlock2 > _endBlock1);
+
+    require(_publicPresaleStartTimestamp >= block.timestamp);
+    require(_publicPresaleEndTimestamp > _publicPresaleStartTimestamp);
+    require(_startTimestamp > _publicPresaleEndTimestamp);
+    require(_end1Timestamp > _startTimestamp);
+    require(_end2Timestamp > _end1Timestamp);
     require(_publicPresaleRate > 0);
     require(_rate1 > 0);
     require(_rate2 > 0);
-    require(_setWeiLockBlocks > 0);
+    require(_setWeiLockSeconds > 0);
     require(_foundationWallet != 0x0);
 
     token = new LifToken();
     token.pause();
 
-    publicPresaleStartBlock = _publicPresaleStartBlock;
-    publicPresaleEndBlock = _publicPresaleEndBlock;
-    startBlock = _startBlock;
-    endBlock1 = _endBlock1;
-    endBlock2 = _endBlock2;
+    publicPresaleStartTimestamp = _publicPresaleStartTimestamp;
+    publicPresaleEndTimestamp = _publicPresaleEndTimestamp;
+    startTimestamp = _startTimestamp;
+    end1Timestamp = _end1Timestamp;
+    end2Timestamp = _end2Timestamp;
     publicPresaleRate = _publicPresaleRate;
     rate1 = _rate1;
     rate2 = _rate2;
     privatePresaleRate = _privatePresaleRate;
-    setWeiLockBlocks = _setWeiLockBlocks;
+    setWeiLockSeconds = _setWeiLockSeconds;
     foundationWallet = _foundationWallet;
   }
 
@@ -131,7 +132,7 @@ contract LifCrowdsale is Ownable, Pausable {
   // precision the maxCap on the presale.
   function setWeiPerUSDinPresale(uint256 _weiPerUSD) onlyOwner {
     require(_weiPerUSD > 0);
-    assert(block.number < publicPresaleStartBlock.sub(setWeiLockBlocks));
+    assert(block.timestamp < publicPresaleStartTimestamp.sub(setWeiLockSeconds));
 
     weiPerUSDinPresale = _weiPerUSD;
   }
@@ -140,22 +141,22 @@ contract LifCrowdsale is Ownable, Pausable {
   // maxCap on the distribution of funds on finalize.
   function setWeiPerUSDinTGE(uint256 _weiPerUSD) onlyOwner {
     require(_weiPerUSD > 0);
-    assert(block.number < startBlock.sub(setWeiLockBlocks));
+    assert(block.timestamp < startTimestamp.sub(setWeiLockSeconds));
 
     weiPerUSDinTGE = _weiPerUSD;
   }
 
   // returns the current rate or 0 if current block is not within the crowdsale period
   function getRate() public constant returns (uint256) {
-    if (block.number < publicPresaleStartBlock)
+    if (block.timestamp < publicPresaleStartTimestamp)
       return 0;
-    else if (block.number <= publicPresaleEndBlock)
+    else if (block.timestamp <= publicPresaleEndTimestamp)
       return publicPresaleRate;
-    else if (block.number < startBlock)
+    else if (block.timestamp < startTimestamp)
       return 0;
-    else if (block.number <= endBlock1)
+    else if (block.timestamp <= end1Timestamp)
       return rate1;
-    else if (block.number <= endBlock2)
+    else if (block.timestamp <= end2Timestamp)
       return rate2;
     else
       return 0;
@@ -163,7 +164,7 @@ contract LifCrowdsale is Ownable, Pausable {
 
   // fallback function can be used to buy tokens
   function () payable {
-    if (block.number >= startBlock)
+    if (block.timestamp >= startTimestamp)
       buyTokens(msg.sender);
     else
       buyPresaleTokens(msg.sender);
@@ -218,7 +219,7 @@ contract LifCrowdsale is Ownable, Pausable {
   }
 
   function addPrivatePresaleTokens(address beneficiary, uint256 weiSent) onlyOwner {
-    require(block.number < publicPresaleStartBlock);
+    require(block.timestamp < publicPresaleStartTimestamp);
     require(beneficiary != address(0));
     require(weiSent > 0);
 
@@ -265,16 +266,14 @@ contract LifCrowdsale is Ownable, Pausable {
 
   // @return true if the transaction can buy tokens on TGE
   function validPurchase() internal constant returns (bool) {
-    uint256 current = block.number;
-    bool withinPeriod = current >= startBlock && current <= endBlock2;
+    bool withinPeriod = now >= startTimestamp && now <= end2Timestamp;
     bool nonZeroPurchase = msg.value != 0;
     return (withinPeriod && nonZeroPurchase);
   }
 
   // @return true if the transaction can buy tokens on presale
   function validPresalePurchase() internal constant returns (bool) {
-    uint256 current = block.number;
-    bool withinPublicPresalePeriod = current >= publicPresaleStartBlock && current <= publicPresaleEndBlock;
+    bool withinPublicPresalePeriod = now >= publicPresaleStartTimestamp && now <= publicPresaleEndTimestamp;
     bool maxPresaleNotReached = totalPresaleWei.add(msg.value) <= maxPresaleCapUSD.mul(weiPerUSDinPresale);
     bool nonZeroPurchase = msg.value != 0;
     return (withinPublicPresalePeriod && maxPresaleNotReached && nonZeroPurchase);
@@ -282,7 +281,7 @@ contract LifCrowdsale is Ownable, Pausable {
 
   // @return true if crowdsale event has ended
   function hasEnded() public constant returns (bool) {
-    return block.number > endBlock2;
+    return block.timestamp > end2Timestamp;
   }
 
   function funded() public constant returns (bool) {

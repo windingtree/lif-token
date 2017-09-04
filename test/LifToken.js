@@ -10,6 +10,9 @@ var LifToken = artifacts.require("./LifToken.sol");
 var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
 var Message = artifacts.require("./Message.sol");
 
+var latestTime = require('./helpers/latestTime');
+var {increaseTimeTestRPC, increaseTimeTestRPCTo, duration} = require('./helpers/increaseTime');
+
 const LOG_EVENTS = true;
 
 contract('LifToken', function(accounts) {
@@ -17,31 +20,9 @@ contract('LifToken', function(accounts) {
   var token;
   var eventsWatcher;
 
-  var simulateCrowdsale = async function(rate, balances, accounts) {
-    if (web3.eth.blockNumber < 10)
-      await help.waitToBlock(10-web3.eth.blockNumber, accounts);
-    var startBlock = web3.eth.blockNumber+3;
-    var endBlock = startBlock+15;
-    var crowdsale = await LifCrowdsale.new(
-      startBlock+1, startBlock+2,
-      startBlock+3, startBlock+10, endBlock,
-      rate-1, rate, rate+10, rate+20, 1,
-      accounts[0]
-    );
-    await crowdsale.setWeiPerUSDinTGE(1);
-    await help.waitToBlock(startBlock+3, accounts);
-    for(i = 0; i < 5; i++) {
-      if (balances[i] > 0)
-        await crowdsale.sendTransaction({ value: web3.toWei(balances[i]/rate, 'ether'), from: accounts[i + 1]});
-    }
-    await help.waitToBlock(endBlock+1, accounts);
-    await crowdsale.finalize();
-    return LifToken.at(await crowdsale.token.call());
-  };
-
   beforeEach(async function() {
     rate = 100000000000;
-    token = await simulateCrowdsale(rate, [40,30,20,10,0], accounts);
+    token = await help.simulateCrowdsale(rate, [40,30,20,10,0], accounts);
     eventsWatcher = token.allEvents();
     eventsWatcher.watch(function(error, log){
       if (LOG_EVENTS)

@@ -15,13 +15,18 @@ module.exports = {
     rate2: jsc.nat,
     privatePresaleRate: jsc.nat,
     foundationWallet: accountGen,
-    setWeiLockBlocks: jsc.nat(1,10),
+    setWeiLockSeconds: jsc.nat(600,3600),
     owner: accountGen
   }),
 
   waitBlockCommandGen: jsc.record({
     type: jsc.constant("waitBlock"),
     blocks: jsc.nat
+  }),
+
+  waitTimeCommandGen: jsc.record({
+    type: jsc.constant("waitTime"),
+    seconds: jsc.nat
   }),
 
   checkRateCommandGen: jsc.record({
