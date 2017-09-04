@@ -479,6 +479,8 @@ let runMarketMakerSendTokensCommand = async (command, state) => {
   if (state.marketMaker === undefined) {
     // doesn't make sense to execute the actual command, let's just assert
     // that the crowdsale was not funded (in which case there should be MM)
+    // except when the soft cap was not reached
+    // TODO: test whether the crowdsale was funded but soft cap was not reached
     assert.equal(false, state.crowdsaleFinalized && state.crowdsaleFunded,
       "if there's no market Maker, crowdsale should not have been funded");
   } else {
