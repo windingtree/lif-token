@@ -104,6 +104,7 @@ contract LifMarketMaker is Ownable {
 
   function calculateDistributionPeriods() {
     assert(totalPeriods == 24 || totalPeriods == 48);
+    assert(marketMakerPeriods.length == 0);
 
     // Table with the max delta % that can be distributed back to the foundation on
     // each period. It follows an exponential curve (starts with lower % and ends
@@ -132,8 +133,6 @@ contract LifMarketMaker is Ownable {
 
     uint256 accumDistribution = 0;
     uint256 deltaDistribution = 0;
-
-    require(marketMakerPeriods.length == 0);
 
     for (uint8 i = 0; i < totalPeriods; i++) {
 
