@@ -77,8 +77,11 @@ contract LifMarketMaker is Ownable {
     address lifAddr, uint256 _startBlock, uint256 _blocksPerPeriod,
     uint8 _totalPeriods, address _foundationAddr
   ) {
-
+    require(lifAddr != address(0));
+    require(_startBlock > block.number);
+    require(_blocksPerPeriod > 0);
     require(_totalPeriods == 24 || _totalPeriods == 48);
+    require(_foundationAddr != address(0));
 
     lifToken = LifToken(lifAddr);
     startBlock = _startBlock;
