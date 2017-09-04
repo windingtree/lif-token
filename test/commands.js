@@ -454,20 +454,20 @@ let runTransferFromCommand = async (command, state) => {
 
 let priceFactor = 100000
 
-let getMMMaxClaimableEth = function(state) {
+let getMMMaxClaimableWei = function(state) {
   if (state.marketMakerMonth >= state.marketMakerPeriods) {
     help.debug("calculating maxClaimableEth with", state.marketMakerStartingBalance,
-      state.marketMakerClaimedEth,
+      state.marketMakerClaimedWei,
       state.returnedWeiForBurnedTokens);
     return state.marketMakerStartingBalance.
-      minus(state.marketMakerClaimedEth).
+      minus(state.marketMakerClaimedWei).
       minus(state.returnedWeiForBurnedTokens);
   } else {
     const maxClaimable = state.marketMakerStartingBalance.
       mul(state.claimablePercentage).dividedBy(priceFactor).
       mul(state.initialTokenSupply - state.marketMakerBurnedTokens).
       dividedBy(state.initialTokenSupply).
-      minus(state.marketMakerClaimedEth);
+      minus(state.marketMakerClaimedWei);
     return _.max([0, maxClaimable]);
   }
 }
@@ -509,7 +509,7 @@ let runMarketMakerSendTokensCommand = async (command, state) => {
       state.marketMakerBurnedTokens = state.marketMakerBurnedTokens.plus(lifWei);
       state.returnedWeiForBurnedTokens = state.returnedWeiForBurnedTokens.plus(tokensCost);
       state.balances[command.from] = getBalance(state, command.from).minus(lifWei);
-      state.marketMakerMaxClaimableEth = getMMMaxClaimableEth(state);
+      state.marketMakerMaxClaimableWei = getMMMaxClaimableWei(state);
 
     } catch(e) {
       assertExpectedException(e, shouldThrow, state, command);
