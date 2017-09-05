@@ -1,4 +1,5 @@
 var help = require("./helpers");
+var commands = require("./commands");
 
 var BigNumber = web3.BigNumber;
 
@@ -14,8 +15,6 @@ var latestTime = require('./helpers/latestTime');
 var {increaseTimeTestRPC, increaseTimeTestRPCTo, duration} = require('./helpers/increaseTime');
 
 const LOG_EVENTS = true;
-
-const gasPrice = new BigNumber(100000000000);
 
 contract('marketMaker', function(accounts) {
 
@@ -177,32 +176,33 @@ contract('marketMaker', function(accounts) {
 
   const periods = 24;
   const tokenTotalSupply = 100;
+  let customerAddressIndex = 1;
 
   var checkScenarioProperties = async function(data, mm, customer) {
-    help.debug("checking scenario", JSON.stringify(data));
+    //help.debug("checking scenario", JSON.stringify(data));
 
-    assert.equal(data.month, await mm.getCurrentPeriodIndex());
+    assert.equal(data.marketMakerMonth, await mm.getCurrentPeriodIndex());
     data.marketMakerEthBalance.should.be.bignumber.equal(web3.eth.getBalance(mm.address));
     data.marketMakerLifBalance.should.be.bignumber.equal(await token.balanceOf(mm.address));
 
     new BigNumber(web3.toWei(tokenTotalSupply, 'ether')).
-      minus(data.burnedTokens).
+      minus(data.marketMakerBurnedTokens).
       should.be.bignumber.equal(await token.totalSupply.call());
-    data.burnedTokens.should.be.bignumber.equal(await mm.totalBurnedTokens.call());
+    data.marketMakerBurnedTokens.should.be.bignumber.equal(await mm.totalBurnedTokens.call());
 
-    if (data.month < periods) {
+    if (data.marketMakerMonth < periods) {
       data.marketMakerBuyPrice.should.be.bignumber.equal(await mm.getBuyPrice());
       assert.equal(data.claimablePercentage, parseInt(await mm.getAccumulatedDistributionPercentage()));
     }
 
-    assert.equal(data.month >= periods, await mm.isFinished());
+    assert.equal(data.marketMakerMonth >= periods, await mm.isFinished());
 
-    data.customerEthBalance.should.be.bignumber.equal(web3.eth.getBalance(customer));
-    data.customerLifBalance.should.be.bignumber.equal(await token.balanceOf(customer));
+    data.ethBalances[customerAddressIndex].should.be.bignumber.equal(web3.eth.getBalance(customer));
+    data.balances[customerAddressIndex].should.be.bignumber.equal(await token.balanceOf(customer));
 
-    data.maxClaimableEth.should.be.bignumber.equal(await mm.getMaxClaimableWeiAmount());
+    data.marketMakerMaxClaimableWei.should.be.bignumber.equal(await mm.getMaxClaimableWeiAmount());
 
-    data.totalClaimedEth.should.be.bignumber.equal(await mm.totalWeiClaimed.call());
+    data.marketMakerClaimedWei.should.be.bignumber.equal(await mm.totalWeiClaimed.call());
   };
 
   it("should go through scenario with some claims and sells on the Market Maker", async function() {
@@ -211,21 +211,30 @@ contract('marketMaker', function(accounts) {
 
     token = await help.simulateCrowdsale(tokenTotalSupply, [tokenTotalSupply], accounts);
 
-    let customer = accounts[1];
+    let customer = accounts[customerAddressIndex];
     let startingMMBalance = new BigNumber(web3.toWei(200, 'ether'));
     const initialBuyPrice = startingMMBalance.dividedBy(help.lif2LifWei(tokenTotalSupply));
 
     let state = {
-      month: 0,
-      burnedTokens: new BigNumber(0),
+      marketMakerMonth: 0,
+      marketMakerPeriods: periods,
+      token: token,
+      initialTokenSupply: help.lif2LifWei(tokenTotalSupply),
+      marketMakerBurnedTokens: new BigNumber(0), // burned tokens in MM, via sendTokens txs
+      burnedTokens: new BigNumber(0), // total burned tokens, in MM or not (for compat with gen-test state)
       returnedWeiForBurnedTokens: new BigNumber(0),
+      marketMaker: mm,
       marketMakerEthBalance: startingMMBalance,
+      marketMakerStartingBalance: startingMMBalance,
       marketMakerLifBalance: new BigNumber(0),
-      customerEthBalance: web3.eth.getBalance(customer),
-      customerLifBalance: await token.balanceOf(customer),
+      ethBalances: {},
+      balances: {},
       marketMakerBuyPrice: startingMMBalance.dividedBy(help.lif2LifWei(tokenTotalSupply)).mul(priceFactor),
-      claimablePercentage: 0, maxClaimableEth: new BigNumber(0), totalClaimedEth: new BigNumber(0)
+      claimablePercentage: 0, marketMakerMaxClaimableWei: new BigNumber(0),
+      marketMakerClaimedWei: new BigNumber(0)
     };
+    state.ethBalances[customerAddressIndex] = web3.eth.getBalance(customer);
+    state.balances[customerAddressIndex] = await token.balanceOf(customer);
 
     const startBlock = web3.eth.blockNumber + 10;
     const blocksPerPeriod = 15;
@@ -234,6 +243,8 @@ contract('marketMaker', function(accounts) {
 
     mm = await LifMarketMaker.new(token.address, startBlock, blocksPerPeriod, periods,
       foundationWallet, {from: accounts[0]});
+
+    state.marketMaker = mm;
 
     await mm.fund({value: state.marketMakerEthBalance, from: accounts[0]});
     await mm.calculateDistributionPeriods({from: accounts[0]});
@@ -245,20 +256,20 @@ contract('marketMaker', function(accounts) {
       6583, 7243, 7929, 8640, 9377, 10138
     ];
 
-    let getMaxClaimableEth = function(state) {
-      if (state.month >= periods) {
-        help.debug("calculating maxClaimableEth with", startingMMBalance, state.totalClaimedEth,
+    let getMaxClaimableWei = function(state) {
+      if (state.marketMakerMonth >= periods) {
+        help.debug("calculating maxClaimableEth with", startingMMBalance, state.marketMakerClaimedWei,
           state.returnedWeiForBurnedTokens);
         return startingMMBalance.
-          minus(state.totalClaimedEth).
+          minus(state.marketMakerClaimedWei).
           minus(state.returnedWeiForBurnedTokens);
       } else {
         const totalSupplyWei = web3.toWei(tokenTotalSupply, 'ether');
         const maxClaimable = startingMMBalance.
           mul(state.claimablePercentage).dividedBy(priceFactor).
-          mul(totalSupplyWei - state.burnedTokens).
+          mul(totalSupplyWei - state.marketMakerBurnedTokens).
           dividedBy(totalSupplyWei).
-          minus(state.totalClaimedEth);
+          minus(state.marketMakerClaimedWei);
         return _.max([0, maxClaimable]);
       }
     }
@@ -280,8 +291,8 @@ contract('marketMaker', function(accounts) {
       state.marketMakerBuyPrice = startingMMBalance.
         mul(priceFactor - state.claimablePercentage).
         dividedBy(help.lif2LifWei(tokenTotalSupply));
-      state.month = month;
-      state.maxClaimableEth = getMaxClaimableEth(state);
+      state.marketMakerMonth = month;
+      state.marketMakerMaxClaimableWei = getMaxClaimableWei(state);
 
       await checkScenarioProperties(state, mm, customer);
     };
@@ -290,21 +301,11 @@ contract('marketMaker', function(accounts) {
     await waitForMonth(0, startBlock, blocksPerPeriod);
 
     let sendTokens = async (tokens) => {
-      let lifWei = help.lif2LifWei(tokens);
-      let lifBuyPrice = state.marketMakerBuyPrice.div(priceFactor);
-      let tokensCost = new BigNumber(lifWei).mul(lifBuyPrice);
 
-      let tx1 = await token.approve(mm.address, lifWei, {from: customer});
-      let tx2 = await mm.sendTokens(lifWei, {from: customer});
-      let gas = tx1.receipt.gasUsed + tx2.receipt.gasUsed;
-
-      help.debug('Selling ',tokens, ' tokens in exchange of ', web3.fromWei(tokensCost, 'ether'), 'eth');
-      state.customerEthBalance = state.customerEthBalance.plus(tokensCost).minus(gasPrice.mul(gas));
-      state.marketMakerEthBalance = state.marketMakerEthBalance.minus(tokensCost);
-      state.burnedTokens = state.burnedTokens.plus(lifWei);
-      state.returnedWeiForBurnedTokens = state.returnedWeiForBurnedTokens.plus(tokensCost);
-      state.customerLifBalance = state.customerLifBalance.minus(lifWei);
-      state.maxClaimableEth = getMaxClaimableEth(state);
+      return await commands.commands.marketMakerSendTokens.run({
+        tokens: tokens,
+        from: customerAddressIndex
+      }, state);
 
       await checkScenarioProperties(state, mm, customer);
     }
@@ -314,9 +315,9 @@ contract('marketMaker', function(accounts) {
       help.debug('Claiming ', weiToClaim.toString(), 'wei (', eth, "eth)");
       await mm.claimEth(weiToClaim, {from: foundationWallet});
 
-      state.totalClaimedEth = state.totalClaimedEth.plus(weiToClaim);
+      state.marketMakerClaimedWei = state.marketMakerClaimedWei.plus(weiToClaim);
       state.marketMakerEthBalance = state.marketMakerEthBalance.minus(weiToClaim);
-      state.maxClaimableEth = getMaxClaimableEth(state);
+      state.marketMakerMaxClaimableWei = getMaxClaimableWei(state);
 
       await checkScenarioProperties(state, mm, customer);
     }
@@ -337,7 +338,7 @@ contract('marketMaker', function(accounts) {
     let thrown;
     try {
       thrown = false;
-      await claimEth(state.maxClaimableEth + 1);
+      await claimEth(state.marketMakerMaxClaimableWei + 1);
     } catch(e) {
       thrown = true;
     }

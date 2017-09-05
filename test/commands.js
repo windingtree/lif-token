@@ -295,6 +295,8 @@ let runFinalizeCrowdsaleCommand = async (command, state) => {
 
       assert.equal(24, parseInt(await marketMaker.totalPeriods()));
       assert.equal(state.crowdsaleData.foundationWallet, await marketMaker.foundationAddr());
+
+      state.marketMaker = marketMaker;
     }
 
     assert.equal(false, shouldThrow);
@@ -445,6 +447,80 @@ let runTransferFromCommand = async (command, state) => {
   return state;
 }
 
+
+//
+// Market Maker commands
+//
+
+let priceFactor = 100000
+
+let getMMMaxClaimableWei = function(state) {
+  if (state.marketMakerMonth >= state.marketMakerPeriods) {
+    help.debug("calculating maxClaimableEth with", state.marketMakerStartingBalance,
+      state.marketMakerClaimedWei,
+      state.returnedWeiForBurnedTokens);
+    return state.marketMakerStartingBalance.
+      minus(state.marketMakerClaimedWei).
+      minus(state.returnedWeiForBurnedTokens);
+  } else {
+    const maxClaimable = state.marketMakerStartingBalance.
+      mul(state.claimablePercentage).dividedBy(priceFactor).
+      mul(state.initialTokenSupply - state.marketMakerBurnedTokens).
+      dividedBy(state.initialTokenSupply).
+      minus(state.marketMakerClaimedWei);
+    return _.max([0, maxClaimable]);
+  }
+}
+
+// TODO: implement finished
+let isMarketMakerFinished = (state) => false
+
+let runMarketMakerSendTokensCommand = async (command, state) => {
+  if (state.marketMaker === undefined) {
+    // doesn't make sense to execute the actual command, let's just assert
+    // that the crowdsale was not funded (in which case there should be MM)
+    // except when the soft cap was not reached
+    // TODO: test whether the crowdsale was funded but soft cap was not reached
+    assert.equal(false, state.crowdsaleFinalized && state.crowdsaleFunded,
+      "if there's no market Maker, crowdsale should not have been funded");
+  } else {
+    let lifWei = help.lif2LifWei(command.tokens),
+      lifBuyPrice = state.marketMakerBuyPrice.div(priceFactor),
+      tokensCost = new BigNumber(lifWei).mul(lifBuyPrice),
+      fromAddress = accounts[command.from],
+      ethBalanceBeforeSend = state.ethBalances[command.from] || new BigNumber(0),
+      initialLifBalance = getBalance(state, command.from);
+
+    let shouldThrow = !state.crowdsaleFinalized ||
+      !state.crowdsaleFunded ||
+      state.marketMakerPaused ||
+      (command.tokens == 0) ||
+      isMarketMakerFinished(state);
+
+    try {
+      help.debug('Selling ',command.tokens, ' tokens in exchange of ', web3.fromWei(tokensCost, 'ether'), 'eth');
+      tx1 = await state.token.approve(state.marketMaker.address, lifWei, {from: fromAddress}),
+        tx2 = await state.marketMaker.sendTokens(lifWei, {from: fromAddress}),
+        gas = tx1.receipt.gasUsed + tx2.receipt.gasUsed;
+
+      help.debug("sold tokens to market Maker");
+
+      state.ethBalances[command.from] = ethBalanceBeforeSend.plus(tokensCost).minus(help.gasPrice.mul(gas));
+      state.marketMakerEthBalance = state.marketMakerEthBalance.minus(tokensCost);
+      state.burnedTokens = state.burnedTokens.plus(lifWei);
+      state.marketMakerBurnedTokens = state.marketMakerBurnedTokens.plus(lifWei);
+      state.returnedWeiForBurnedTokens = state.returnedWeiForBurnedTokens.plus(tokensCost);
+      state.balances[command.from] = getBalance(state, command.from).minus(lifWei);
+      state.marketMakerMaxClaimableWei = getMMMaxClaimableWei(state);
+
+    } catch(e) {
+      assertExpectedException(e, shouldThrow, state, command);
+    }
+  }
+
+  return state;
+}
+
 const commands = {
   // waitBlock: {gen: gen.waitBlockCommandGen, run: runWaitBlockCommand},
   waitTime: {gen: gen.waitTimeCommandGen, run: runWaitTimeCommand},
@@ -462,7 +538,8 @@ const commands = {
   claimEth: {gen: gen.claimEthCommandGen, run: runClaimEthCommand},
   transfer: {gen: gen.transferCommandGen, run: runTransferCommand},
   approve: {gen: gen.approveCommandGen, run: runApproveCommand},
-  transferFrom: {gen: gen.transferFromCommandGen, run: runTransferFromCommand}
+  transferFrom: {gen: gen.transferFromCommandGen, run: runTransferFromCommand},
+  marketMakerSendTokens: {gen: gen.marketMakerSendTokensCommandGen, run: runMarketMakerSendTokensCommand}
 };
 
 module.exports = {

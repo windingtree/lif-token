@@ -1,5 +1,7 @@
 var advanceToBlock = require('./helpers/advanceToBlock');
 
+var BigNumber = web3.BigNumber;
+
 var LifToken = artifacts.require("./LifToken.sol");
 var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
 var LifMarketMaker = artifacts.require("./LifMarketMaker.sol");
@@ -17,6 +19,8 @@ const DEBUG_MODE = (process.env.WT_DEBUG == "true") || false;
 module.exports = {
 
   abiDecoder: abiDecoder,
+
+  gasPrice: new BigNumber(100000000000),
 
   hexEncode: function(str){
     var hex, i;
