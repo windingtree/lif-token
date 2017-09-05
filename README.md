@@ -80,4 +80,6 @@ GEN_TESTS_QTY=50 GEN_TESTS_TIMEOUT=300 npm test
 will make the property-based tests in `test/CrowdsaleGenTest.js` to run 50 examples in a maximum of 5 minutes
 
 
+## License
 
+Líf Token is open source and distributed under the Apache License v2.0
