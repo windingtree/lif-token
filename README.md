@@ -38,7 +38,7 @@ TODO: Rewrite this section
   addDiscount(address target, uint stage, uint amount) external onlyOwner() onStatus(2,0) {...}
   ```
 
-## Important Contracts
+## Main Contracts
 
 - [LifToken](blob/master/contracts/LifToken.sol)
 - [LifCrowdsale](blob/master/contracts/LifCrowdsale.sol)
