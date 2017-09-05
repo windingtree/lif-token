@@ -486,7 +486,7 @@ let runMarketMakerSendTokensCommand = async (command, state) => {
       lifBuyPrice = state.marketMakerBuyPrice.div(priceFactor),
       tokensCost = new BigNumber(lifWei).mul(lifBuyPrice),
       fromAddress = accounts[command.from],
-      initialEthBalance = state.ethBalances[command.from] || new BigNumber(0),
+      ethBalanceBeforeSend = state.ethBalances[command.from] || new BigNumber(0),
       initialLifBalance = getBalance(state, command.from);
 
     let shouldThrow = !state.crowdsaleFinalized ||
@@ -503,7 +503,7 @@ let runMarketMakerSendTokensCommand = async (command, state) => {
 
       help.debug("sold tokens to market Maker");
 
-      state.ethBalances[command.from] = initialEthBalance.plus(tokensCost).minus(help.gasPrice.mul(gas));
+      state.ethBalances[command.from] = ethBalanceBeforeSend.plus(tokensCost).minus(help.gasPrice.mul(gas));
       state.marketMakerEthBalance = state.marketMakerEthBalance.minus(tokensCost);
       state.burnedTokens = state.burnedTokens.plus(lifWei);
       state.marketMakerBurnedTokens = state.marketMakerBurnedTokens.plus(lifWei);
