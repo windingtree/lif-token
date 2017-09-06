@@ -34,7 +34,7 @@ contract VestedPayment is Ownable {
   function VestedPayment(
     uint256 _startTime, uint256 _secondsPerPeriod,
     uint256 _totalPeriods, uint256 _cliffDuration, address tokenAddress
-  ){
+  ) {
     require(_startTime >= block.timestamp);
     require(_secondsPerPeriod > 0);
     require(_totalPeriods > 0);

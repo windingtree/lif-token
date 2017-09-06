@@ -176,7 +176,7 @@ contract('VestedPayment', function(accounts) {
   });
 
 
-  it(" should fail when try to claim tokens inside cliff periods", async function() {
+  it("should fail when try to claim tokens inside cliff periods", async function() {
     const startTime = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
       startTime, duration.days(30), 12, 4, token.address
@@ -201,7 +201,7 @@ contract('VestedPayment', function(accounts) {
 
   });
 
-  it(" should fail when try to claim more tokens than the available", async function() {
+  it("should fail when try to claim more tokens than the available", async function() {
     const startTime = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
       startTime, duration.days(30), 12, 0, token.address
