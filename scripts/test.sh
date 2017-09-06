@@ -2,9 +2,19 @@
 
 output=$(nc -z localhost 8545; echo $?)
 [ $output -eq "0" ] && trpc_running=true
+
+TESTRPC_REDIRECT=/dev/null
+
+# when in CI (travis), enable --mem so we can debug testrpc memory usage
+# we also need to send testrpc output to stdout instead of /dev/null so we can see it
+[ $CI = "true" ] && TESTRPC_MEM="--mem" && TESTRPC_REDIRECT=/dev/stdout
+
+echo "testrpc_mem: $TESTRPC_MEM"
+
 if [ ! $trpc_running ]; then
   echo "Starting our own testrpc node instance"
   testrpc \
+    $TESTRPC_MEM \
     --account="0xe8280389ca1303a2712a874707fdd5d8ae0437fab9918f845d26fd9919af5a92,10000000000000000000000000000000000000000000000000000000000000000000000000000000" \
     --account="0xed095a912033d26dc444d2675b33414f0561af170d58c33f394db8812c87a764,10000000000000000000000000000000000000000000000000000000000000000000000000000000" \
     --account="0xf5556ca108835f04cd7d29b4ac66f139dc12b61396b147674631ce25e6e80b9b,10000000000000000000000000000000000000000000000000000000000000000000000000000000" \
@@ -17,7 +27,7 @@ if [ ! $trpc_running ]; then
     --account="0x38062255973f02f1b320d8c7762dd286946b3e366f73076995dc859a6346c2ec,10000000000000000000000000000000000000000000000000000000000000000000000000000000" \
     --account="0x35b5042e809eab0db3252bad02b67436f64453072128ee91c1d4605de70b27c1,10000000000000000000000000000000000000000000000000000000000000000000000000000000" \
     --gasLimit 6000000 \
-    > /dev/null &
+    > $TESTRPC_REDIRECT &
   trpc_pid=$!
 fi
 
