@@ -1,13 +1,27 @@
 var jsc = require("jsverify");
 
+var help = require("./helpers");
+
 // this is just to have web3 available and correctly initialized
 artifacts.require("./LifToken.sol");
 
-const accountGen = jsc.nat(web3.eth.accounts.length - 1);
+const knownAccountGen = jsc.nat(web3.eth.accounts.length - 1);
+const zeroAddressAccountGen = jsc.constant("zero");
+const accountGen = jsc.oneof([zeroAddressAccountGen, knownAccountGen]);
+
+let getAccount = (account) => {
+  if (account == "zero") {
+    return help.zeroAddress;
+  } else {
+    return web3.eth.accounts[account];
+  }
+}
 
 module.exports = {
 
   accountGen: accountGen,
+
+  getAccount: getAccount,
 
   crowdsaleGen: jsc.record({
     publicPresaleRate: jsc.nat,

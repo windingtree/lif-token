@@ -64,7 +64,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     help.debug("crowdsaleTestInput data:\n", input, publicPresaleStartTimestamp, publicPresaleEndTimestamp, startTimestamp, end1Timestamp, end2Timestamp);
 
     let {publicPresaleRate, rate1, rate2, owner, setWeiLockSeconds} = input.crowdsale,
-      ownerAddress = accounts[input.crowdsale.owner];
+      ownerAddress = gen.getAccount(input.crowdsale.owner),
+      foundationWallet = gen.getAccount(input.crowdsale.foundationWallet);
     let shouldThrow = (publicPresaleRate == 0) ||
       (rate1 == 0) ||
       (rate2 == 0) ||
@@ -72,7 +73,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       (publicPresaleEndTimestamp >= startTimestamp) ||
       (startTimestamp >= end1Timestamp) ||
       (end1Timestamp >= end2Timestamp) ||
-      (setWeiLockSeconds == 0)
+      (setWeiLockSeconds == 0) ||
+      (ownerAddress == 0) ||
+      (foundationWallet == 0);
 
     var eventsWatcher;
 
@@ -85,7 +88,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         rate2: input.crowdsale.rate2,
         privatePresaleRate: input.crowdsale.privatePresaleRate,
         setWeiLockSeconds: input.crowdsale.setWeiLockSeconds,
-        foundationWallet: accounts[input.crowdsale.foundationWallet],
+        foundationWallet: gen.getAccount(input.crowdsale.foundationWallet),
         maxPresaleCapUSD: 1000000,
         minCapUSD: 5000000,
         maxFoundationCapUSD: 10000000,
