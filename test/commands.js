@@ -165,13 +165,15 @@ let runSendTransactionCommand = async (command, state) => {
     await state.crowdsaleContract.sendTransaction({value: weiCost, from: account});
 
     assert.equal(false, shouldThrow, "sendTransaction should have thrown but it didn't");
-    if (rate == rate1 || rate == rate2) {
+    if (inTGE) {
       state.purchases = _.concat(state.purchases,
         {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
       );
       state.weiRaised = state.weiRaised.plus(weiCost);
-    } else if (rate == publicPresaleRate) {
+    } else if (inPresale) {
       state.totalPresaleWei = state.totalPresaleWei.plus(weiCost);
+    } else {
+      throw(new Error("sendTransaction not in presale or TGE should have thrown"));
     }
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
