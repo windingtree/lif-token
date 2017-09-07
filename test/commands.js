@@ -88,8 +88,7 @@ let runBuyTokensCommand = async (command, state) => {
       {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
     );
     state.balances[command.beneficiary] = getBalance(state, command.beneficiary).plus(help.lif2LifWei(tokens));
-    state.weiRaised += weiCost;
-
+    state.weiRaised = state.weiRaised.plus(weiCost);
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
@@ -170,7 +169,7 @@ let runSendTransactionCommand = async (command, state) => {
       state.purchases = _.concat(state.purchases,
         {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
       );
-      state.weiRaised += weiCost;
+      state.weiRaised = state.weiRaised.plus(weiCost);
     } else if (rate == publicPresaleRate) {
       state.totalPresaleWei = state.totalPresaleWei.plus(weiCost);
     }
@@ -316,7 +315,7 @@ let runFinalizeCrowdsaleCommand = async (command, state) => {
 
     if (crowdsaleFunded) {
 
-      let marketMakerInitialBalance = state.weiRaised - (state.crowdsaleData.minCapUSD*state.weiPerUSDinTGE);
+      let marketMakerInitialBalance = state.weiRaised.minus(state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
       let marketMakerPeriods = (marketMakerInitialBalance > (state.crowdsaleData.marketMaker24PeriodsCapUSD*state.weiPerUSDinTGE)) ? 48 : 24;
       let mmAddress = await state.crowdsaleContract.marketMaker();
       help.debug('MarketMaker contract address', mmAddress);

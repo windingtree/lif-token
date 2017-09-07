@@ -137,7 +137,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         purchases: [],
         presalePurchases: [],
         claimedEth: {},
-        weiRaised: 0,
+        weiRaised: zero,
         totalPresaleWei: zero,
         crowdsalePaused: false,
         tokenPaused: true,
