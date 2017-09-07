@@ -39,11 +39,11 @@ contract('VestedPayment', function(accounts) {
   });
 
   it("create the VestedPayment", async function() {
-    const startTime = latestTime() + duration.days(10);
+    const startTimestamp = latestTime() + duration.days(10);
     var vestedPayment = await VestedPayment.new(
-      startTime, duration.days(30), 10, 4, token.address
+      startTimestamp, duration.days(30), 10, 4, token.address
     );
-    assert.equal(startTime, await vestedPayment.startTime.call());
+    assert.equal(startTimestamp, await vestedPayment.startTimestamp.call());
     assert.equal(duration.days(30), parseInt(await vestedPayment.secondsPerPeriod.call()));
     assert.equal(10, await vestedPayment.totalPeriods.call());
     assert.equal(4, await vestedPayment.cliffDuration.call());
@@ -51,9 +51,9 @@ contract('VestedPayment', function(accounts) {
   });
 
   it("get availableToClaim correctly with cliff periods", async function() {
-    const startTime = latestTime() + duration.days(60);
+    const startTimestamp = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
-      startTime, duration.days(30), 12, 4, token.address
+      startTimestamp, duration.days(30), 12, 4, token.address
     , {from: accounts[1]});
     var tokensAvailable = new BigNumber(0);
 
@@ -62,7 +62,7 @@ contract('VestedPayment', function(accounts) {
     assert.equal(true, await vestedPayment.funded.call());
 
     // Go to start
-    await increaseTimeTestRPCTo(startTime);
+    await increaseTimeTestRPCTo(startTimestamp);
 
     tokensAvailable.should.be.bignumber
       .equal(await vestedPayment.getAvailableTokens.call());
@@ -84,9 +84,9 @@ contract('VestedPayment', function(accounts) {
   });
 
   it("get availableToClaim correctly without cliff periods", async function() {
-    const startTime = latestTime() + duration.days(60);
+    const startTimestamp = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
-      startTime, duration.days(30), 12, 0, token.address
+      startTimestamp, duration.days(30), 12, 0, token.address
     , {from: accounts[1]});
     var tokensAvailable = new BigNumber(0);
 
@@ -95,7 +95,7 @@ contract('VestedPayment', function(accounts) {
     assert.equal(true, await vestedPayment.funded.call());
 
     // Go to start
-    await increaseTimeTestRPCTo(startTime);
+    await increaseTimeTestRPCTo(startTimestamp);
 
     tokensAvailable = tokensAvailable.plus(help.lif2LifWei(5));
 
@@ -113,9 +113,9 @@ contract('VestedPayment', function(accounts) {
   });
 
   it("claim tokens correctly with cliff periods and owner transfered", async function() {
-    const startTime = latestTime() + duration.days(60);
+    const startTimestamp = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
-      startTime, duration.days(30), 12, 4, token.address
+      startTimestamp, duration.days(30), 12, 4, token.address
     , {from: accounts[1]});
     var tokensAvailable = new BigNumber(0);
 
@@ -127,13 +127,13 @@ contract('VestedPayment', function(accounts) {
     assert.equal(true, await vestedPayment.funded.call());
 
     // Go to start
-    await increaseTimeTestRPCTo(startTime);
+    await increaseTimeTestRPCTo(startTimestamp);
 
     tokensAvailable.should.be.bignumber
       .equal(await vestedPayment.getAvailableTokens.call());
 
     // Go to period 4 and claim 20 tokens
-    await increaseTimeTestRPCTo(startTime+duration.days(120));
+    await increaseTimeTestRPCTo(startTimestamp+duration.days(120));
 
     tokensAvailable = tokensAvailable.plus(help.lif2LifWei(25));
 
@@ -147,7 +147,7 @@ contract('VestedPayment', function(accounts) {
       .equal(await vestedPayment.getAvailableTokens.call());
 
     // Go to period 10 and claim 10 tokens
-    await increaseTimeTestRPCTo(startTime+duration.days(300));
+    await increaseTimeTestRPCTo(startTimestamp+duration.days(300));
 
     tokensAvailable = tokensAvailable.plus(help.lif2LifWei(30));
 
@@ -161,7 +161,7 @@ contract('VestedPayment', function(accounts) {
       .equal(await vestedPayment.getAvailableTokens.call());
 
     // Go to period 11 plus 90 days and claim teh remaining tokens
-    await increaseTimeTestRPCTo(startTime+duration.days(320)+duration.days(90));
+    await increaseTimeTestRPCTo(startTimestamp+duration.days(320)+duration.days(90));
 
     tokensAvailable = tokensAvailable.plus(help.lif2LifWei(5));
 
@@ -176,10 +176,10 @@ contract('VestedPayment', function(accounts) {
   });
 
 
-  it(" should fail when try to claim tokens inside cliff periods", async function() {
-    const startTime = latestTime() + duration.days(60);
+  it("should fail when try to claim tokens inside cliff periods", async function() {
+    const startTimestamp = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
-      startTime, duration.days(30), 12, 4, token.address
+      startTimestamp, duration.days(30), 12, 4, token.address
     , {from: accounts[1]});
     var tokensAvailable = new BigNumber(0);
 
@@ -191,7 +191,7 @@ contract('VestedPayment', function(accounts) {
     assert.equal(true, await vestedPayment.funded.call());
 
     // Go to period 1
-    await increaseTimeTestRPCTo(startTime+duration.days(30));
+    await increaseTimeTestRPCTo(startTimestamp+duration.days(30));
 
     try {
       await vestedPayment.claimTokens(help.lif2LifWei(5), {from: accounts[2]});
@@ -201,10 +201,10 @@ contract('VestedPayment', function(accounts) {
 
   });
 
-  it(" should fail when try to claim more tokens than the available", async function() {
-    const startTime = latestTime() + duration.days(60);
+  it("should fail when try to claim more tokens than the available", async function() {
+    const startTimestamp = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
-      startTime, duration.days(30), 12, 0, token.address
+      startTimestamp, duration.days(30), 12, 0, token.address
     , {from: accounts[1]});
     var tokensAvailable = new BigNumber(0);
 
@@ -216,7 +216,7 @@ contract('VestedPayment', function(accounts) {
     assert.equal(true, await vestedPayment.funded.call());
 
     // Go to period 1
-    await increaseTimeTestRPCTo(startTime+duration.days(30));
+    await increaseTimeTestRPCTo(startTimestamp+duration.days(30));
 
     try {
       await vestedPayment.claimTokens(help.lif2LifWei(15), {from: accounts[2]});

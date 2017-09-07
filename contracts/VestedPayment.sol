@@ -8,7 +8,7 @@ contract VestedPayment is Ownable {
   using SafeMath for uint256;
 
   // when the vested schedule starts
-  uint256 public startTime;
+  uint256 public startTimestamp;
 
   // how much seconds each period will last
   uint256 public secondsPerPeriod;
@@ -32,16 +32,16 @@ contract VestedPayment is Ownable {
   bool public funded = false;
 
   function VestedPayment(
-    uint256 _startTime, uint256 _secondsPerPeriod,
+    uint256 _startTimestamp, uint256 _secondsPerPeriod,
     uint256 _totalPeriods, uint256 _cliffDuration, address tokenAddress
-  ){
-    require(_startTime >= block.timestamp);
+  ) {
+    require(_startTimestamp >= block.timestamp);
     require(_secondsPerPeriod > 0);
     require(_totalPeriods > 0);
     require(tokenAddress != address(0));
     require(_cliffDuration < _totalPeriods);
 
-    startTime = _startTime;
+    startTimestamp = _startTimestamp;
     secondsPerPeriod = _secondsPerPeriod;
     totalPeriods = _totalPeriods;
     cliffDuration = _cliffDuration;
@@ -59,7 +59,7 @@ contract VestedPayment is Ownable {
 
   // how much tokens are available to be claimed
   function getAvailableTokens() public constant returns (uint256) {
-    uint256 period = block.timestamp.sub(startTime).div(secondsPerPeriod);
+    uint256 period = block.timestamp.sub(startTimestamp).div(secondsPerPeriod);
 
     if ((period < cliffDuration) || !funded) {
       return 0;
