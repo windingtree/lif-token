@@ -25,6 +25,8 @@ if (isNaN(GEN_TESTS_TIMEOUT))
 
 contract('LifCrowdsale Property-based test', function(accounts) {
 
+  const zero = new BigNumber(0);
+
   let crowdsaleTestInputGen = jsc.record({
     commands: jsc.array(jsc.nonshrink(commands.commandsGen)),
     crowdsale: jsc.nonshrink(gen.crowdsaleGen)
@@ -46,7 +48,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     assert.equal(_.sumBy(state.purchases, (b) => b.wei), parseFloat(await crowdsale.weiRaised()));
 
     // Check presale tokens sold
-    assert.equal(state.totalPresaleWei, parseFloat(await crowdsale.totalPresaleWei.call()));
+    state.totalPresaleWei.should.be.bignumber.equal(await crowdsale.totalPresaleWei.call());
     assert.equal(state.crowdsaleFinalized, await crowdsale.isFinalized.call());
     if (state.weiPerUSDinTGE > 0) {
       assert.equal(state.crowdsaleFunded, await crowdsale.funded());
@@ -136,7 +138,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         presalePurchases: [],
         claimedEth: {},
         weiRaised: 0,
-        totalPresaleWei: 0,
+        totalPresaleWei: zero,
         crowdsalePaused: false,
         tokenPaused: true,
         crowdsaleFinalized: false,

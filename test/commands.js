@@ -111,7 +111,7 @@ let runBuyPresaleTokensCommand = async (command, state) => {
 
   console.log('now', nextTimestamp, 'start', publicPresaleStartTimestamp);
   let shouldThrow = (nextTimestamp < publicPresaleStartTimestamp) ||
-    ((state.totalPresaleWei + weiCost) > maxPresaleWei) ||
+    (state.totalPresaleWei.plus(weiCost) > maxPresaleWei) ||
     (nextTimestamp > publicPresaleEndTimestamp) ||
     (state.crowdsalePaused) ||
     (state.crowdsaleFinalized) ||
@@ -126,7 +126,7 @@ let runBuyPresaleTokensCommand = async (command, state) => {
 
     assert.equal(false, shouldThrow, "buyPresaleTokens should have thrown but it didn't");
 
-    state.totalPresaleWei += weiCost;
+    state.totalPresaleWei = state.totalPresaleWei.plus(weiCost);
 
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
@@ -154,7 +154,7 @@ let runSendTransactionCommand = async (command, state) => {
   let shouldThrow = (!inPresale && !inTGE) ||
     (inTGE && state.weiPerUSDinTGE == 0) ||
     (inPresale && state.weiPerUSDinPresale == 0) ||
-    (inPresale && ((state.totalPresaleWei + weiCost) > maxPresaleWei)) ||
+    (inPresale && (state.totalPresaleWei.plus(weiCost) > maxPresaleWei)) ||
     (state.crowdsalePaused) ||
     (state.crowdsaleFinalized) ||
     (command.eth == 0) ||
@@ -172,7 +172,7 @@ let runSendTransactionCommand = async (command, state) => {
       );
       state.weiRaised += weiCost;
     } else if (rate == publicPresaleRate) {
-      state.totalPresaleWei += weiCost;
+      state.totalPresaleWei = state.totalPresaleWei.plus(weiCost);
     }
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
@@ -362,7 +362,7 @@ let runAddPrivatePresalePaymentCommand = async (command, state) => {
 
     assert.equal(false, shouldThrow, "buyTokens should have thrown but it didn't");
 
-    state.totalPresaleWei += weiToSend;
+    state.totalPresaleWei = state.totalPresaleWei.plus(weiToSend);
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
