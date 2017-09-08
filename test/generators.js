@@ -150,5 +150,12 @@ module.exports = {
     finalize: jsc.bool
   }),
 
+  fundCrowdsaleOverSoftCap: jsc.record({
+    type: jsc.constant("fundCrowdsaleOverSoftCap"),
+    account: knownAccountGen, // we don't want this one to fail with 0x0 addresses
+    softCapExcessWei: jsc.nat,
+    finalize: jsc.bool
+  }),
+
 }
 

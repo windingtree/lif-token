@@ -57,7 +57,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     // Check presale tokens sold
     state.totalPresaleWei.should.be.bignumber.equal(await crowdsale.totalPresaleWei.call());
     assert.equal(state.crowdsaleFinalized, await crowdsale.isFinalized.call());
-    if (state.weiPerUSDinTGE > 0) {
+    if (state.crowdsaleFinalized && state.weiPerUSDinTGE > 0) {
       assert.equal(state.crowdsaleFunded, await crowdsale.funded());
     }
   }
@@ -341,6 +341,30 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
         {"type":"fundCrowdsaleBelowSoftCap","account":3,"finalize":true}
+      ],
+      crowdsale: {
+        publicPresaleRate: 41, rate1: 20, rate2: 46, privatePresaleRate: 0,
+        foundationWallet: 4, setWeiLockSeconds: 521, owner: 0
+      }
+    });
+  });
+
+  it("should run the fund crowdsale below cap without finalize command fine", async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {"type":"fundCrowdsaleBelowSoftCap","account":3,"finalize":false}
+      ],
+      crowdsale: {
+        publicPresaleRate: 41, rate1: 20, rate2: 46, privatePresaleRate: 0,
+        foundationWallet: 4, setWeiLockSeconds: 521, owner: 0
+      }
+    });
+  });
+
+  it("should run the fund over soft cap and finalize crowdsale command fine", async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {"type":"fundCrowdsaleOverSoftCap","account":3,"softCapExcessWei":10,"finalize":true}
       ],
       crowdsale: {
         publicPresaleRate: 41, rate1: 20, rate2: 46, privatePresaleRate: 0,

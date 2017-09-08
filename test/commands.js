@@ -316,9 +316,9 @@ let runFinalizeCrowdsaleCommand = async (command, state) => {
     let finalizeTx = await state.crowdsaleContract.finalize({from: account});
 
     let fundsRaised = state.weiRaised.div(state.weiPerUSDinTGE),
-      minimumForMarketMaker = await state.crowdsaleContract.maxFoundationCapUSD;
+      minimumForMarketMaker = await state.crowdsaleContract.maxFoundationCapUSD.call();
 
-    if (crowdsaleFunded && (fundsRaised > minimumForMarketMaker)) {
+    if (crowdsaleFunded && (fundsRaised.gt(minimumForMarketMaker))) {
 
       let marketMakerInitialBalance = state.weiRaised.minus(state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
       let marketMakerPeriods = (marketMakerInitialBalance > (state.crowdsaleData.marketMaker24PeriodsCapUSD*state.weiPerUSDinTGE)) ? 48 : 24;
@@ -564,6 +564,58 @@ let runFundCrowdsaleBelowSoftCap = async (command, state) => {
   return state;
 }
 
+let runFundCrowdsaleOverSoftCap = async (command, state) => {
+  if (!state.crowdsaleFinalized) {
+    // unpause the crowdsale if needed
+    if (state.crowdsalePaused) {
+      state = await runPauseCrowdsaleCommand({pause: false, fromAccount: state.owner}, state);
+    }
+
+    // set weiPerUSDinTGE rate if needed
+    if (state.weiPerUSDinTGE == 0) {
+      state = await runSetWeiPerUSDinTGECommand({wei: 10000, fromAccount: state.owner}, state);
+    }
+
+    let softCap = await state.crowdsaleContract.maxFoundationCapUSD.call(),
+      currentUSDFunding = state.weiRaised.div(state.weiPerUSDinTGE);
+
+    if (softCap > currentUSDFunding) {
+      // wait for crowdsale startTimestamp
+      if (latestTime() < state.crowdsaleData.startTimestamp) {
+        await increaseTimeTestRPCTo(state.crowdsaleData.startTimestamp);
+      }
+
+      // buy enough tokens to exactly reach the minCap (which is less than softCap)
+      let wei = softCap.minus(currentUSDFunding).mul(state.weiPerUSDinTGE).plus(command.softCapExcessWei),
+        eth = web3.fromWei(wei, 'ether'),
+        buyTokensCommand = {account: command.account, eth: eth, beneficiary: command.account};
+
+      state = await runBuyTokensCommand(buyTokensCommand, state);
+
+      wei.should.be.bignumber.equal(state.weiRaised);
+    }
+
+    if (command.finalize) {
+      // wait for crowdsale end2Timestamp
+      if (latestTime() < state.crowdsaleData.end2Timestamp) {
+        await increaseTimeTestRPCTo(state.crowdsaleData.end2Timestamp + 1);
+      }
+
+      state = await runFinalizeCrowdsaleCommand({fromAccount: command.account}, state);
+
+      // verify that the crowdsale is finalized and funded, but there's no market maker
+      assert.equal(true, state.crowdsaleFinalized);
+      assert.equal(true, state.crowdsaleFunded);
+
+      assert(typeof state.marketMaker != "undefined");
+      assert.equal(24, parseInt(await state.marketMaker.totalPeriods()));
+      assert.equal(state.crowdsaleData.foundationWallet, await state.marketMaker.foundationAddr());
+    }
+  }
+
+  return state;
+}
+
 // TODO: implement finished
 let isMarketMakerFinished = (state) => false
 
@@ -634,6 +686,7 @@ const commands = {
   approve: {gen: gen.approveCommandGen, run: runApproveCommand},
   transferFrom: {gen: gen.transferFromCommandGen, run: runTransferFromCommand},
   fundCrowdsaleBelowSoftCap: {gen: gen.fundCrowdsaleBelowSoftCap, run: runFundCrowdsaleBelowSoftCap},
+  fundCrowdsaleOverSoftCap: {gen: gen.fundCrowdsaleOverSoftCap, run: runFundCrowdsaleOverSoftCap},
   marketMakerSendTokens: {gen: gen.marketMakerSendTokensCommandGen, run: runMarketMakerSendTokensCommand}
 };
 
