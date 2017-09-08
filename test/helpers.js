@@ -13,7 +13,6 @@ abiDecoder.addABI(LifMarketMaker._json.abi);
 var latestTime = require('./helpers/latestTime');
 var {increaseTimeTestRPC, increaseTimeTestRPCTo, duration} = require('./helpers/increaseTime');
 
-const TOKEN_DECIMALS = 18;
 const DEBUG_MODE = (process.env.WT_DEBUG == "true") || false;
 
 module.exports = {
@@ -44,19 +43,12 @@ module.exports = {
     return back;
   },
 
-  lifWei2Lif: function(balance){
-    return (balance/Math.pow(10,TOKEN_DECIMALS)).toPrecision(TOKEN_DECIMALS);
-  },
-  lif2LifWei: function(balance){
-    return (balance*Math.pow(10,TOKEN_DECIMALS));
+  lifWei2Lif: function(value){
+    return web3.fromWei(value, 'ether');
   },
 
-  toEther: function(wei){
-    return web3.fromWei(parseFloat(wei), 'ether');
-  },
-
-  toWei: function(ether){
-    return web3.toWei(parseFloat(ether), 'wei');
+  lif2LifWei: function(value){
+    return web3.toWei(value, 'ether');
   },
 
   isInvalidOpcodeEx: function(e) {
