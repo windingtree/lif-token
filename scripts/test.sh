@@ -7,9 +7,7 @@ TESTRPC_REDIRECT=/dev/null
 
 # when in CI (travis), enable --mem so we can debug testrpc memory usage
 # we also need to send testrpc output to stdout instead of /dev/null so we can see it
-[ $CI = "true" ] && TESTRPC_MEM="--mem" && TESTRPC_REDIRECT=/dev/stdout
-
-echo "testrpc_mem: $TESTRPC_MEM"
+[ "$CI" = "true" ] && TESTRPC_MEM="--mem" && TESTRPC_REDIRECT=/dev/stdout
 
 if [ ! $trpc_running ]; then
   echo "Starting our own testrpc node instance"
