@@ -18,11 +18,11 @@ contract LifMarketMaker is Ownable {
   // The amount of wei that the Market Maker received initially
   uint256 public initialWei;
 
-  // Start block since which the Market Maker begins to accept buy and sell orders
-  uint256 public startBlock;
+  // Start timestamp since which the Market Maker begins to accept buy and sell orders
+  uint256 public startTimestamp;
 
-  // Quantity of blocks in every period, it's roughly equivalent to 30 days
-  uint256 public blocksPerPeriod;
+  // Quantity of seconds in every period
+  uint256 public secondsPerPeriod;
 
   // Number of periods. It should be 24 or 48 (each period is roughly a month)
   uint8 public totalPeriods;
@@ -48,11 +48,11 @@ contract LifMarketMaker is Ownable {
   // if the market maker is paused or not
   bool public paused = false;
 
-  // total amount of blocks that the market maker was paused
-  uint256 public totalPausedBlocks = 0;
+  // total amount of seconds that the market maker was paused
+  uint256 public totalPausedSeconds = 0;
 
-  // the block where the market maker was paused
-  uint256 public pausedBlock;
+  // the timestamp where the market maker was paused
+  uint256 public pausedTimestamp;
 
   struct MarketMakerPeriod {
     // delta % of the initialWei that can be claimed by the foundation from this period
@@ -74,18 +74,18 @@ contract LifMarketMaker is Ownable {
   }
 
   function LifMarketMaker(
-    address lifAddr, uint256 _startBlock, uint256 _blocksPerPeriod,
+    address lifAddr, uint256 _startTimestamp, uint256 _secondsPerPeriod,
     uint8 _totalPeriods, address _foundationAddr
   ) {
     require(lifAddr != address(0));
-    require(_startBlock > block.number);
-    require(_blocksPerPeriod > 0);
+    require(_startTimestamp > block.timestamp);
+    require(_secondsPerPeriod > 0);
     require(_totalPeriods == 24 || _totalPeriods == 48);
     require(_foundationAddr != address(0));
 
     lifToken = LifToken(lifAddr);
-    startBlock = _startBlock;
-    blocksPerPeriod = _blocksPerPeriod;
+    startTimestamp = _startTimestamp;
+    secondsPerPeriod = _secondsPerPeriod;
     totalPeriods = _totalPeriods;
     foundationAddr = _foundationAddr;
     originalTotalSupply = lifToken.totalSupply();
@@ -152,8 +152,8 @@ contract LifMarketMaker is Ownable {
   }
 
   function getCurrentPeriodIndex() constant public returns(uint256) {
-    assert(block.number >= startBlock);
-    return block.number.sub(startBlock).sub(totalPausedBlocks).div(blocksPerPeriod);
+    assert(block.timestamp >= startTimestamp);
+    return block.timestamp.sub(startTimestamp).sub(totalPausedSeconds).div(secondsPerPeriod);
   }
 
   function getAccumulatedDistributionPercentage() public constant returns(uint256 percentage) {
@@ -226,12 +226,12 @@ contract LifMarketMaker is Ownable {
 
   function pause() onlyOwner whenNotPaused {
     paused = true;
-    pausedBlock = block.number;
+    pausedTimestamp = block.timestamp;
   }
 
   function unpause() onlyOwner whenPaused {
-    uint256 pausedBlocks = block.number.sub(pausedBlock);
-    totalPausedBlocks = totalPausedBlocks.add(pausedBlocks);
+    uint256 pausedTimestamps = block.timestamp.sub(pausedTimestamp);
+    totalPausedSeconds = totalPausedSeconds.add(pausedTimestamps);
     paused = false;
   }
 
