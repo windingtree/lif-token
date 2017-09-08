@@ -33,11 +33,9 @@
   "devDependencies": {
     "chai-bignumber": "^2.0.1",
     "coveralls": "^2.13.1",
+    "eslint": "^4.6.1",
     "ethereumjs-testrpc": "4.1.1",
     "solidity-coverage": "^0.2.2",
     "truffle": "3.4.8"
-  },
-  "jshintConfig": {
-    "esversion": 6
   }
 }
