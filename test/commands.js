@@ -540,7 +540,7 @@ let runMarketMakerSendTokensCommand = async (command, state) => {
       hasZeroAddress;
 
     try {
-      help.debug('Selling ',command.tokens, ' tokens in exchange of ', web3.fromWei(tokensCost, 'ether'), 'eth');
+      help.debug('Selling ',command.tokens, ' tokens in exchange of ', web3.fromWei(tokensCost, 'ether'), 'eth at a price of', lifBuyPrice.toString());
       tx1 = await state.token.approve(state.marketMaker.address, lifWei, {from: fromAddress}),
         tx2 = await state.marketMaker.sendTokens(lifWei, {from: fromAddress}),
         gas = tx1.receipt.gasUsed + tx2.receipt.gasUsed;

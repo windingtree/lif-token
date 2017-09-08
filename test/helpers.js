@@ -59,7 +59,7 @@ module.exports = {
     return this.waitToBlock(parseInt(web3.eth.blockNumber) + toWait, accounts);
   },
 
-  simulateCrowdsale: async function(rate, balances, accounts) {
+  simulateCrowdsale: async function(rate, balances, accounts, weiPerUSD) {
     await increaseTimeTestRPC(1);
     var startTime = latestTime() + 5;
     var endTime = startTime + 20;
@@ -70,7 +70,7 @@ module.exports = {
       accounts[0]
     );
     await increaseTimeTestRPCTo(latestTime()+1);
-    await crowdsale.setWeiPerUSDinTGE(1);
+    await crowdsale.setWeiPerUSDinTGE(weiPerUSD);
     await increaseTimeTestRPCTo(startTime+3);
     for(i = 0; i < 5; i++) {
       if (balances[i] > 0)
@@ -78,7 +78,7 @@ module.exports = {
     }
     await increaseTimeTestRPCTo(endTime+1);
     await crowdsale.finalize();
-    return LifToken.at(await crowdsale.token.call());
+    return crowdsale;
   },
 
   debug: DEBUG_MODE ? console.log : function() {},

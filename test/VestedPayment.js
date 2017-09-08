@@ -25,7 +25,8 @@ contract('VestedPayment', function(accounts) {
 
   beforeEach(async function() {
     rate = 100000000000;
-    token = await help.simulateCrowdsale(rate, [100], accounts);
+    const crowdsale = await help.simulateCrowdsale(rate, [100], accounts, 1);
+    token = LifToken.at(await crowdsale.token.call());
     eventsWatcher = token.allEvents();
     eventsWatcher.watch(function(error, log){
       if (LOG_EVENTS)
