@@ -8,9 +8,13 @@ module.exports = {
         "ecmaVersion": 8
     },
     "globals": {
+      "afterEach": true,
+      "artifacts": true,
       "assert": true,
-      "web3": true,
-      "artifacts": true
+      "beforeEach": true,
+      "contract": true,
+      "it": true,
+      "web3": true
     },
     "rules": {
         "no-console": "off",
