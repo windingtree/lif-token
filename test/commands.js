@@ -183,7 +183,7 @@ let runSendTransactionCommand = async (command, state) => {
 
 let runBurnTokensCommand = async (command, state) => {
   let account = gen.getAccount(command.account),
-    balance = getBalance(command.account),
+    balance = getBalance(state, command.account),
     hasZeroAddress = isZeroAddress(account);
 
   let shouldThrow = state.tokenPaused ||
