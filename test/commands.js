@@ -183,7 +183,7 @@ let runSendTransactionCommand = async (command, state) => {
 
 let runBurnTokensCommand = async (command, state) => {
   let account = gen.getAccount(command.account),
-    balance = state.balances[command.account],
+    balance = getBalance(command.account),
     hasZeroAddress = isZeroAddress(account);
 
   let shouldThrow = state.tokenPaused ||
@@ -194,7 +194,7 @@ let runBurnTokensCommand = async (command, state) => {
     await state.token.burn(command.tokens, {from: account});
     assert.equal(false, shouldThrow, "burn should have thrown but it didn't");
 
-    state.balances[account] = balance - command.tokens;
+    state.balances[account] = balance.minus(command.tokens);
 
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
