@@ -318,7 +318,7 @@ let runFinalizeCrowdsaleCommand = async (command, state) => {
     let fundsRaised = state.weiRaised.div(state.weiPerUSDinTGE),
       minimumForMarketMaker = await state.crowdsaleContract.maxFoundationCapUSD.call();
 
-    if (crowdsaleFunded && (fundsRaised > minimumForMarketMaker)) {
+    if (crowdsaleFunded && (fundsRaised.gt(minimumForMarketMaker))) {
 
       let marketMakerInitialBalance = state.weiRaised.minus(state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
       let marketMakerPeriods = (marketMakerInitialBalance > (state.crowdsaleData.marketMaker24PeriodsCapUSD*state.weiPerUSDinTGE)) ? 48 : 24;
