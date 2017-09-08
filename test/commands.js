@@ -295,6 +295,7 @@ let runFinalizeCrowdsaleCommand = async (command, state) => {
 
       assert.equal(24, parseInt(await marketMaker.totalPeriods()));
       assert.equal(state.crowdsaleData.foundationWallet, await marketMaker.foundationAddr());
+      assert.equal(state.crowdsaleData.foundationWallet, await marketMaker.owner());
 
       state.marketMaker = marketMaker;
     }
