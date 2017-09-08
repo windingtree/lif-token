@@ -52,4 +52,4 @@ module.exports = {
     years:   function(val) { return val * this.days(365); }
   }
 
-}
+};
