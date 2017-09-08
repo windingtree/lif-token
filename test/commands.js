@@ -1,35 +1,31 @@
-var LifMarketMaker = artifacts.require("./LifMarketMaker.sol");
+var LifMarketMaker = artifacts.require('./LifMarketMaker.sol');
 
 var BigNumber = web3.BigNumber;
 
-const should = require('chai')
-  .use(require('chai-bignumber')(BigNumber))
-  .should();
+require('chai').
+  use(require('chai-bignumber')(BigNumber)).
+  should();
 
 var _ = require('lodash');
-var jsc = require("jsverify");
-var help = require("./helpers");
-var gen = require("./generators");
+var jsc = require('jsverify');
+var help = require('./helpers');
+var gen = require('./generators');
 var latestTime = require('./helpers/latestTime');
-var {increaseTimeTestRPC, increaseTimeTestRPCTo, duration} = require('./helpers/increaseTime');
+var {increaseTimeTestRPC, increaseTimeTestRPCTo} = require('./helpers/increaseTime');
 
-const isZeroAddress = (addr) => addr == help.zeroAddress;
+const isZeroAddress = (addr) => addr === help.zeroAddress;
 
 let isCouldntUnlockAccount = (e) => e.message.search('could not unlock signer account') >= 0;
 
-let assertExpectedException = (e, shouldThrow, addressZero, state, command) => {
+function assertExpectedException(e, shouldThrow, addressZero, state, command) {
   let isKnownException = help.isInvalidOpcodeEx(e) ||
     (isCouldntUnlockAccount(e) && addressZero);
-  if (!shouldThrow || !isKnownException)
+  if (!shouldThrow || !isKnownException) {
     throw(new ExceptionRunningCommand(e, state, command));
+  }
 }
 
-let runWaitBlockCommand = async (command, state) => {
-  await help.waitBlocks(command.blocks);
-  return state;
-}
-
-let runWaitTimeCommand = async (command, state) => {
+async function runWaitTimeCommand(command, state) {
   await increaseTimeTestRPC(command.seconds);
   return state;
 }
@@ -43,25 +39,25 @@ function ExceptionRunningCommand(e, state, command) {
 ExceptionRunningCommand.prototype = Object.create(Error.prototype);
 ExceptionRunningCommand.prototype.constructor = ExceptionRunningCommand;
 
-let runCheckRateCommand = async (command, state) => {
+async function runCheckRateCommand(command, state) {
   let expectedRate = help.getCrowdsaleExpectedRate(state.crowdsaleData, latestTime());
   let rate = parseFloat(await state.crowdsaleContract.getRate());
 
   assert.equal(expectedRate, rate,
-    "expected rate is different! Expected: " + expectedRate + ", actual: " + rate + ". blocks: " + web3.eth.blockTimestamp +
-    ", public presale start/end: " + state.crowdsaleData.publicPresaleStartTimestamp + "/" + state.crowdsaleData.publicPresaleEndTimestamp +
-    ", start/end1/end2: " + state.crowdsaleData.startTimestamp + "/" + state.crowdsaleData.end1Timestamp + "/" + state.crowdsaleData.end2Timestamp);
+    'expected rate is different! Expected: ' + expectedRate + ', actual: ' + rate + '. blocks: ' + web3.eth.blockTimestamp +
+    ', public presale start/end: ' + state.crowdsaleData.publicPresaleStartTimestamp + '/' + state.crowdsaleData.publicPresaleEndTimestamp +
+    ', start/end1/end2: ' + state.crowdsaleData.startTimestamp + '/' + state.crowdsaleData.end1Timestamp + '/' + state.crowdsaleData.end2Timestamp);
 
   return state;
 }
 
-let getBalance = (state, account) => {
+function getBalance(state, account) {
   return state.balances[account] || new BigNumber(0);
 }
 
-let runBuyTokensCommand = async (command, state) => {
+async function runBuyTokensCommand(command, state) {
   let crowdsale = state.crowdsaleData,
-    { startTimestamp, end2Timestamp, weiPerUSDinTGE} = crowdsale,
+    { startTimestamp, end2Timestamp} = crowdsale,
     weiCost = parseInt(web3.toWei(command.eth, 'ether')),
     nextTimestamp = latestTime(),
     rate = help.getCrowdsaleExpectedRate(crowdsale, nextTimestamp),
@@ -79,10 +75,10 @@ let runBuyTokensCommand = async (command, state) => {
     (command.eth == 0);
 
   try {
-    help.debug("buyTokens rate:", rate, "eth:", command.eth, "endBlocks:", crowdsale.end1Timestamp, end2Timestamp, "blockTimestamp:", nextTimestamp);
+    help.debug('buyTokens rate:', rate, 'eth:', command.eth, 'endBlocks:', crowdsale.end1Timestamp, end2Timestamp, 'blockTimestamp:', nextTimestamp);
 
     await state.crowdsaleContract.buyTokens(beneficiaryAccount, {value: weiCost, from: account});
-    assert.equal(false, shouldThrow, "buyTokens should have thrown but it didn't");
+    assert.equal(false, shouldThrow, 'buyTokens should have thrown but it didnt');
 
     state.purchases = _.concat(state.purchases,
       {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
@@ -95,20 +91,17 @@ let runBuyTokensCommand = async (command, state) => {
   return state;
 }
 
-let runBuyPresaleTokensCommand = async (command, state) => {
+async function runBuyPresaleTokensCommand(command, state) {
   let crowdsale = state.crowdsaleData,
-    { publicPresaleStartTimestamp, publicPresaleEndTimestamp,
-      startTimestamp, publicPresaleRate } = crowdsale,
+    { publicPresaleStartTimestamp, publicPresaleEndTimestamp } = crowdsale,
     weiCost = parseInt(web3.toWei(command.eth, 'ether')),
     nextTimestamp = latestTime(),
     rate = help.getCrowdsaleExpectedRate(crowdsale, nextTimestamp),
-    tokens = command.eth * rate,
     account = gen.getAccount(command.account),
     beneficiaryAccount = gen.getAccount(command.beneficiary),
     maxPresaleWei = crowdsale.maxPresaleCapUSD*state.weiPerUSDinPresale,
     hasZeroAddress = _.some([beneficiaryAccount, account], isZeroAddress);
 
-  console.log('now', nextTimestamp, 'start', publicPresaleStartTimestamp);
   let shouldThrow = (nextTimestamp < publicPresaleStartTimestamp) ||
     (state.totalPresaleWei.plus(weiCost) > maxPresaleWei) ||
     (nextTimestamp > publicPresaleEndTimestamp) ||
@@ -119,11 +112,11 @@ let runBuyPresaleTokensCommand = async (command, state) => {
     hasZeroAddress;
 
   try {
-    help.debug("buying presale tokens, rate:", rate, "eth:", command.eth, "endBlock:", crowdsale.publicPresaleEndTimestamp, "blockTimestamp:", nextTimestamp);
+    help.debug('buying presale tokens, rate:', rate, 'eth:', command.eth, 'endBlock:', crowdsale.publicPresaleEndTimestamp, 'blockTimestamp:', nextTimestamp);
 
     await state.crowdsaleContract.buyPresaleTokens(beneficiaryAccount, {value: weiCost, from: account});
 
-    assert.equal(false, shouldThrow, "buyPresaleTokens should have thrown but it didn't");
+    assert.equal(false, shouldThrow, 'buyPresaleTokens should have thrown but it did not');
 
     state.totalPresaleWei = state.totalPresaleWei.plus(weiCost);
 
@@ -133,12 +126,10 @@ let runBuyPresaleTokensCommand = async (command, state) => {
   return state;
 }
 
-
-let runSendTransactionCommand = async (command, state) => {
+async function runSendTransactionCommand(command, state) {
   let crowdsale = state.crowdsaleData,
     { publicPresaleStartTimestamp, publicPresaleEndTimestamp,
-      startTimestamp, end2Timestamp, publicPresaleRate,
-      rate1, rate2 } = crowdsale,
+      startTimestamp, end2Timestamp } = crowdsale,
     weiCost = parseInt(web3.toWei(command.eth, 'ether')),
     nextTimestamp = latestTime(),
     rate = help.getCrowdsaleExpectedRate(crowdsale, nextTimestamp),
@@ -160,11 +151,11 @@ let runSendTransactionCommand = async (command, state) => {
     hasZeroAddress;
 
   try {
-    // help.debug("buyTokens rate:", rate, "eth:", command.eth, "endBlocks:", crowdsale.end1Timestamp, end2Timestamp, "blockTimestamp:", nextTimestamp);
+    // help.debug('buyTokens rate:', rate, 'eth:', command.eth, 'endBlocks:', crowdsale.end1Timestamp, end2Timestamp, 'blockTimestamp:', nextTimestamp);
 
     await state.crowdsaleContract.sendTransaction({value: weiCost, from: account});
 
-    assert.equal(false, shouldThrow, "sendTransaction should have thrown but it didn't");
+    assert.equal(false, shouldThrow, 'sendTransaction should have thrown but it did not');
     if (inTGE) {
       state.purchases = _.concat(state.purchases,
         {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
@@ -173,7 +164,7 @@ let runSendTransactionCommand = async (command, state) => {
     } else if (inPresale) {
       state.totalPresaleWei = state.totalPresaleWei.plus(weiCost);
     } else {
-      throw(new Error("sendTransaction not in presale or TGE should have thrown"));
+      throw(new Error('sendTransaction not in presale or TGE should have thrown'));
     }
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
@@ -181,7 +172,7 @@ let runSendTransactionCommand = async (command, state) => {
   return state;
 }
 
-let runBurnTokensCommand = async (command, state) => {
+async function runBurnTokensCommand(command, state) {
   let account = gen.getAccount(command.account),
     balance = getBalance(state, command.account),
     hasZeroAddress = isZeroAddress(account);
@@ -192,7 +183,7 @@ let runBurnTokensCommand = async (command, state) => {
 
   try {
     await state.token.burn(command.tokens, {from: account});
-    assert.equal(false, shouldThrow, "burn should have thrown but it didn't");
+    assert.equal(false, shouldThrow, 'burn should have thrown but it did not');
 
     state.balances[account] = balance.minus(command.tokens);
 
@@ -200,9 +191,9 @@ let runBurnTokensCommand = async (command, state) => {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
-};
+}
 
-let runSetWeiPerUSDinPresaleCommand = async (command, state) => {
+async function runSetWeiPerUSDinPresaleCommand(command, state) {
 
   let crowdsale = state.crowdsaleData,
     { publicPresaleStartTimestamp, setWeiLockSeconds } = crowdsale,
@@ -215,7 +206,7 @@ let runSetWeiPerUSDinPresaleCommand = async (command, state) => {
     (command.wei == 0) ||
     hasZeroAddress;
 
-  help.debug("seting wei per usd in presale:", command.wei);
+  help.debug('seting wei per usd in presale:', command.wei);
   try {
     await state.crowdsaleContract.setWeiPerUSDinPresale(command.wei, {from: account});
     assert.equal(false, shouldThrow);
@@ -224,9 +215,9 @@ let runSetWeiPerUSDinPresaleCommand = async (command, state) => {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
-};
+}
 
-let runSetWeiPerUSDinTGECommand = async (command, state) => {
+async function runSetWeiPerUSDinTGECommand(command, state) {
 
   let crowdsale = state.crowdsaleData,
     { startTimestamp, setWeiLockSeconds } = crowdsale,
@@ -239,18 +230,18 @@ let runSetWeiPerUSDinTGECommand = async (command, state) => {
     hasZeroAddress ||
     (command.wei == 0);
 
-  help.debug("seting wei per usd in tge:", command.wei);
+  help.debug('seting wei per usd in tge:', command.wei);
   try {
     await state.crowdsaleContract.setWeiPerUSDinTGE(command.wei, {from: account});
-    assert.equal(false, shouldThrow, "setWeiPerUSDinTGE should have thrown but it didn't");
+    assert.equal(false, shouldThrow, 'setWeiPerUSDinTGE should have thrown but it did not');
     state.weiPerUSDinTGE = command.wei;
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
-};
+}
 
-let runPauseCrowdsaleCommand = async (command, state) => {
+async function runPauseCrowdsaleCommand(command, state) {
   let account = gen.getAccount(command.fromAccount),
     hasZeroAddress = isZeroAddress(account);
 
@@ -258,7 +249,7 @@ let runPauseCrowdsaleCommand = async (command, state) => {
     (command.fromAccount != state.owner) ||
     hasZeroAddress;
 
-  help.debug("pausing crowdsale, previous state:", state.crowdsalePaused, "new state:", command.pause);
+  help.debug('pausing crowdsale, previous state:', state.crowdsalePaused, 'new state:', command.pause);
   try {
     if (command.pause) {
       await state.crowdsaleContract.pause({from: account});
@@ -271,9 +262,9 @@ let runPauseCrowdsaleCommand = async (command, state) => {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
-};
+}
 
-let runPauseTokenCommand = async (command, state) => {
+async function runPauseTokenCommand(command, state) {
   let account = gen.getAccount(command.fromAccount),
     hasZeroAddress = isZeroAddress(account);
 
@@ -282,7 +273,7 @@ let runPauseTokenCommand = async (command, state) => {
     (command.fromAccount != state.owner) ||
     hasZeroAddress;
 
-  help.debug("pausing token, previous state:", state.tokenPaused, "new state:", command.pause);
+  help.debug('pausing token, previous state:', state.tokenPaused, 'new state:', command.pause);
   try {
     if (command.pause) {
       await state.token.pause({from: account});
@@ -295,9 +286,9 @@ let runPauseTokenCommand = async (command, state) => {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
-};
+}
 
-let runFinalizeCrowdsaleCommand = async (command, state) => {
+async function runFinalizeCrowdsaleCommand(command, state) {
   let nextTimestamp = latestTime(),
     account = gen.getAccount(command.fromAccount),
     hasZeroAddress = isZeroAddress(account);
@@ -311,9 +302,9 @@ let runFinalizeCrowdsaleCommand = async (command, state) => {
 
     let crowdsaleFunded = (state.weiRaised >= state.crowdsaleData.minCapUSD*state.weiPerUSDinTGE);
 
-    help.debug("finishing crowdsale on block", nextTimestamp, ", from address:", gen.getAccount(command.fromAccount), ", funded:", crowdsaleFunded);
+    help.debug('finishing crowdsale on block', nextTimestamp, ', from address:', gen.getAccount(command.fromAccount), ', funded:', crowdsaleFunded);
 
-    let finalizeTx = await state.crowdsaleContract.finalize({from: account});
+    await state.crowdsaleContract.finalize({from: account});
 
     let fundsRaised = state.weiRaised.div(state.weiPerUSDinTGE),
       minimumForMarketMaker = await state.crowdsaleContract.maxFoundationCapUSD.call();
@@ -327,7 +318,7 @@ let runFinalizeCrowdsaleCommand = async (command, state) => {
 
       let marketMaker = new LifMarketMaker(mmAddress);
 
-      assert.equal(24, parseInt(await marketMaker.totalPeriods()));
+      assert.equal(marketMakerPeriods, parseInt(await marketMaker.totalPeriods()));
       assert.equal(state.crowdsaleData.foundationWallet, await marketMaker.foundationAddr());
       assert.equal(state.crowdsaleData.foundationWallet, await marketMaker.owner());
 
@@ -341,12 +332,11 @@ let runFinalizeCrowdsaleCommand = async (command, state) => {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
-};
+}
 
-let runAddPrivatePresalePaymentCommand = async (command, state) => {
+async function runAddPrivatePresalePaymentCommand(command, state) {
 
-  let crowdsale = state.crowdsaleData,
-    { publicPresaleStartTimestamp, privatePresaleRate } = crowdsale,
+  let { publicPresaleStartTimestamp } = state.crowdsaleData,
     nextTimestamp = latestTime(),
     weiToSend = web3.toWei(command.eth, 'ether'),
     account = gen.getAccount(command.fromAccount),
@@ -361,25 +351,22 @@ let runAddPrivatePresalePaymentCommand = async (command, state) => {
     (weiToSend == 0);
 
   try {
-    help.debug("Adding presale private tokens for account:", command.beneficiaryAccount, "eth:", command.eth, "fromAccount:", command.fromAccount, "blockTimestamp:", nextTimestamp);
+    help.debug('Adding presale private tokens for account:', command.beneficiaryAccount, 'eth:', command.eth, 'fromAccount:', command.fromAccount, 'blockTimestamp:', nextTimestamp);
 
     await state.crowdsaleContract.addPrivatePresaleTokens(beneficiary, weiToSend, {from: account});
 
-    assert.equal(false, shouldThrow, "buyTokens should have thrown but it didn't");
+    assert.equal(false, shouldThrow, 'buyTokens should have thrown but it did not');
 
     state.totalPresaleWei = state.totalPresaleWei.plus(weiToSend);
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
-};
+}
 
-let runClaimEthCommand = async (command, state) => {
+async function runClaimEthCommand(command, state) {
 
-  let crowdsale = state.crowdsaleData,
-    { publicPresaleStartTimestamp, maxPresaleWei, privatePresaleRate } = crowdsale,
-    nextTimestamp = latestTime(),
-    account = gen.getAccount(command.fromAccount),
+  let account = gen.getAccount(command.fromAccount),
     purchases = _.filter(state.purchases, (p) => p.account == command.fromAccount),
     hasZeroAddress = isZeroAddress(account);
 
@@ -392,7 +379,7 @@ let runClaimEthCommand = async (command, state) => {
   try {
     await state.crowdsaleContract.claimEth({from: account});
 
-    assert.equal(false, shouldThrow, "claimEth should have thrown but it didn't");
+    assert.equal(false, shouldThrow, 'claimEth should have thrown but it did not');
 
     state.claimedEth[command.account] = _.sumBy(purchases, (p) => p.amount);
   } catch(e) {
@@ -401,10 +388,9 @@ let runClaimEthCommand = async (command, state) => {
   return state;
 }
 
-let runTransferCommand = async (command, state) => {
+async function runTransferCommand(command, state) {
 
-  let token = state.token,
-    fromAddress = gen.getAccount(command.fromAccount),
+  let fromAddress = gen.getAccount(command.fromAccount),
     toAddress = gen.getAccount(command.toAccount),
     fromBalance = getBalance(state, command.fromAccount),
     lifWei = help.lif2LifWei(command.lif),
@@ -414,7 +400,7 @@ let runTransferCommand = async (command, state) => {
   try {
     await state.token.transfer(toAddress, lifWei, {from: fromAddress});
 
-    assert.equal(false, shouldThrow, "transfer should have thrown but it didn't");
+    assert.equal(false, shouldThrow, 'transfer should have thrown but it did not');
 
     // TODO: take spent gas into account?
     state.balances[command.fromAccount] = fromBalance.minus(lifWei);
@@ -425,22 +411,21 @@ let runTransferCommand = async (command, state) => {
   return state;
 }
 
-let getAllowance = (state, sender, from) => {
+function getAllowance(state, sender, from) {
   if (!state.allowances[sender])
     state.allowances[sender] = {};
   return state.allowances[sender][from] || 0;
 }
 
-let setAllowance = (state, sender, from, allowance) => {
+function setAllowance(state, sender, from, allowance) {
   if (!state.allowances[sender])
     state.allowances[sender] = {};
   return state.allowances[sender][from] = allowance;
 }
 
-let runApproveCommand = async (command, state) => {
+async function runApproveCommand(command, state) {
 
-  let token = state.token,
-    fromAddress = gen.getAccount(command.fromAccount),
+  let fromAddress = gen.getAccount(command.fromAccount),
     spenderAddress = gen.getAccount(command.spenderAccount),
     lifWei = help.lif2LifWei(command.lif),
     hasZeroAddress = _.some([fromAddress, spenderAddress], isZeroAddress),
@@ -449,7 +434,7 @@ let runApproveCommand = async (command, state) => {
   try {
     await state.token.approve(spenderAddress, lifWei, {from: fromAddress});
 
-    assert.equal(false, shouldThrow, "approve should have thrown but it didn't");
+    assert.equal(false, shouldThrow, 'approve should have thrown but it did not');
 
     // TODO: take spent gas into account?
     setAllowance(state, command.fromAccount, command.spenderAccount, lifWei);
@@ -459,16 +444,15 @@ let runApproveCommand = async (command, state) => {
   return state;
 }
 
-let runTransferFromCommand = async (command, state) => {
+async function runTransferFromCommand(command, state) {
 
-  let token = state.token,
-    senderAddress = gen.getAccount(command.senderAccount),
+  let senderAddress = gen.getAccount(command.senderAccount),
     fromAddress = gen.getAccount(command.fromAccount),
     toAddress = gen.getAccount(command.toAccount),
     fromBalance = getBalance(state, command.fromAccount),
     lifWei = help.lif2LifWei(command.lif),
     allowance = getAllowance(state, command.senderAccount, command.fromAccount),
-    hasZeroAddress = _.some([senderAddress, fromAddress, toAddress], isZeroAddress)
+    hasZeroAddress = _.some([senderAddress, fromAddress, toAddress], isZeroAddress);
 
   let shouldThrow = state.tokenPaused ||
     fromBalance.lt(lifWei) ||
@@ -478,7 +462,7 @@ let runTransferFromCommand = async (command, state) => {
   try {
     await state.token.transferFrom(fromAddress, toAddress, lifWei, {from: senderAddress});
 
-    assert.equal(false, shouldThrow, "transferFrom should have thrown but it didn't");
+    assert.equal(false, shouldThrow, 'transferFrom should have thrown but it did not');
 
     // TODO: take spent gas into account?
     state.balances[command.fromAccount] = fromBalance.minus(lifWei);
@@ -495,11 +479,11 @@ let runTransferFromCommand = async (command, state) => {
 // Market Maker commands
 //
 
-let priceFactor = 100000
+let priceFactor = 100000;
 
-let getMMMaxClaimableWei = function(state) {
+function getMMMaxClaimableWei(state) {
   if (state.marketMakerMonth >= state.marketMakerPeriods) {
-    help.debug("calculating maxClaimableEth with", state.marketMakerStartingBalance,
+    help.debug('calculating maxClaimableEth with', state.marketMakerStartingBalance,
       state.marketMakerClaimedWei,
       state.returnedWeiForBurnedTokens);
     return state.marketMakerStartingBalance.
@@ -515,7 +499,7 @@ let getMMMaxClaimableWei = function(state) {
   }
 }
 
-let runFundCrowdsaleBelowSoftCap = async (command, state) => {
+async function runFundCrowdsaleBelowSoftCap(command, state) {
   if (!state.crowdsaleFinalized) {
     // unpause the crowdsale if needed
     if (state.crowdsalePaused) {
@@ -564,7 +548,7 @@ let runFundCrowdsaleBelowSoftCap = async (command, state) => {
   return state;
 }
 
-let runFundCrowdsaleOverSoftCap = async (command, state) => {
+async function runFundCrowdsaleOverSoftCap(command, state) {
   if (!state.crowdsaleFinalized) {
     // unpause the crowdsale if needed
     if (state.crowdsalePaused) {
@@ -607,7 +591,7 @@ let runFundCrowdsaleOverSoftCap = async (command, state) => {
       assert.equal(true, state.crowdsaleFinalized);
       assert.equal(true, state.crowdsaleFunded);
 
-      assert(typeof state.marketMaker != "undefined");
+      assert(typeof state.marketMaker != 'undefined');
       assert.equal(24, parseInt(await state.marketMaker.totalPeriods()));
       assert.equal(state.crowdsaleData.foundationWallet, await state.marketMaker.foundationAddr());
     }
@@ -616,24 +600,23 @@ let runFundCrowdsaleOverSoftCap = async (command, state) => {
   return state;
 }
 
-// TODO: implement finished
-let isMarketMakerFinished = (state) => false
+// TODO: implement finished, returns false, but references state to make eslint happy
+let isMarketMakerFinished = (state) => state && false;
 
-let runMarketMakerSendTokensCommand = async (command, state) => {
+async function runMarketMakerSendTokensCommand(command, state) {
   if (state.marketMaker === undefined) {
     // doesn't make sense to execute the actual command, let's just assert
     // that the crowdsale was not funded (in which case there should be MM)
     // except when the soft cap was not reached
     // TODO: test whether the crowdsale was funded but soft cap was not reached
     assert.equal(false, state.crowdsaleFinalized && state.crowdsaleFunded,
-      "if there's no market Maker, crowdsale should not have been funded");
+      'if there is no market Maker, crowdsale should not have been funded');
   } else {
     let lifWei = help.lif2LifWei(command.tokens),
       lifBuyPrice = state.marketMakerBuyPrice.div(priceFactor),
       tokensCost = new BigNumber(lifWei).mul(lifBuyPrice),
       fromAddress = gen.getAccount(command.from),
       ethBalanceBeforeSend = state.ethBalances[command.from] || new BigNumber(0),
-      initialLifBalance = getBalance(state, command.from),
       hasZeroAddress = isZeroAddress(fromAddress);
 
     let shouldThrow = !state.crowdsaleFinalized ||
@@ -645,11 +628,11 @@ let runMarketMakerSendTokensCommand = async (command, state) => {
 
     try {
       help.debug('Selling ',command.tokens, ' tokens in exchange of ', web3.fromWei(tokensCost, 'ether'), 'eth at a price of', lifBuyPrice.toString());
-      tx1 = await state.token.approve(state.marketMaker.address, lifWei, {from: fromAddress}),
+      const tx1 = await state.token.approve(state.marketMaker.address, lifWei, {from: fromAddress}),
         tx2 = await state.marketMaker.sendTokens(lifWei, {from: fromAddress}),
         gas = tx1.receipt.gasUsed + tx2.receipt.gasUsed;
 
-      help.debug("sold tokens to market Maker");
+      help.debug('sold tokens to market Maker');
 
       state.ethBalances[command.from] = ethBalanceBeforeSend.plus(tokensCost).minus(help.gasPrice.mul(gas));
       state.marketMakerEthBalance = state.marketMakerEthBalance.minus(tokensCost);
@@ -668,7 +651,6 @@ let runMarketMakerSendTokensCommand = async (command, state) => {
 }
 
 const commands = {
-  // waitBlock: {gen: gen.waitBlockCommandGen, run: runWaitBlockCommand},
   waitTime: {gen: gen.waitTimeCommandGen, run: runWaitTimeCommand},
   checkRate: {gen: gen.checkRateCommandGen, run: runCheckRateCommand},
   sendTransaction: {gen: gen.sendTransactionCommandGen, run: runSendTransactionCommand},
@@ -698,9 +680,9 @@ module.exports = {
   findCommand: (type) => {
     let command = commands[type];
     if (command === undefined)
-      throw(new Error("unknown command " + type));
+      throw(new Error('unknown command ' + type));
     return command;
   },
 
   ExceptionRunningCommand: ExceptionRunningCommand
-}
+};
