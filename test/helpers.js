@@ -2,22 +2,22 @@ var advanceToBlock = require('./helpers/advanceToBlock');
 
 var BigNumber = web3.BigNumber;
 
-var LifToken = artifacts.require("./LifToken.sol");
-var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
-var LifMarketMaker = artifacts.require("./LifMarketMaker.sol");
+var LifToken = artifacts.require('./LifToken.sol');
+var LifCrowdsale = artifacts.require('./LifCrowdsale.sol');
+var LifMarketMaker = artifacts.require('./LifMarketMaker.sol');
 var abiDecoder = require('abi-decoder');
 abiDecoder.addABI(LifToken._json.abi);
 abiDecoder.addABI(LifCrowdsale._json.abi);
 abiDecoder.addABI(LifMarketMaker._json.abi);
 
 var latestTime = require('./helpers/latestTime');
-var {increaseTimeTestRPC, increaseTimeTestRPCTo, duration} = require('./helpers/increaseTime');
+var {increaseTimeTestRPC, increaseTimeTestRPCTo} = require('./helpers/increaseTime');
 
-const DEBUG_MODE = (process.env.WT_DEBUG == "true") || false;
+const DEBUG_MODE = (process.env.WT_DEBUG == 'true') || false;
 
 module.exports = {
 
-  zeroAddress: "0x0000000000000000000000000000000000000000",
+  zeroAddress: '0x0000000000000000000000000000000000000000',
 
   abiDecoder: abiDecoder,
 
@@ -25,10 +25,10 @@ module.exports = {
 
   hexEncode: function(str){
     var hex, i;
-    var result = "";
+    var result = '';
     for (i=0; i < str.length; i++) {
       hex = str.charCodeAt(i).toString(16);
-      result += ("000"+hex).slice(-4);
+      result += ('000'+hex).slice(-4);
     }
     return result;
   },
@@ -36,7 +36,7 @@ module.exports = {
   hexDecode: function(str){
     var j;
     var hexes = str.match(/.{1,4}/g) || [];
-    var back = "";
+    var back = '';
     for(j = 0; j<hexes.length; j++) {
       back += String.fromCharCode(parseInt(hexes[j], 16));
     }
@@ -72,7 +72,7 @@ module.exports = {
     await increaseTimeTestRPCTo(latestTime()+1);
     await crowdsale.setWeiPerUSDinTGE(weiPerUSD);
     await increaseTimeTestRPCTo(startTime+3);
-    for(i = 0; i < 5; i++) {
+    for(let i = 0; i < 5; i++) {
       if (balances[i] > 0)
         await crowdsale.sendTransaction({ value: web3.toWei(balances[i]/rate, 'ether'), from: accounts[i + 1]});
     }
@@ -83,7 +83,7 @@ module.exports = {
 
   debug: DEBUG_MODE ? console.log : function() {},
 
-  waitToBlock: async function(blockNumber, accounts){
+  waitToBlock: async function(blockNumber) {
     let debug = this.debug;
     let blocksLeft = blockNumber - web3.eth.blockNumber;
 
@@ -113,11 +113,11 @@ module.exports = {
     ]);
 
     debug('Total Supply:', this.lifWei2Lif(parseFloat(tokenTotalSupply)));
-    for(i = 0; i < 5; i++) {
+    for(let i = 0; i < 5; i++) {
       debug(
         'Account[' + (i + 1) + ']',
         accounts[i + 1],
-        ", Balance:", this.lifWei2Lif(tokenAccountBalances[i])
+        ', Balance:', this.lifWei2Lif(tokenAccountBalances[i])
       );
     }
 
