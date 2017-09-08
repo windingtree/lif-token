@@ -1,16 +1,16 @@
-var jsc = require("jsverify");
+var jsc = require('jsverify');
 
-var help = require("./helpers");
+var help = require('./helpers');
 
 // this is just to have web3 available and correctly initialized
-artifacts.require("./LifToken.sol");
+artifacts.require('./LifToken.sol');
 
 const knownAccountGen = jsc.nat(web3.eth.accounts.length - 1);
-const zeroAddressAccountGen = jsc.constant("zero");
+const zeroAddressAccountGen = jsc.constant('zero');
 const accountGen = jsc.oneof([zeroAddressAccountGen, knownAccountGen]);
 
-let getAccount = (account) => {
-  if (account == "zero") {
+function getAccount(account) {
+  if (account == 'zero') {
     return help.zeroAddress;
   } else {
     return web3.eth.accounts[account];
@@ -34,104 +34,104 @@ module.exports = {
   }),
 
   waitBlockCommandGen: jsc.record({
-    type: jsc.constant("waitBlock"),
+    type: jsc.constant('waitBlock'),
     blocks: jsc.nat
   }),
 
   waitTimeCommandGen: jsc.record({
-    type: jsc.constant("waitTime"),
+    type: jsc.constant('waitTime'),
     seconds: jsc.nat
   }),
 
   checkRateCommandGen: jsc.record({
-    type: jsc.constant("checkRate")
+    type: jsc.constant('checkRate')
   }),
 
   setWeiPerUSDinPresaleCommandGen: jsc.record({
-    type: jsc.constant("setWeiPerUSDinPresale"),
+    type: jsc.constant('setWeiPerUSDinPresale'),
     wei: jsc.nat(0,10000000000000000), // between 0-0.01 ETH
     fromAccount: accountGen
   }),
 
   setWeiPerUSDinTGECommandGen: jsc.record({
-    type: jsc.constant("setWeiPerUSDinTGE"),
+    type: jsc.constant('setWeiPerUSDinTGE'),
     wei: jsc.nat(0,10000000000000000), // between 0-0.01 ETH
     fromAccount: accountGen
   }),
 
   buyTokensCommandGen: jsc.record({
-    type: jsc.constant("buyTokens"),
+    type: jsc.constant('buyTokens'),
     account: accountGen,
     beneficiary: accountGen,
     eth: jsc.nat
   }),
 
   burnTokensCommandGen: jsc.record({
-    type: jsc.constant("burnTokens"),
+    type: jsc.constant('burnTokens'),
     account: accountGen,
     tokens: jsc.nat
   }),
 
   buyPresaleTokensCommandGen: jsc.record({
-    type: jsc.constant("buyPresaleTokens"),
+    type: jsc.constant('buyPresaleTokens'),
     account: accountGen,
     beneficiary: accountGen,
     eth: jsc.nat
   }),
 
   sendTransactionCommandGen: jsc.record({
-    type: jsc.constant("sendTransaction"),
+    type: jsc.constant('sendTransaction'),
     account: accountGen,
     beneficiary: accountGen,
     eth: jsc.nat
   }),
 
   pauseCrowdsaleCommandGen: jsc.record({
-    type: jsc.constant("pauseCrowdsale"),
+    type: jsc.constant('pauseCrowdsale'),
     pause: jsc.bool,
     fromAccount: accountGen
   }),
 
   pauseTokenCommandGen: jsc.record({
-    type: jsc.constant("pauseToken"),
+    type: jsc.constant('pauseToken'),
     pause: jsc.bool,
     fromAccount: accountGen
   }),
 
   finalizeCrowdsaleCommandGen: jsc.record({
-    type: jsc.constant("finalizeCrowdsale"),
+    type: jsc.constant('finalizeCrowdsale'),
     fromAccount: accountGen
   }),
 
   addPrivatePresalePaymentCommandGen: jsc.record({
-    type: jsc.constant("addPrivatePresalePayment"),
+    type: jsc.constant('addPrivatePresalePayment'),
     beneficiaryAccount: accountGen,
     fromAccount: accountGen,
     eth: jsc.nat(0,200)
   }),
 
   claimEthCommandGen: jsc.record({
-    type: jsc.constant("claimEth"),
+    type: jsc.constant('claimEth'),
     eth: jsc.nat(0, 200),
     fromAccount: accountGen
   }),
 
   transferCommandGen: jsc.record({
-    type: jsc.constant("transfer"),
+    type: jsc.constant('transfer'),
     lif: jsc.nat(0, 200),
     fromAccount: accountGen,
     toAccount: accountGen
   }),
 
   approveCommandGen: jsc.record({
-    type: jsc.constant("approve"),
+    type: jsc.constant('approve'),
     lif: jsc.nat(0, 200),
     fromAccount: accountGen,
     spenderAccount: accountGen
   }),
 
   transferFromCommandGen: jsc.record({
-    type: jsc.constant("transferFrom"),
+    type: jsc.constant('transferFrom'),
     lif: jsc.nat(0, 200),
     senderAccount: accountGen,
     fromAccount: accountGen,
@@ -139,23 +139,23 @@ module.exports = {
   }),
 
   marketMakerSendTokensCommandGen: jsc.record({
-    type: jsc.constant("marketMakerSendTokens"),
+    type: jsc.constant('marketMakerSendTokens'),
     tokens: jsc.nat,
     from: accountGen
   }),
 
   fundCrowdsaleBelowSoftCap: jsc.record({
-    type: jsc.constant("fundCrowdsaleBelowSoftCap"),
+    type: jsc.constant('fundCrowdsaleBelowSoftCap'),
     account: knownAccountGen, // we don't want this one to fail with 0x0 addresses
     finalize: jsc.bool
   }),
 
   fundCrowdsaleOverSoftCap: jsc.record({
-    type: jsc.constant("fundCrowdsaleOverSoftCap"),
+    type: jsc.constant('fundCrowdsaleOverSoftCap'),
     account: knownAccountGen, // we don't want this one to fail with 0x0 addresses
     softCapExcessWei: jsc.nat,
     finalize: jsc.bool
   }),
 
-}
+};
 
