@@ -25,6 +25,8 @@ if (isNaN(GEN_TESTS_TIMEOUT))
 
 contract('LifCrowdsale Property-based test', function(accounts) {
 
+  const zero = new BigNumber(0);
+
   let crowdsaleTestInputGen = jsc.record({
     commands: jsc.array(jsc.nonshrink(commands.commandsGen)),
     crowdsale: jsc.nonshrink(gen.crowdsaleGen)
@@ -32,21 +34,28 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   let checkCrowdsaleState = async function(state, crowdsaleData, crowdsale) {
     assert.equal(state.crowdsalePaused, await crowdsale.paused());
-    assert.approximately(
-      _.sumBy(state.purchases, (b) => b.tokens),
-      parseFloat(help.lifWei2Lif(parseFloat(await crowdsale.tokensSold()))),
-      0.000000001
+    let tokensInPurchases = _.reduce(
+      _.map(state.purchases, (p) => p.tokens),
+      (accum, tokens) => accum.plus(tokens),
+      zero
     );
+    tokensInPurchases.should.be.bignumber.equal(help.lifWei2Lif(await crowdsale.tokensSold()));
+
     /*
      * TODO: add this and similar checks
     let inMemoryPresaleWei = web3.toWei(_.sumBy(state.presalePayments, (p) => p.amountEth), 'ether')
     assert.equal(inMemoryPresaleWei, parseInt(await crowdsale.totalPresaleWei.call()));
     */
     help.debug("checking purchases total wei, purchases:", JSON.stringify(state.purchases));
-    assert.equal(_.sumBy(state.purchases, (b) => b.wei), parseFloat(await crowdsale.weiRaised()));
+    let weiInPurchases = _.reduce(
+      _.map(state.purchases, (p) => p.wei),
+      (accum, wei) => accum.plus(wei),
+      zero
+    );
+    weiInPurchases.should.be.bignumber.equal(await crowdsale.weiRaised());
 
     // Check presale tokens sold
-    assert.equal(state.totalPresaleWei, parseFloat(await crowdsale.totalPresaleWei.call()));
+    state.totalPresaleWei.should.be.bignumber.equal(await crowdsale.totalPresaleWei.call());
     assert.equal(state.crowdsaleFinalized, await crowdsale.isFinalized.call());
     if (state.weiPerUSDinTGE > 0) {
       assert.equal(state.crowdsaleFunded, await crowdsale.funded());
@@ -135,8 +144,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
         purchases: [],
         presalePurchases: [],
         claimedEth: {},
-        weiRaised: 0,
-        totalPresaleWei: 0,
+        weiRaised: zero,
+        totalPresaleWei: zero,
         crowdsalePaused: false,
         tokenPaused: true,
         crowdsaleFinalized: false,

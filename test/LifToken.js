@@ -130,7 +130,7 @@ contract('LifToken', function(accounts) {
     assert.equal(2, decodedEvents.length);
     assert.equal(data, decodedEvents[1].events[3].value);
 
-    assert.equal(help.lif2LifWei(1000), await token.allowance(accounts[1], message.contract.address));
+    new BigNumber(help.lif2LifWei(1000)).should.be.bignumber.equal(await token.allowance(accounts[1], message.contract.address));
 
     await help.checkToken(token, accounts, 100, [40,30,20,10,0]);
   });

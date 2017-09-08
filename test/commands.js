@@ -88,8 +88,7 @@ let runBuyTokensCommand = async (command, state) => {
       {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
     );
     state.balances[command.beneficiary] = getBalance(state, command.beneficiary).plus(help.lif2LifWei(tokens));
-    state.weiRaised += weiCost;
-
+    state.weiRaised = state.weiRaised.plus(weiCost);
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
@@ -111,7 +110,7 @@ let runBuyPresaleTokensCommand = async (command, state) => {
 
   console.log('now', nextTimestamp, 'start', publicPresaleStartTimestamp);
   let shouldThrow = (nextTimestamp < publicPresaleStartTimestamp) ||
-    ((state.totalPresaleWei + weiCost) > maxPresaleWei) ||
+    (state.totalPresaleWei.plus(weiCost) > maxPresaleWei) ||
     (nextTimestamp > publicPresaleEndTimestamp) ||
     (state.crowdsalePaused) ||
     (state.crowdsaleFinalized) ||
@@ -126,7 +125,7 @@ let runBuyPresaleTokensCommand = async (command, state) => {
 
     assert.equal(false, shouldThrow, "buyPresaleTokens should have thrown but it didn't");
 
-    state.totalPresaleWei += weiCost;
+    state.totalPresaleWei = state.totalPresaleWei.plus(weiCost);
 
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
@@ -154,7 +153,7 @@ let runSendTransactionCommand = async (command, state) => {
   let shouldThrow = (!inPresale && !inTGE) ||
     (inTGE && state.weiPerUSDinTGE == 0) ||
     (inPresale && state.weiPerUSDinPresale == 0) ||
-    (inPresale && ((state.totalPresaleWei + weiCost) > maxPresaleWei)) ||
+    (inPresale && (state.totalPresaleWei.plus(weiCost) > maxPresaleWei)) ||
     (state.crowdsalePaused) ||
     (state.crowdsaleFinalized) ||
     (command.eth == 0) ||
@@ -166,13 +165,15 @@ let runSendTransactionCommand = async (command, state) => {
     await state.crowdsaleContract.sendTransaction({value: weiCost, from: account});
 
     assert.equal(false, shouldThrow, "sendTransaction should have thrown but it didn't");
-    if (rate == rate1 || rate == rate2) {
+    if (inTGE) {
       state.purchases = _.concat(state.purchases,
         {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
       );
-      state.weiRaised += weiCost;
-    } else if (rate == publicPresaleRate) {
-      state.totalPresaleWei += weiCost;
+      state.weiRaised = state.weiRaised.plus(weiCost);
+    } else if (inPresale) {
+      state.totalPresaleWei = state.totalPresaleWei.plus(weiCost);
+    } else {
+      throw(new Error("sendTransaction not in presale or TGE should have thrown"));
     }
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
@@ -182,7 +183,7 @@ let runSendTransactionCommand = async (command, state) => {
 
 let runBurnTokensCommand = async (command, state) => {
   let account = gen.getAccount(command.account),
-    balance = state.balances[command.account],
+    balance = getBalance(state, command.account),
     hasZeroAddress = isZeroAddress(account);
 
   let shouldThrow = state.tokenPaused ||
@@ -193,7 +194,7 @@ let runBurnTokensCommand = async (command, state) => {
     await state.token.burn(command.tokens, {from: account});
     assert.equal(false, shouldThrow, "burn should have thrown but it didn't");
 
-    state.balances[account] = balance - command.tokens;
+    state.balances[account] = balance.minus(command.tokens);
 
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
@@ -316,7 +317,7 @@ let runFinalizeCrowdsaleCommand = async (command, state) => {
 
     if (crowdsaleFunded) {
 
-      let marketMakerInitialBalance = state.weiRaised - (state.crowdsaleData.minCapUSD*state.weiPerUSDinTGE);
+      let marketMakerInitialBalance = state.weiRaised.minus(state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
       let marketMakerPeriods = (marketMakerInitialBalance > (state.crowdsaleData.marketMaker24PeriodsCapUSD*state.weiPerUSDinTGE)) ? 48 : 24;
       let mmAddress = await state.crowdsaleContract.marketMaker();
       help.debug('MarketMaker contract address', mmAddress);
@@ -362,7 +363,7 @@ let runAddPrivatePresalePaymentCommand = async (command, state) => {
 
     assert.equal(false, shouldThrow, "buyTokens should have thrown but it didn't");
 
-    state.totalPresaleWei += weiToSend;
+    state.totalPresaleWei = state.totalPresaleWei.plus(weiToSend);
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
