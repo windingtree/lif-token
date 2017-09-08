@@ -144,5 +144,11 @@ module.exports = {
     from: accountGen
   }),
 
+  fundCrowdsaleBelowSoftCap: jsc.record({
+    type: jsc.constant("fundCrowdsaleBelowSoftCap"),
+    account: knownAccountGen, // we don't want this one to fail with 0x0 addresses
+    finalize: jsc.bool
+  }),
+
 }
 
