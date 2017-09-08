@@ -1,4 +1,4 @@
-var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
+var LifCrowdsale = artifacts.require('./LifCrowdsale.sol');
 
 var latestTime = require('./helpers/latestTime');
 var {duration} = require('./helpers/increaseTime');
@@ -6,7 +6,7 @@ var {duration} = require('./helpers/increaseTime');
 
 contract('LifToken Crowdsale', function(accounts) {
 
-  it("can create a Crowndsale", async function() {
+  it('can create a Crowndsale', async function() {
     const publicPresaleStartTimestamp = latestTime() + duration.days(1),
       publicPresaleEndTimestamp = publicPresaleStartTimestamp + duration.days(1),
       startTimestamp = publicPresaleEndTimestamp + duration.days(1),
