@@ -309,13 +309,16 @@ let runFinalizeCrowdsaleCommand = async (command, state) => {
 
   try {
 
-    let crowdsaleFunded = (state.weiRaised > state.crowdsaleData.minCapUSD*state.weiPerUSDinTGE);
+    let crowdsaleFunded = (state.weiRaised >= state.crowdsaleData.minCapUSD*state.weiPerUSDinTGE);
 
     help.debug("finishing crowdsale on block", nextTimestamp, ", from address:", gen.getAccount(command.fromAccount), ", funded:", crowdsaleFunded);
 
     let finalizeTx = await state.crowdsaleContract.finalize({from: account});
 
-    if (crowdsaleFunded) {
+    let fundsRaised = state.weiRaised.div(state.weiPerUSDinTGE),
+      minimumForMarketMaker = await state.crowdsaleContract.maxFoundationCapUSD;
+
+    if (crowdsaleFunded && (fundsRaised > minimumForMarketMaker)) {
 
       let marketMakerInitialBalance = state.weiRaised.minus(state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
       let marketMakerPeriods = (marketMakerInitialBalance > (state.crowdsaleData.marketMaker24PeriodsCapUSD*state.weiPerUSDinTGE)) ? 48 : 24;
