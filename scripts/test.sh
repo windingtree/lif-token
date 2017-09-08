@@ -1,7 +1,18 @@
-#! /bin/bash
+#!/bin/bash
 
-output=$(nc -z localhost 8545; echo $?)
-[ $output -eq "0" ] && trpc_running=true
+# Executes cleanup function at script exit.
+trap cleanup EXIT
+
+cleanup() {
+  # Kill the testrpc instance that we started (if we started one).
+  if [ -n "$testestrpc_pid" ]; then
+    kill -9 $testrpc_pid
+  fi
+}
+
+testrpc_running() {
+  nc -z localhost 8555
+}
 
 TESTRPC_REDIRECT=/dev/null
 
@@ -9,8 +20,11 @@ TESTRPC_REDIRECT=/dev/null
 # we also need to send testrpc output to stdout instead of /dev/null so we can see it
 [ "$CI" = "true" ] && TESTRPC_MEM="--mem" && TESTRPC_REDIRECT=/dev/stdout
 
-if [ ! $trpc_running ]; then
+if testrpc_running; then
+  echo "Using existing testrpc instance"
+else
   echo "Starting our own testrpc node instance"
+
   testrpc \
     $TESTRPC_MEM \
     --account="0xe8280389ca1303a2712a874707fdd5d8ae0437fab9918f845d26fd9919af5a92,10000000000000000000000000000000000000000000000000000000000000000000000000000000" \
@@ -26,16 +40,8 @@ if [ ! $trpc_running ]; then
     --account="0x35b5042e809eab0db3252bad02b67436f64453072128ee91c1d4605de70b27c1,10000000000000000000000000000000000000000000000000000000000000000000000000000000" \
     --gasLimit 6000000 \
     > $TESTRPC_REDIRECT &
-  trpc_pid=$!
+  testrpc_pid=$!
 fi
 
 ./node_modules/.bin/truffle compile
 ./node_modules/.bin/truffle test $@
-test_result=$?
-
-if [ ! $trpc_running ]; then
-  kill -9 $trpc_pid
-fi
-
-# exit with the result from the tests
-exit $test_result
