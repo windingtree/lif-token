@@ -258,6 +258,7 @@ contract LifCrowdsale is Ownable, Pausable {
         address(token), block.number.add(10), 20, marketMakerPeriods, foundationWallet
       );
       newMarketMaker.fund.value(mmFundBalance)();
+      newMarketMaker.transferOwnership(foundationWallet);
 
       marketMaker = address(newMarketMaker);
 
