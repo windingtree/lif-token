@@ -13,6 +13,7 @@ module.exports = {
       "artifacts": true
     },
     "rules": {
+        "no-console": "off",
         "indent": [
             "error",
             2
