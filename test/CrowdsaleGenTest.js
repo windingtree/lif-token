@@ -216,6 +216,15 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       }
     });
 
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {"type":"fundCrowdsaleBelowSoftCap","account":7,"finalize":false}
+      ],
+      crowdsale: {
+        publicPresaleRate: 5, rate1: 33, rate2: 12, privatePresaleRate: 28,
+        foundationWallet: 10, setWeiLockSeconds: 52, owner: 0
+      }
+    });
   });
 
   it("calculates correct rate on the boundaries between end1Timestamp and end2Timestamp", async function() {
