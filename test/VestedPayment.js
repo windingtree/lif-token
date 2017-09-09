@@ -1,20 +1,15 @@
-var help = require("./helpers");
+var help = require('./helpers');
 var latestTime = require('./helpers/latestTime');
 var {increaseTimeTestRPC, increaseTimeTestRPCTo, duration} = require('./helpers/increaseTime');
 
 var BigNumber = web3.BigNumber;
 
-const should = require('chai')
+require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-var VestedPayment = artifacts.require("./VestedPayment.sol");
-var LifToken = artifacts.require("./LifToken.sol");
-var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
-var Message = artifacts.require("./Message.sol");
-
-var latestTime = require('./helpers/latestTime');
-var {increaseTimeTestRPC, increaseTimeTestRPCTo, duration} = require('./helpers/increaseTime');
+var VestedPayment = artifacts.require('./VestedPayment.sol');
+var LifToken = artifacts.require('./LifToken.sol');
 
 const LOG_EVENTS = true;
 
@@ -24,7 +19,7 @@ contract('VestedPayment', function(accounts) {
   var eventsWatcher;
 
   beforeEach(async function() {
-    rate = 100000000000;
+    const rate = 100000000000;
     const crowdsale = await help.simulateCrowdsale(rate, [100], accounts, 1);
     token = LifToken.at(await crowdsale.token.call());
     eventsWatcher = token.allEvents();
@@ -39,7 +34,7 @@ contract('VestedPayment', function(accounts) {
     done();
   });
 
-  it("create the VestedPayment", async function() {
+  it('create the VestedPayment', async function() {
     const startTimestamp = latestTime() + duration.days(10);
     var vestedPayment = await VestedPayment.new(
       startTimestamp, duration.days(30), 10, 4, token.address
@@ -51,11 +46,12 @@ contract('VestedPayment', function(accounts) {
     assert.equal(token.address, await vestedPayment.token.call());
   });
 
-  it("get availableToClaim correctly with cliff periods", async function() {
+  it('get availableToClaim correctly with cliff periods', async function() {
     const startTimestamp = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
-      startTimestamp, duration.days(30), 12, 4, token.address
-    , {from: accounts[1]});
+      startTimestamp, duration.days(30), 12, 4,
+      token.address, {from: accounts[1]}
+    );
     var tokensAvailable = new BigNumber(0);
 
     await token.approve(vestedPayment.address, help.lif2LifWei(61), {from: accounts[1]});
@@ -84,11 +80,12 @@ contract('VestedPayment', function(accounts) {
 
   });
 
-  it("get availableToClaim correctly without cliff periods", async function() {
+  it('get availableToClaim correctly without cliff periods', async function() {
     const startTimestamp = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
-      startTimestamp, duration.days(30), 12, 0, token.address
-    , {from: accounts[1]});
+      startTimestamp, duration.days(30), 12, 0,
+      token.address, {from: accounts[1]}
+    );
     var tokensAvailable = new BigNumber(0);
 
     await token.approve(vestedPayment.address, help.lif2LifWei(61), {from: accounts[1]});
@@ -113,11 +110,11 @@ contract('VestedPayment', function(accounts) {
 
   });
 
-  it("claim tokens correctly with cliff periods and owner transfered", async function() {
+  it('claim tokens correctly with cliff periods and owner transfered', async function() {
     const startTimestamp = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
-      startTimestamp, duration.days(30), 12, 4, token.address
-    , {from: accounts[1]});
+      startTimestamp, duration.days(30), 12, 4,
+      token.address, {from: accounts[1]});
     var tokensAvailable = new BigNumber(0);
 
     await token.approve(vestedPayment.address, help.lif2LifWei(61), {from: accounts[1]});
@@ -177,12 +174,12 @@ contract('VestedPayment', function(accounts) {
   });
 
 
-  it("should fail when try to claim tokens inside cliff periods", async function() {
+  it('should fail when try to claim tokens inside cliff periods', async function() {
     const startTimestamp = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
-      startTimestamp, duration.days(30), 12, 4, token.address
-    , {from: accounts[1]});
-    var tokensAvailable = new BigNumber(0);
+      startTimestamp, duration.days(30), 12, 4,
+      token.address, {from: accounts[1]}
+    );
 
     await token.approve(vestedPayment.address, help.lif2LifWei(61), {from: accounts[1]});
     await vestedPayment.fund(help.lif2LifWei(60), {from: accounts[1]});
@@ -202,12 +199,12 @@ contract('VestedPayment', function(accounts) {
 
   });
 
-  it("should fail when try to claim more tokens than the available", async function() {
+  it('should fail when try to claim more tokens than the available', async function() {
     const startTimestamp = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
-      startTimestamp, duration.days(30), 12, 0, token.address
-    , {from: accounts[1]});
-    var tokensAvailable = new BigNumber(0);
+      startTimestamp, duration.days(30), 12, 0,
+      token.address, {from: accounts[1]}
+    );
 
     await token.approve(vestedPayment.address, help.lif2LifWei(61), {from: accounts[1]});
     await vestedPayment.fund(help.lif2LifWei(60), {from: accounts[1]});
