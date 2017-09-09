@@ -8,7 +8,7 @@ cache:
   yarn: true
 script:
   - set -e
-  - ./node_modules/.bin/eslint test/**/*.js
+  - yarn lint
   - GEN_TESTS_QTY=20 yarn test test/LifToken.js test/Crowdsale.js test/CrowdsaleGenTest.js
   - yarn test test/MarketMaker.js
 after_script:
