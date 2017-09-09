@@ -65,7 +65,7 @@ let runBuyTokensCommand = async (command, state) => {
     weiCost = parseInt(web3.toWei(command.eth, 'ether')),
     nextTimestamp = latestTime(),
     rate = help.getCrowdsaleExpectedRate(crowdsale, nextTimestamp),
-    tokens = command.eth * rate,
+    tokens = new BigNumber(command.eth).mul(rate),
     account = gen.getAccount(command.account),
     beneficiaryAccount = gen.getAccount(command.beneficiary),
     hasZeroAddress = _.some([account, beneficiaryAccount], isZeroAddress);
@@ -142,7 +142,7 @@ let runSendTransactionCommand = async (command, state) => {
     weiCost = parseInt(web3.toWei(command.eth, 'ether')),
     nextTimestamp = latestTime(),
     rate = help.getCrowdsaleExpectedRate(crowdsale, nextTimestamp),
-    tokens = command.eth * rate,
+    tokens = new BigNumber(command.eth).mul(rate),
     account = gen.getAccount(command.account),
     maxPresaleWei = crowdsale.maxPresaleCapUSD*state.weiPerUSDinPresale;
 
