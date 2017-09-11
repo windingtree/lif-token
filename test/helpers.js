@@ -19,7 +19,7 @@ module.exports = {
 
   abiDecoder: abiDecoder,
 
-  gasPrice: new BigNumber(100000000000),
+  gasPrice: new BigNumber(21000000000),
 
   hexEncode: function(str){
     var hex, i;
