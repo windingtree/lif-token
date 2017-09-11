@@ -4,7 +4,7 @@ import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "./LifToken.sol";
-import "./LifMarketMaker.sol";
+import "./LifMarketValidationMechanism.sol";
 
 contract LifCrowdsale is Ownable, Pausable {
   using SafeMath for uint256;
@@ -33,8 +33,8 @@ contract LifCrowdsale is Ownable, Pausable {
   // maximun balance that the foundation can have, it starts in USD
   uint256 public maxFoundationCapUSD = 10000000;
 
-  // maximun balance that the 24 month market maker can have
-  uint256 public marketMaker24PeriodsCapUSD = 40000000;
+  // maximun balance that the 24 month Market Validation Mechanism (MVM) can have
+  uint256 public MVM24PeriodsCapUSD = 40000000;
 
   // how much a USD worth in wei in public presale
   uint256 public weiPerUSDinPresale = 0;
@@ -64,8 +64,8 @@ contract LifCrowdsale is Ownable, Pausable {
   // total amount of wei received as presale payments (both private and public)
   uint256 public totalPresaleWei;
 
-  // the address of the market maker created at the end of the crowdsale
-  address public marketMaker;
+  // the address of the MVM created at the end of the crowdsale
+  address public MVM;
 
   mapping(address => uint256) public purchases;
 
@@ -236,8 +236,8 @@ contract LifCrowdsale is Ownable, Pausable {
     // calculate the max amount of wei for the foundation
     uint256 foundationBalanceCapWei = maxFoundationCapUSD.mul(weiPerUSDinTGE);
 
-    // if the minimiun cap for the market maker is not reached transfer all funds to foundation
-    // else if the min cap for the market maker is reached, create it and send the remaining funds
+    // if the minimiun cap for the MVM is not reached transfer all funds to foundation
+    // else if the min cap for the MVM is reached, create it and send the remaining funds
     if (this.balance <= foundationBalanceCapWei) {
 
       foundationWallet.transfer(this.balance);
@@ -246,21 +246,21 @@ contract LifCrowdsale is Ownable, Pausable {
 
       uint256 mmFundBalance = this.balance.sub(foundationBalanceCapWei);
 
-      // check how much preiods we have to use on the market maker
-      uint8 marketMakerPeriods = 24;
-      if (mmFundBalance > marketMaker24PeriodsCapUSD.mul(weiPerUSDinTGE))
-        marketMakerPeriods = 48;
+      // check how much preiods we have to use on the MVM
+      uint8 MVMPeriods = 24;
+      if (mmFundBalance > MVM24PeriodsCapUSD.mul(weiPerUSDinTGE))
+        MVMPeriods = 48;
 
       foundationWallet.transfer(foundationBalanceCapWei);
 
-      // TODO: create the market maker with a start block that equals one month after crowdsale ends
-      LifMarketMaker newMarketMaker = new LifMarketMaker(
-        address(token), block.timestamp.add(10), 30 days, marketMakerPeriods, foundationWallet
+      // TODO: create the MVM with a start block that equals one month after crowdsale ends
+      LifMarketValidationMechanism newMVM = new LifMarketValidationMechanism(
+        address(token), block.timestamp.add(10), 30 days, MVMPeriods, foundationWallet
       );
-      newMarketMaker.fund.value(mmFundBalance)();
-      newMarketMaker.transferOwnership(foundationWallet);
+      newMVM.fund.value(mmFundBalance)();
+      newMVM.transferOwnership(foundationWallet);
 
-      marketMaker = address(newMarketMaker);
+      MVM = address(newMVM);
 
     }
   }
