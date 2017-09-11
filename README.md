@@ -43,7 +43,7 @@ TODO: Rewrite this section
 
 - [LifToken](blob/master/contracts/LifToken.sol)
 - [LifCrowdsale](blob/master/contracts/LifCrowdsale.sol)
-- [LifMarketMaker](blob/master/contracts/LifMarketMaker.sol)
+- [LifMarketValidationMechanism](blob/master/contracts/LifMarketValidationMechanism.sol)
 
 ## New Token Methods
 
