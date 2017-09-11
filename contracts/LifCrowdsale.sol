@@ -4,6 +4,7 @@ import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "./LifToken.sol";
+import "./VestedPayment.sol";
 import "./LifMarketValidationMechanism.sol";
 
 /**
@@ -99,8 +100,16 @@ contract LifCrowdsale is Ownable, Pausable {
   // Amount of wei received as presale payments (both private and public)
   uint256 public totalPresaleWei;
 
+  // Address of the vesting schedule for the foundation created at the
+  // end of the crowdsale
+  VestedPayment public foundationVestedPayment;
+
+  // Address of the vesting schedule for founders created at the
+  // end of the crowdsale
+  VestedPayment public foundersVestedPayment;
+
   // Address of the MVM created at the end of the crowdsale
-  address public MVM;
+  LifMarketValidationMechanism public MVM;
 
   // Tracks the wei sent per address during the 2 week TGE. This is the amount
   // that can be claimed by each address in case the minimum cap is not reached
@@ -334,6 +343,8 @@ contract LifCrowdsale is Ownable, Pausable {
 
       foundationWallet.transfer(this.balance);
 
+      mintExtraTokens(uint256(12));
+
     } else {
 
       uint256 mmFundBalance = this.balance.sub(foundationBalanceCapWei);
@@ -346,17 +357,55 @@ contract LifCrowdsale is Ownable, Pausable {
       foundationWallet.transfer(foundationBalanceCapWei);
 
       // TODO: create the MVM with a start block that equals one month after crowdsale ends
-      LifMarketValidationMechanism newMVM = new LifMarketValidationMechanism(
+      MVM = new LifMarketValidationMechanism(
         address(token), block.timestamp.add(10), 30 days, MVMPeriods, foundationWallet
       );
-      newMVM.fund.value(mmFundBalance)();
-      newMVM.transferOwnership(foundationWallet);
 
-      MVM = address(newMVM);
+      mintExtraTokens(uint256(MVMPeriods));
+
+      MVM.fund.value(mmFundBalance)();
+      MVM.transferOwnership(foundationWallet);
 
     }
   }
 
+  /**
+     @dev Internal. Distribute the rest of the tokens among founders and advisors
+   */
+  function mintExtraTokens(uint256 foundationMonthsStart) internal {
+    // calculate how much tokens will the founders, foundation and advisors will receive
+    uint256 foundersTokens = token.totalSupply().mul(128).div(1000);
+    uint256 foundationTokens = token.totalSupply().mul(50).div(1000);
+    uint256 advisorsTokens = token.totalSupply().mul(72).div(1000);
+
+    // create the vested payment schedule for the founders
+    foundersVestedPayment = new VestedPayment(
+      block.timestamp, 30 days, 48, 12, foundersTokens, token
+    );
+    token.mint(foundersVestedPayment, foundersTokens);
+    foundersVestedPayment.transferOwnership(foundationWallet);
+
+    // create the vested payment schedule for the foundation
+    uint256 foundationPaymentStart = foundationMonthsStart.mul(604800);
+    foundationVestedPayment = new VestedPayment(
+      block.timestamp.add(foundationPaymentStart), 30 days,
+      foundationMonthsStart, 0, foundationTokens, token
+    );
+    token.mint(foundationVestedPayment, foundationTokens);
+    foundationVestedPayment.transferOwnership(foundationWallet);
+
+    // transfer the token for advisors and future employees to the foundation
+    token.mint(foundationWallet, advisorsTokens);
+
+    // finish the minting of the token and unpause it
+    token.finishMinting();
+    token.unpause();
+
+    // transfer the ownership of the token to the foundation
+    token.transferOwnership(owner);
+  }
+
+  // @return true if the transaction can buy tokens on TGE
   /**
      @dev Modifier
      @return true if the transaction can buy tokens on TGE
@@ -422,16 +471,8 @@ contract LifCrowdsale is Ownable, Pausable {
     require(!isFinalized);
     require(hasEnded());
 
-    // TODO: transfer an extra 25% of tokens to the foundation, for the team
-    // TODO: transfer 13% to founders with a vesting mechanism?
-
     // foward founds and unpause token only if minCap is reached
     if (funded()) {
-
-      // finish the minting of the token, unpause it and transfer the ownership to the foundation
-      token.finishMinting();
-      token.unpause();
-      token.transferOwnership(owner);
 
       forwardFunds();
     }
