@@ -1,4 +1,4 @@
-var LifMarketMaker = artifacts.require('./LifMarketMaker.sol');
+var LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
 
 var BigNumber = web3.BigNumber;
 
@@ -307,22 +307,22 @@ async function runFinalizeCrowdsaleCommand(command, state) {
     await state.crowdsaleContract.finalize({from: account});
 
     let fundsRaised = state.weiRaised.div(state.weiPerUSDinTGE),
-      minimumForMarketMaker = await state.crowdsaleContract.maxFoundationCapUSD.call();
+      minimumForMVM = await state.crowdsaleContract.maxFoundationCapUSD.call();
 
-    if (crowdsaleFunded && (fundsRaised.gt(minimumForMarketMaker))) {
+    if (crowdsaleFunded && (fundsRaised.gt(minimumForMVM))) {
 
-      let marketMakerInitialBalance = state.weiRaised.minus(state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
-      let marketMakerPeriods = (marketMakerInitialBalance > (state.crowdsaleData.marketMaker24PeriodsCapUSD*state.weiPerUSDinTGE)) ? 48 : 24;
-      let mmAddress = await state.crowdsaleContract.marketMaker();
-      help.debug('MarketMaker contract address', mmAddress);
+      let MVMInitialBalance = state.weiRaised.minus(state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
+      let MVMPeriods = (MVMInitialBalance > (state.crowdsaleData.MVM24PeriodsCapUSD*state.weiPerUSDinTGE)) ? 48 : 24;
+      let mmAddress = await state.crowdsaleContract.MVM();
+      help.debug('MVM contract address', mmAddress);
 
-      let marketMaker = new LifMarketMaker(mmAddress);
+      let MVM = new LifMarketValidationMechanism(mmAddress);
 
-      assert.equal(marketMakerPeriods, parseInt(await marketMaker.totalPeriods()));
-      assert.equal(state.crowdsaleData.foundationWallet, await marketMaker.foundationAddr());
-      assert.equal(state.crowdsaleData.foundationWallet, await marketMaker.owner());
+      assert.equal(MVMPeriods, parseInt(await MVM.totalPeriods()));
+      assert.equal(state.crowdsaleData.foundationWallet, await MVM.foundationAddr());
+      assert.equal(state.crowdsaleData.foundationWallet, await MVM.owner());
 
-      state.marketMaker = marketMaker;
+      state.MVM = MVM;
     }
 
     assert.equal(false, shouldThrow);
@@ -481,23 +481,23 @@ async function runTransferFromCommand(command, state) {
 
 let priceFactor = 100000;
 
-function getMMMaxClaimableWei(state) {
-  if (state.marketMakerMonth >= state.marketMakerPeriods) {
-    help.debug('calculating maxClaimableEth with', state.marketMakerStartingBalance,
-      state.marketMakerClaimedWei,
+let getMMMaxClaimableWei = function(state) {
+  if (state.MVMMonth >= state.MVMPeriods) {
+    help.debug('calculating maxClaimableEth with', state.MVMStartingBalance,
+      state.MVMClaimedWei,
       state.returnedWeiForBurnedTokens);
-    return state.marketMakerStartingBalance.
-      minus(state.marketMakerClaimedWei).
+    return state.MVMStartingBalance.
+      minus(state.MVMClaimedWei).
       minus(state.returnedWeiForBurnedTokens);
   } else {
-    const maxClaimable = state.marketMakerStartingBalance.
+    const maxClaimable = state.MVMStartingBalance.
       mul(state.claimablePercentage).dividedBy(priceFactor).
-      mul(state.initialTokenSupply - state.marketMakerBurnedTokens).
+      mul(state.initialTokenSupply - state.MVMBurnedTokens).
       dividedBy(state.initialTokenSupply).
-      minus(state.marketMakerClaimedWei);
+      minus(state.MVMClaimedWei);
     return _.max([0, maxClaimable]);
   }
-}
+};
 
 async function runFundCrowdsaleBelowSoftCap(command, state) {
   if (!state.crowdsaleFinalized) {
@@ -538,10 +538,10 @@ async function runFundCrowdsaleBelowSoftCap(command, state) {
 
       state = await runFinalizeCrowdsaleCommand({fromAccount: command.account}, state);
 
-      // verify that the crowdsale is finalized and funded, but there's no market maker
+      // verify that the crowdsale is finalized and funded, but there's no MVM
       assert.equal(true, state.crowdsaleFinalized);
       assert.equal(true, state.crowdsaleFunded);
-      assert(state.marketMaker === undefined);
+      assert(state.MVM === undefined);
     }
   }
 
@@ -587,13 +587,13 @@ async function runFundCrowdsaleOverSoftCap(command, state) {
 
       state = await runFinalizeCrowdsaleCommand({fromAccount: command.account}, state);
 
-      // verify that the crowdsale is finalized and funded, but there's no market maker
+      // verify that the crowdsale is finalized and funded, but there's no MVM
       assert.equal(true, state.crowdsaleFinalized);
       assert.equal(true, state.crowdsaleFunded);
 
-      assert(typeof state.marketMaker != 'undefined');
-      assert.equal(24, parseInt(await state.marketMaker.totalPeriods()));
-      assert.equal(state.crowdsaleData.foundationWallet, await state.marketMaker.foundationAddr());
+      assert(state.MVM);
+      assert.equal(24, parseInt(await state.MVM.totalPeriods()));
+      assert.equal(state.crowdsaleData.foundationWallet, await state.MVM.foundationAddr());
     }
   }
 
@@ -601,19 +601,19 @@ async function runFundCrowdsaleOverSoftCap(command, state) {
 }
 
 // TODO: implement finished, returns false, but references state to make eslint happy
-let isMarketMakerFinished = (state) => state && false;
+let isMVMFinished = (state) => state && false;
 
-async function runMarketMakerSendTokensCommand(command, state) {
-  if (state.marketMaker === undefined) {
+async function runMVMSendTokensCommand(command, state) {
+  if (state.MVM === undefined) {
     // doesn't make sense to execute the actual command, let's just assert
     // that the crowdsale was not funded (in which case there should be MM)
     // except when the soft cap was not reached
     // TODO: test whether the crowdsale was funded but soft cap was not reached
     assert.equal(false, state.crowdsaleFinalized && state.crowdsaleFunded,
-      'if there is no market Maker, crowdsale should not have been funded');
+      'if theres no MVM, crowdsale should not have been funded');
   } else {
     let lifWei = help.lif2LifWei(command.tokens),
-      lifBuyPrice = state.marketMakerBuyPrice.div(priceFactor),
+      lifBuyPrice = state.MVMBuyPrice.div(priceFactor),
       tokensCost = new BigNumber(lifWei).mul(lifBuyPrice),
       fromAddress = gen.getAccount(command.from),
       ethBalanceBeforeSend = state.ethBalances[command.from] || new BigNumber(0),
@@ -621,26 +621,26 @@ async function runMarketMakerSendTokensCommand(command, state) {
 
     let shouldThrow = !state.crowdsaleFinalized ||
       !state.crowdsaleFunded ||
-      state.marketMakerPaused ||
+      state.MVMPaused ||
       (command.tokens == 0) ||
-      isMarketMakerFinished(state) ||
+      isMVMFinished(state) ||
       hasZeroAddress;
 
     try {
       help.debug('Selling ',command.tokens, ' tokens in exchange of ', web3.fromWei(tokensCost, 'ether'), 'eth at a price of', lifBuyPrice.toString());
-      const tx1 = await state.token.approve(state.marketMaker.address, lifWei, {from: fromAddress}),
-        tx2 = await state.marketMaker.sendTokens(lifWei, {from: fromAddress}),
+      let tx1 = await state.token.approve(state.MVM.address, lifWei, {from: fromAddress}),
+        tx2 = await state.MVM.sendTokens(lifWei, {from: fromAddress}),
         gas = tx1.receipt.gasUsed + tx2.receipt.gasUsed;
 
-      help.debug('sold tokens to market Maker');
+      help.debug('sold tokens to MVM');
 
       state.ethBalances[command.from] = ethBalanceBeforeSend.plus(tokensCost).minus(help.gasPrice.mul(gas));
-      state.marketMakerEthBalance = state.marketMakerEthBalance.minus(tokensCost);
+      state.MVMEthBalance = state.MVMEthBalance.minus(tokensCost);
       state.burnedTokens = state.burnedTokens.plus(lifWei);
-      state.marketMakerBurnedTokens = state.marketMakerBurnedTokens.plus(lifWei);
+      state.MVMBurnedTokens = state.MVMBurnedTokens.plus(lifWei);
       state.returnedWeiForBurnedTokens = state.returnedWeiForBurnedTokens.plus(tokensCost);
       state.balances[command.from] = getBalance(state, command.from).minus(lifWei);
-      state.marketMakerMaxClaimableWei = getMMMaxClaimableWei(state);
+      state.MVMMaxClaimableWei = getMMMaxClaimableWei(state);
 
     } catch(e) {
       assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
@@ -667,9 +667,9 @@ const commands = {
   transfer: {gen: gen.transferCommandGen, run: runTransferCommand},
   approve: {gen: gen.approveCommandGen, run: runApproveCommand},
   transferFrom: {gen: gen.transferFromCommandGen, run: runTransferFromCommand},
+  MVMSendTokens: {gen: gen.MVMSendTokensCommandGen, run: runMVMSendTokensCommand},
   fundCrowdsaleBelowSoftCap: {gen: gen.fundCrowdsaleBelowSoftCap, run: runFundCrowdsaleBelowSoftCap},
-  fundCrowdsaleOverSoftCap: {gen: gen.fundCrowdsaleOverSoftCap, run: runFundCrowdsaleOverSoftCap},
-  marketMakerSendTokens: {gen: gen.marketMakerSendTokensCommandGen, run: runMarketMakerSendTokensCommand}
+  fundCrowdsaleOverSoftCap: {gen: gen.fundCrowdsaleOverSoftCap, run: runFundCrowdsaleOverSoftCap}
 };
 
 module.exports = {

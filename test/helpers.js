@@ -2,11 +2,11 @@ var BigNumber = web3.BigNumber;
 
 var LifToken = artifacts.require('./LifToken.sol');
 var LifCrowdsale = artifacts.require('./LifCrowdsale.sol');
-var LifMarketMaker = artifacts.require('./LifMarketMaker.sol');
+var LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
 var abiDecoder = require('abi-decoder');
 abiDecoder.addABI(LifToken._json.abi);
 abiDecoder.addABI(LifCrowdsale._json.abi);
-abiDecoder.addABI(LifMarketMaker._json.abi);
+abiDecoder.addABI(LifMarketValidationMechanism._json.abi);
 
 var latestTime = require('./helpers/latestTime');
 var {increaseTimeTestRPC, increaseTimeTestRPCTo} = require('./helpers/increaseTime');

@@ -4,21 +4,21 @@ import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "./LifToken.sol";
 
-contract LifMarketMaker is Ownable {
+contract LifMarketValidationMechanism is Ownable {
   using SafeMath for uint256;
 
   // The Lif token contract
   LifToken public lifToken;
 
   // The address of the foundation wallet. It can claim part of the eth funds following an
-  // exponential curve until the end of the Market Maker lifetime (24 or 48 months). After
+  // exponential curve until the end of the Market Validation Mechanism (MVM) lifetime (24 or 48 months). After
   // that it can claim 100% of remaining eth and tokens.
   address public foundationAddr;
 
-  // The amount of wei that the Market Maker received initially
+  // The amount of wei that the MVM received initially
   uint256 public initialWei;
 
-  // Start timestamp since which the Market Maker begins to accept buy and sell orders
+  // Start timestamp since which the MVM begins to accept buy and sell orders
   uint256 public startTimestamp;
 
   // Quantity of seconds in every period
@@ -30,38 +30,38 @@ contract LifMarketMaker is Ownable {
   // The total amount of wei that was claimed by the foundation
   uint256 public totalWeiClaimed = 0;
 
-  // The price at which the market maker buys tokens at the beginning of its lifetime
+  // The price at which the MVM buys tokens at the beginning of its lifetime
   uint256 public initialBuyPrice = 0;
 
-  // Amount of tokens that were burned by the market maker
+  // Amount of tokens that were burned by the MVM
   uint256 public totalBurnedTokens = 0;
 
-  // Total supply of tokens when the Market Maker was created
+  // Total supply of tokens when the MVM was created
   uint256 public originalTotalSupply;
 
   uint256 constant PERCENTAGE_FACTOR = 100000;
   uint256 constant PRICE_FACTOR = 100000;
 
-  // Has the Market Maker been funded by calling `fund`? It can be funded only once
+  // Has the MVM been funded by calling `fund`? It can be funded only once
   bool public funded = false;
 
-  // if the market maker is paused or not
+  // if the market MVM is paused or not
   bool public paused = false;
 
-  // total amount of seconds that the market maker was paused
+  // total amount of seconds that the MVM was paused
   uint256 public totalPausedSeconds = 0;
 
-  // the timestamp where the market maker was paused
+  // the timestamp where the MVM was paused
   uint256 public pausedTimestamp;
 
-  struct MarketMakerPeriod {
+  struct Period {
     // delta % of the initialWei that can be claimed by the foundation from this period
     uint256 deltaDistribution;
     // accumulated % of the initialWei that can be claimed by the foundation on this period
     uint256 accumDistribution;
   }
 
-  MarketMakerPeriod[] public marketMakerPeriods;
+  Period[] public periods;
 
   modifier whenNotPaused(){
     assert(!paused);
@@ -73,7 +73,7 @@ contract LifMarketMaker is Ownable {
     _;
   }
 
-  function LifMarketMaker(
+  function LifMarketValidationMechanism(
     address lifAddr, uint256 _startTimestamp, uint256 _secondsPerPeriod,
     uint8 _totalPeriods, address _foundationAddr
   ) {
@@ -104,12 +104,12 @@ contract LifMarketMaker is Ownable {
 
   function calculateDistributionPeriods() {
     assert(totalPeriods == 24 || totalPeriods == 48);
-    assert(marketMakerPeriods.length == 0);
+    assert(periods.length == 0);
 
     // Table with the max delta % that can be distributed back to the foundation on
     // each period. It follows an exponential curve (starts with lower % and ends
-    // with higher %) to keep the funds in the market maker longer. deltas24
-    // is used when market maker lifetime is 24 months, deltas48 when it's 48 months.
+    // with higher %) to keep the funds in the MVM longer. deltas24
+    // is used when MVM lifetime is 24 months, deltas48 when it's 48 months.
     // The sum is less than 100% because the last % is missing: after the last period
     // the 100% remaining can be claimed by the foundation. Values multipled by 10^5
 
@@ -144,7 +144,7 @@ contract LifMarketMaker is Ownable {
 
       accumDistribution = accumDistribution.add(deltaDistribution);
 
-      marketMakerPeriods.push(MarketMakerPeriod(
+      periods.push(Period(
         deltaDistribution, accumDistribution
       ));
 
@@ -161,7 +161,7 @@ contract LifMarketMaker is Ownable {
 
     assert(period < totalPeriods);
 
-    return marketMakerPeriods[period].accumDistribution;
+    return periods[period].accumDistribution;
   }
 
   function getBuyPrice() public constant returns (uint256 price) {
@@ -192,7 +192,7 @@ contract LifMarketMaker is Ownable {
     }
   }
 
-  // sends tokens from Market Maker to the msg.sender, in exchange of Eth at the price of getBuyPrice
+  // sends tokens from MVM to the msg.sender, in exchange of Eth at the price of getBuyPrice
   function sendTokens(uint256 tokens) whenNotPaused {
     require(tokens > 0);
 
@@ -210,7 +210,7 @@ contract LifMarketMaker is Ownable {
     return getCurrentPeriodIndex() >= totalPeriods;
   }
 
-  // Called from the foundation wallet to claim eth back from the Market Maker. Maximum amount
+  // Called from the foundation wallet to claim eth back from the MVM. Maximum amount
   // that can be claimed is determined by getMaxClaimableWeiAmount
   function claimEth(uint256 weiAmount) whenNotPaused {
     require(msg.sender == foundationAddr);

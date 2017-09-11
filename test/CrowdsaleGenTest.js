@@ -101,7 +101,7 @@ contract('LifCrowdsale Property-based test', function() {
         maxPresaleCapUSD: 1000000,
         minCapUSD: 5000000,
         maxFoundationCapUSD: 10000000,
-        marketMaker24PeriodsCapUSD: 40000000
+        MVM24PeriodsCapUSD: 40000000
       };
 
       let crowdsale = await LifCrowdsale.new(
@@ -153,8 +153,8 @@ contract('LifCrowdsale Property-based test', function() {
         weiPerUSDinTGE: 0,
         crowdsaleFunded: false,
         owner: owner,
-        marketMakerBuyPrice: new BigNumber(0),
-        marketMakerBurnedTokens: new BigNumber(0),
+        MVMBuyPrice: new BigNumber(0),
+        MVMBurnedTokens: new BigNumber(0),
         returnedWeiForBurnedTokens: new BigNumber(0)
       };
 
