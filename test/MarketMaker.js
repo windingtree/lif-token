@@ -8,13 +8,10 @@ require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-var LifMarketValidationMechanism = artifacts.require("./LifMarketValidationMechanism.sol");
-var LifToken = artifacts.require("./LifToken.sol");
-var LifCrowdsale = artifacts.require("./LifCrowdsale.sol");
+var LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
+var LifToken = artifacts.require('./LifToken.sol');
 
 var {increaseTimeTestRPC, increaseTimeTestRPCTo, duration} = require('./helpers/increaseTime');
-
-const LOG_EVENTS = true;
 
 contract('Market validation Mechanism', function(accounts) {
 
@@ -43,16 +40,16 @@ contract('Market validation Mechanism', function(accounts) {
     ];
 
     for (var i = 0; i < distributionDeltas.length; i++) {
-      assert.equal(distributionDeltas[i], parseInt((await mm.periods.call(i))[0]))
+      assert.equal(distributionDeltas[i], parseInt((await mm.periods.call(i))[0]));
     }
 
     // a few specific examples to double-check
-    assert.equal( parseInt((await mm.periods.call(0))[0]), 0 )
-    assert.equal( parseInt((await mm.periods.call(1))[0]), 18 )
-    assert.equal( parseInt((await mm.periods.call(9))[0]), 1905 )
-    assert.equal( parseInt((await mm.periods.call(15))[0]), 4766 )
-    assert.equal( parseInt((await mm.periods.call(16))[0]), 5345 )
-    assert.equal( parseInt((await mm.periods.call(23))[0]), 10138 )
+    assert.equal( parseInt((await mm.periods.call(0))[0]), 0 );
+    assert.equal( parseInt((await mm.periods.call(1))[0]), 18 );
+    assert.equal( parseInt((await mm.periods.call(9))[0]), 1905 );
+    assert.equal( parseInt((await mm.periods.call(15))[0]), 4766 );
+    assert.equal( parseInt((await mm.periods.call(16))[0]), 5345 );
+    assert.equal( parseInt((await mm.periods.call(23))[0]), 10138 );
 
   });
 
@@ -81,20 +78,20 @@ contract('Market validation Mechanism', function(accounts) {
     ];
 
     for (var i = 0; i < distributionDeltas.length; i++) {
-      assert.equal(distributionDeltas[i], parseInt((await mm.periods.call(i))[0]))
+      assert.equal(distributionDeltas[i], parseInt((await mm.periods.call(i))[0]));
     }
 
     // just a few examples to double-check
-    assert.equal(97, parseInt((await mm.periods.call(5))[0]))
-    assert.equal(416, parseInt((await mm.periods.call(11))[0]))
-    assert.equal(1425, parseInt((await mm.periods.call(22))[0]))
-    assert.equal(2746, parseInt((await mm.periods.call(32))[0]))
-    assert.equal(2898, parseInt((await mm.periods.call(33))[0]))
-    assert.equal(4595, parseInt((await mm.periods.call(43))[0]))
-    assert.equal(4782, parseInt((await mm.periods.call(44))[0]))
-    assert.equal(4972, parseInt((await mm.periods.call(45))[0]))
-    assert.equal(5166, parseInt((await mm.periods.call(46))[0]))
-    assert.equal(5363, parseInt((await mm.periods.call(47))[0]))
+    assert.equal(97, parseInt((await mm.periods.call(5))[0]));
+    assert.equal(416, parseInt((await mm.periods.call(11))[0]));
+    assert.equal(1425, parseInt((await mm.periods.call(22))[0]));
+    assert.equal(2746, parseInt((await mm.periods.call(32))[0]));
+    assert.equal(2898, parseInt((await mm.periods.call(33))[0]));
+    assert.equal(4595, parseInt((await mm.periods.call(43))[0]));
+    assert.equal(4782, parseInt((await mm.periods.call(44))[0]));
+    assert.equal(4972, parseInt((await mm.periods.call(45))[0]));
+    assert.equal(5166, parseInt((await mm.periods.call(46))[0]));
+    assert.equal(5363, parseInt((await mm.periods.call(47))[0]));
   });
 
   it('should return correct periods using getCurrentPeriodIndex', async function() {
@@ -243,7 +240,7 @@ contract('Market validation Mechanism', function(accounts) {
 
     let getMaxClaimableWei = function(state) {
       if (state.MVMMonth >= periods) {
-        help.debug("calculating maxClaimableEth with", startingMMBalance, state.MVMClaimedWei,
+        help.debug('calculating maxClaimableEth with', startingMMBalance, state.MVMClaimedWei,
           state.returnedWeiForBurnedTokens);
         return startingMMBalance.
           minus(state.MVMClaimedWei).
@@ -272,7 +269,7 @@ contract('Market validation Mechanism', function(accounts) {
         state.claimablePercentage = _.sumBy(_.take(distributionDeltas, period + 1), (x) => x);
       }
 
-      help.debug("updating state on new month", month, "(period:", period, ")");
+      help.debug('updating state on new month', month, '(period:', period, ')');
       state.MVMBuyPrice = initialBuyPrice.
         mul(priceFactor - state.claimablePercentage).
         dividedBy(priceFactor).floor();
@@ -286,7 +283,7 @@ contract('Market validation Mechanism', function(accounts) {
     await waitForMonth(0, startTimestamp, secondsPerPeriod);
 
     let sendTokens = async (tokens) => {
-      return await commands.commands.MVMSendTokens.run({
+      await commands.commands.MVMSendTokens.run({
         tokens: tokens,
         from: customerAddressIndex
       }, state);

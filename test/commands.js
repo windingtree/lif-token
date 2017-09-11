@@ -1,4 +1,4 @@
-var LifMarketValidationMechanism = artifacts.require("./LifMarketValidationMechanism.sol");
+var LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
 
 var BigNumber = web3.BigNumber;
 
@@ -307,9 +307,9 @@ async function runFinalizeCrowdsaleCommand(command, state) {
     await state.crowdsaleContract.finalize({from: account});
 
     let fundsRaised = state.weiRaised.div(state.weiPerUSDinTGE),
-      minimumForMarketMaker = await state.crowdsaleContract.maxFoundationCapUSD.call();
+      minimumForMVM = await state.crowdsaleContract.maxFoundationCapUSD.call();
 
-    if (crowdsaleFunded && (fundsRaised.gt(minimumForMarketMaker))) {
+    if (crowdsaleFunded && (fundsRaised.gt(minimumForMVM))) {
 
       let MVMInitialBalance = state.weiRaised.minus(state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
       let MVMPeriods = (MVMInitialBalance > (state.crowdsaleData.MVM24PeriodsCapUSD*state.weiPerUSDinTGE)) ? 48 : 24;
@@ -318,7 +318,7 @@ async function runFinalizeCrowdsaleCommand(command, state) {
 
       let MVM = new LifMarketValidationMechanism(mmAddress);
 
-      assert.equal(24, parseInt(await MVM.totalPeriods()));
+      assert.equal(MVMPeriods, parseInt(await MVM.totalPeriods()));
       assert.equal(state.crowdsaleData.foundationWallet, await MVM.foundationAddr());
       assert.equal(state.crowdsaleData.foundationWallet, await MVM.owner());
 
@@ -483,7 +483,7 @@ let priceFactor = 100000;
 
 let getMMMaxClaimableWei = function(state) {
   if (state.MVMMonth >= state.MVMPeriods) {
-    help.debug("calculating maxClaimableEth with", state.MVMStartingBalance,
+    help.debug('calculating maxClaimableEth with', state.MVMStartingBalance,
       state.MVMClaimedWei,
       state.returnedWeiForBurnedTokens);
     return state.MVMStartingBalance.
@@ -497,7 +497,7 @@ let getMMMaxClaimableWei = function(state) {
       minus(state.MVMClaimedWei);
     return _.max([0, maxClaimable]);
   }
-}
+};
 
 async function runFundCrowdsaleBelowSoftCap(command, state) {
   if (!state.crowdsaleFinalized) {
@@ -538,7 +538,7 @@ async function runFundCrowdsaleBelowSoftCap(command, state) {
 
       state = await runFinalizeCrowdsaleCommand({fromAccount: command.account}, state);
 
-      // verify that the crowdsale is finalized and funded, but there's no market maker
+      // verify that the crowdsale is finalized and funded, but there's no MVM
       assert.equal(true, state.crowdsaleFinalized);
       assert.equal(true, state.crowdsaleFunded);
       assert(state.MVM === undefined);
@@ -601,7 +601,7 @@ async function runFundCrowdsaleOverSoftCap(command, state) {
 }
 
 // TODO: implement finished, returns false, but references state to make eslint happy
-let isMarketMakerFinished = (state) => state && false;
+let isMVMFinished = (state) => state && false;
 
 async function runMVMSendTokensCommand(command, state) {
   if (state.MVM === undefined) {
@@ -610,7 +610,7 @@ async function runMVMSendTokensCommand(command, state) {
     // except when the soft cap was not reached
     // TODO: test whether the crowdsale was funded but soft cap was not reached
     assert.equal(false, state.crowdsaleFinalized && state.crowdsaleFunded,
-      "if there's no MVM, crowdsale should not have been funded");
+      'if theres no MVM, crowdsale should not have been funded');
   } else {
     let lifWei = help.lif2LifWei(command.tokens),
       lifBuyPrice = state.MVMBuyPrice.div(priceFactor),
@@ -628,11 +628,11 @@ async function runMVMSendTokensCommand(command, state) {
 
     try {
       help.debug('Selling ',command.tokens, ' tokens in exchange of ', web3.fromWei(tokensCost, 'ether'), 'eth at a price of', lifBuyPrice.toString());
-      tx1 = await state.token.approve(state.MVM.address, lifWei, {from: fromAddress}),
+      let tx1 = await state.token.approve(state.MVM.address, lifWei, {from: fromAddress}),
         tx2 = await state.MVM.sendTokens(lifWei, {from: fromAddress}),
         gas = tx1.receipt.gasUsed + tx2.receipt.gasUsed;
 
-      help.debug("sold tokens to MVM");
+      help.debug('sold tokens to MVM');
 
       state.ethBalances[command.from] = ethBalanceBeforeSend.plus(tokensCost).minus(help.gasPrice.mul(gas));
       state.MVMEthBalance = state.MVMEthBalance.minus(tokensCost);

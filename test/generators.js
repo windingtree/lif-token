@@ -139,7 +139,7 @@ module.exports = {
   }),
 
   MVMSendTokensCommandGen: jsc.record({
-    type: jsc.constant("MVMSendTokens"),
+    type: jsc.constant('MVMSendTokens'),
     tokens: jsc.nat,
     from: accountGen
   }),
