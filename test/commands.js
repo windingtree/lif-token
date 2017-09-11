@@ -508,7 +508,7 @@ async function runFundCrowdsaleBelowSoftCap(command, state) {
 
     // set weiPerUSDinTGE rate if needed
     if (state.weiPerUSDinTGE == 0) {
-      state = await runSetWeiPerUSDinTGECommand({wei: 10000, fromAccount: state.owner}, state);
+      state = await runSetWeiPerUSDinTGECommand({wei: 100, fromAccount: state.owner}, state);
     }
 
     let minCapUSD = await state.crowdsaleContract.minCapUSD.call(),
