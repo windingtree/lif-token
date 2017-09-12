@@ -113,7 +113,10 @@ async function runBuyPresaleTokensCommand(command, state) {
     hasZeroAddress;
 
   try {
-    help.debug('buying presale tokens, rate:', rate, 'eth:', command.eth, 'endBlock:', crowdsale.publicPresaleEndTimestamp, 'blockTimestamp:', nextTimestamp);
+    help.debug('buying presale tokens, rate:', rate, 'eth:', command.eth,
+      'startBlock:', crowdsale.publicPresaleStartTimestamp,
+      'endBlock:', crowdsale.publicPresaleEndTimestamp,
+      'blockTimestamp:', nextTimestamp);
 
     await state.crowdsaleContract.buyPresaleTokens(beneficiaryAccount, {value: weiCost, from: account});
 

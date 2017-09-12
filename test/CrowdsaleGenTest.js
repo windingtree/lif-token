@@ -85,8 +85,10 @@ contract('LifCrowdsale Property-based test', function() {
 
     try {
       let crowdsaleData = {
-        publicPresaleStartTimestamp: publicPresaleStartTimestamp, publicPresaleEndTimestamp: publicPresaleEndTimestamp,
-        startTimestamp: startTimestamp, end1Timestamp: end1Timestamp, end2Timestamp: end2Timestamp,
+        publicPresaleStartTimestamp: publicPresaleStartTimestamp,
+        publicPresaleEndTimestamp: publicPresaleEndTimestamp,
+        startTimestamp: startTimestamp, end1Timestamp: end1Timestamp,
+        end2Timestamp: end2Timestamp,
         publicPresaleRate: input.crowdsale.publicPresaleRate,
         rate1: input.crowdsale.rate1,
         rate2: input.crowdsale.rate2,
