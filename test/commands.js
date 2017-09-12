@@ -1,4 +1,5 @@
 var LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
+var VestedPayment = artifacts.require('./VestedPayment.sol');
 
 var BigNumber = web3.BigNumber;
 
@@ -321,6 +322,16 @@ async function runFinalizeCrowdsaleCommand(command, state) {
       assert.equal(MVMPeriods, parseInt(await MVM.totalPeriods()));
       assert.equal(state.crowdsaleData.foundationWallet, await MVM.foundationAddr());
       assert.equal(state.crowdsaleData.foundationWallet, await MVM.owner());
+
+      let vestedPaymentFounders = new VestedPayment(
+        await state.crowdsaleContract.foundersVestedPayment()
+      );
+      let vestedPaymentFoundation = new VestedPayment(
+        await state.crowdsaleContract.foundationVestedPayment()
+      );
+
+      assert.equal(state.crowdsaleData.foundationWallet, await vestedPaymentFounders.owner());
+      assert.equal(state.crowdsaleData.foundationWallet, await vestedPaymentFoundation.owner());
 
       state.MVM = MVM;
     }
