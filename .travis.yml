@@ -10,6 +10,6 @@ script:
   - set -e
   - yarn lint
   - GEN_TESTS_QTY=20 yarn test test/LifToken.js test/Crowdsale.js test/CrowdsaleGenTest.js
-  - yarn test test/MarketMaker.js
+  - yarn test test/MarketMaker.js test/VestedPayment.js
 after_script:
   - yarn run coveralls
