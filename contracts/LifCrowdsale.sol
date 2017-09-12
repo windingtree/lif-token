@@ -6,79 +6,121 @@ import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "./LifToken.sol";
 import "./LifMarketValidationMechanism.sol";
 
+/**
+   @title Crowdsale for the Lif Token Generation Even
+
+   Implementation of the Lif Token Generation Event (TGE) Crowdsale: A 2 week
+   fixed price, uncapped
+   token sale, with a discounted rate during the 1st week and discounted rates
+   for contributions during the presale period and a Market Validation Mechanism
+   that will receive the funds over the USD 10M
+   soft cap.
+   The crowdsale has a minimum cap of USD 5M which in case of not being reached
+   by purchases made during the 2 week period the token will not start operating
+   and all funds sent during that period will be made available to be claimed by
+   the originating addresses.
+   Funds up to the USD 10M soft cap will be sent to the Winding Tree Foundation
+   wallet at the end of the crowdsale.
+   Funds over that amount will be put in a MarketValidationMechanism (MVM) smart
+   contract that guarantees a price floor for a period of 2 or 4 years, allowing
+   any token holder to burn their tokens in exchange of part of the eth amount
+   sent during the TGE in exchange of those tokens.
+ */
 contract LifCrowdsale is Ownable, Pausable {
   using SafeMath for uint256;
 
-  // The token being sold
+  // The token being sold.
   LifToken public token;
 
-  // start and end timestamps of the public presale
+  // Start and end timestamps of the public presale.
   uint256 public publicPresaleStartTimestamp;
   uint256 public publicPresaleEndTimestamp;
 
-  // start and end timestamps where investments are allowed (both inclusive)
+  // Beginning of the period where tokens can be purchased at rate `rate1`.
   uint256 public startTimestamp;
+  // Moment after which the rate to buy tokens goes from `rate1` to `rate2`.
   uint256 public end1Timestamp;
+  // Marks the end of the Token Generation Event.
   uint256 public end2Timestamp;
 
-  // address where funds are collected
+  // Address of the Winding Tree Foundation wallet. Funds up to the soft cap are
+  // sent to this address. It's also the address to which the MVM distributes
+  // the funds that are made available month after month. An extra 5% of tokens
+  // are put in a Vested Payment with this address as beneficiary, acting as a
+  // long-term reserve for the foundation.
   address public foundationWallet;
 
-  // minimun amount of wei to be raised in order to succed, it starts in USD
+  // Public presale max cap, in USD. Converted to wei using `weiPerUSDinPresale`
   uint256 public maxPresaleCapUSD = 1000000;
 
-  // minimun amount of wei to be raised in order to succed, it starts in USD
+  // TGE min cap, in USD. Converted to wei using `weiPerUSDinTGE`.
   uint256 public minCapUSD = 5000000;
 
-  // maximun balance that the foundation can have, it starts in USD
+  // Maximun amount from the TGE that the foundation receives, in USD. Converted
+  // to wei using `weiPerUSDinTGE`. Funds over this cap go to the MVM.
   uint256 public maxFoundationCapUSD = 10000000;
 
-  // maximun balance that the 24 month Market Validation Mechanism (MVM) can have
+  // Maximum amount from the TGE that makes the MVM to last for 24 months. If
+  // funds from the TGE exceed this amount, the MVM will last for 24 months.
   uint256 public MVM24PeriodsCapUSD = 40000000;
 
-  // how much a USD worth in wei in public presale
+  // Conversion rate from USD to wei to use during the presale.
   uint256 public weiPerUSDinPresale = 0;
 
-  // how much a USD worth in wei in TGE
+  // Conversion rate from USD to wei to use during the TGE.
   uint256 public weiPerUSDinTGE = 0;
 
-  // amount of seconds where the weiPerUSD cannot change before setWeiPerUSD functions
+  // Seconds before the Presale and the TGE since when the corresponding USD to
+  // wei rate cannot be set by the owner anymore.
   uint256 public setWeiLockSeconds = 0;
 
-  // how much wei a token unit costs to a buyer, during the private presale stage
+  // Quantity of Lif that is received in exchange of 1 Ether during the private
+  // presale
   uint256 public privatePresaleRate;
 
-  // how much wei a token unit costs to a buyer, during the public presale
+  // Quantity of Lif that is received in exchange of 1 Ether during the public
+  // presale
   uint256 public publicPresaleRate;
-  // how much wei a token unit costs to a buyer, during the first half of the crowdsale
+
+  // Quantity of Lif that is received in exchage of 1 Ether during the first
+  // week of the 2 weeks TGE
   uint256 public rate1;
-  // how much wei a token unit costs to a buyer, during the second half of the crowdsale
+
+  // Quantity of Lif that is received in exchage of 1 Ether during the second
+  // week of the 2 weeks TGE
   uint256 public rate2;
 
-  // amount of raised money in wei
+  // Amount of wei received in exchange of tokens during the 2 weeks TGE
   uint256 public weiRaised;
 
-  // total amount of tokens sold on the TGE
+  // Amount of lif minted and transferred during the TGE
   uint256 public tokensSold;
 
-  // total amount of wei received as presale payments (both private and public)
+  // Amount of wei received as presale payments (both private and public)
   uint256 public totalPresaleWei;
 
-  // the address of the MVM created at the end of the crowdsale
+  // Address of the MVM created at the end of the crowdsale
   address public MVM;
 
+  // Tracks the wei sent per address during the 2 week TGE. This is the amount
+  // that can be claimed by each address in case the minimum cap is not reached
   mapping(address => uint256) public purchases;
 
+  // Has the Crowdsale been finalized by a successful call to `finalize`?
   bool public isFinalized = false;
 
+  /**
+     @dev Event triggered (at most once) on a successful call to `finalize`
+  **/
   event Finalized();
 
   /**
-   * event for token purchase logging
-   * @param purchaser who paid for the tokens
-   * @param beneficiary who got the tokens
-   * @param value weis paid for purchase
-   * @param amount amount of tokens purchased
+     @dev Event triggered on every purchase during the public presale and TGE
+
+     @param purchaser who paid for the tokens
+     @param beneficiary who got the tokens
+     @param value amount of wei paid
+     @param amount amount of tokens purchased
    */
   event TokenPurchase(
     address indexed purchaser,
@@ -87,6 +129,20 @@ contract LifCrowdsale is Ownable, Pausable {
     uint256 amount
   );
 
+  /**
+     @dev Constructor. Creates the token in a paused state
+
+     @param _publicPresaleStartTimestamp see `publicPresaleStartTimestamp`
+     @param _publicPresaleEndTimestamp see `publicPresaleEndTimestamp`
+     @param _startTimestamp see `startTimestamp`
+     @param _end1Timestamp see `end1Timestamp`
+     @param _end2Timestamp see `end2Timestamp
+     @param _publicPresaleRate see `publicPresaleRate`
+     @param _rate1 see `rate1`
+     @param _rate2 see `rate2`
+     @param _privatePresaleRate see `privatePresaleRate`
+     @param _foundationWallet see `foundationWallet`
+   */
   function LifCrowdsale(
     uint256 _publicPresaleStartTimestamp,
     uint256 _publicPresaleEndTimestamp,
@@ -128,8 +184,12 @@ contract LifCrowdsale is Ownable, Pausable {
     foundationWallet = _foundationWallet;
   }
 
-  // Set how the rate wei per USD for the public presale, necesary to calculate with more
-  // precision the maxCap on the presale.
+  /**
+     @dev Set the wei per USD rate for the public presale. Has to be called by
+     the owner up to `setWeiLockSeconds` before `publicPresaleStartTimestamp`
+
+     @param _weiPerUSD wei per USD rate valid during the public presale
+  */
   function setWeiPerUSDinPresale(uint256 _weiPerUSD) onlyOwner {
     require(_weiPerUSD > 0);
     assert(block.timestamp < publicPresaleStartTimestamp.sub(setWeiLockSeconds));
@@ -137,8 +197,12 @@ contract LifCrowdsale is Ownable, Pausable {
     weiPerUSDinPresale = _weiPerUSD;
   }
 
-  // Set how the rate wei per USD for the TGE, necesary to calculate with more precision the
-  // maxCap on the distribution of funds on finalize.
+  /**
+     @dev Set the wei per USD rate for the TGE. Has to be called by
+     the owner up to `setWeiLockSeconds` before `startTimestamp`
+
+     @param _weiPerUSD wei per USD rate valid during the TGE
+   */
   function setWeiPerUSDinTGE(uint256 _weiPerUSD) onlyOwner {
     require(_weiPerUSD > 0);
     assert(block.timestamp < startTimestamp.sub(setWeiLockSeconds));
@@ -146,7 +210,11 @@ contract LifCrowdsale is Ownable, Pausable {
     weiPerUSDinTGE = _weiPerUSD;
   }
 
-  // returns the current rate or 0 if current block is not within the crowdsale period
+  /**
+     @dev Returns the current Lif per Eth rate during the presale and TGE
+
+     @return the current Lif per Eth rate or 0 when not during presale or TGE
+   */
   function getRate() public constant returns (uint256) {
     if (block.timestamp < publicPresaleStartTimestamp)
       return 0;
@@ -162,7 +230,10 @@ contract LifCrowdsale is Ownable, Pausable {
       return 0;
   }
 
-  // fallback function can be used to buy tokens
+  /**
+     @dev Fallback function, payable. Calls `buyTokens` or `buyPresaleTokens`
+     depending on the current timestamp
+   */
   function () payable {
     if (block.timestamp >= startTimestamp)
       buyTokens(msg.sender);
@@ -170,7 +241,12 @@ contract LifCrowdsale is Ownable, Pausable {
       buyPresaleTokens(msg.sender);
   }
 
-  // low level token purchase function for TGE
+  /**
+     @dev Allows to get tokens during the TGE. Payable. The value is converted to
+     Lif using the current rate obtained by calling `getRate()`.
+
+     @param beneficiary Address to which Lif should be sent
+   */
   function buyTokens(address beneficiary) payable {
     require(beneficiary != 0x0);
     require(validPurchase());
@@ -195,7 +271,12 @@ contract LifCrowdsale is Ownable, Pausable {
     TokenPurchase(msg.sender, beneficiary, weiAmount, tokens);
   }
 
-  // low level token purchase function for presale
+  /**
+     @dev Allows to get tokens during the public presale. The value is converted
+     to Lif using the current rate obtained by calling `getRate()`
+
+     @param beneficiary Address to which Lif should be sent
+   */
   function buyPresaleTokens(address beneficiary) payable {
     require(beneficiary != 0x0);
     require(validPresalePurchase());
@@ -218,6 +299,14 @@ contract LifCrowdsale is Ownable, Pausable {
     TokenPurchase(msg.sender, beneficiary, weiAmount, tokens);
   }
 
+  /**
+     @dev Allows to add the address and the amount of wei sent by a contributor
+     in the private presale. Can only be called by the owner before the beginning
+     of the public presale
+
+     @param beneficiary Address to which Lif will be sent
+     @param weiSent Amount of wei contributed
+   */
   function addPrivatePresaleTokens(address beneficiary, uint256 weiSent) onlyOwner {
     require(block.timestamp < publicPresaleStartTimestamp);
     require(beneficiary != address(0));
@@ -230,7 +319,10 @@ contract LifCrowdsale is Ownable, Pausable {
     token.mint(beneficiary, tokens);
   }
 
-  // send ether to the fund collection wallet
+  /**
+     @dev Internal. Forwards funds to the foundation wallet and in case the soft
+     cap was exceeded it also creates and funds the Market Validation Mechanism.
+   */
   function forwardFunds() internal {
 
     // calculate the max amount of wei for the foundation
@@ -265,14 +357,20 @@ contract LifCrowdsale is Ownable, Pausable {
     }
   }
 
-  // @return true if the transaction can buy tokens on TGE
+  /**
+     @dev Modifier
+     @return true if the transaction can buy tokens on TGE
+   */
   function validPurchase() internal constant returns (bool) {
     bool withinPeriod = now >= startTimestamp && now <= end2Timestamp;
     bool nonZeroPurchase = msg.value != 0;
     return (withinPeriod && nonZeroPurchase);
   }
 
-  // @return true if the transaction can buy tokens on presale
+  /**
+     @dev Modifier
+     @return true if the transaction can buy tokens on presale
+   */
   function validPresalePurchase() internal constant returns (bool) {
     bool withinPublicPresalePeriod = now >= publicPresaleStartTimestamp && now <= publicPresaleEndTimestamp;
     bool maxPresaleNotReached = totalPresaleWei.add(msg.value) <= maxPresaleCapUSD.mul(weiPerUSDinPresale);
@@ -280,17 +378,27 @@ contract LifCrowdsale is Ownable, Pausable {
     return (withinPublicPresalePeriod && maxPresaleNotReached && nonZeroPurchase);
   }
 
-  // @return true if crowdsale event has ended
+  /**
+     @dev Modifier
+     @return true if crowdsale event has ended
+  */
   function hasEnded() public constant returns (bool) {
     return block.timestamp > end2Timestamp;
   }
 
+  /**
+     @dev Modifier
+     @return true if minCapUSD has been reached by contributions during the TGE
+  */
   function funded() public constant returns (bool) {
     assert(weiPerUSDinTGE > 0);
     return weiRaised >= minCapUSD.mul(weiPerUSDinTGE);
   }
 
-  // return the eth if the crowdsale didnt reach the minCap
+  /**
+     @dev Allows a TGE contributor to claim their contributed eth in case the
+     TGE has finished without reaching the minCapUSD
+   */
   function claimEth() public {
     require(isFinalized);
     require(hasEnded());
@@ -304,8 +412,12 @@ contract LifCrowdsale is Ownable, Pausable {
     msg.sender.transfer(toReturn);
   }
 
-  // should be called after crowdsale ends, to do
-  // some extra finalization work
+  /**
+     @dev Finalizes the crowdsale, taking care of transfer of funds to the
+     Winding Tree Foundation and creation and funding of the Market Validation
+     Mechanism in case the soft cap was exceeded. It also unpauses the token to
+     enable transfers. It can be called only once, after `end2Timestamp`
+   */
   function finalize() public {
     require(!isFinalized);
     require(hasEnded());
@@ -322,7 +434,6 @@ contract LifCrowdsale is Ownable, Pausable {
       token.transferOwnership(owner);
 
       forwardFunds();
-
     }
 
     Finalized();
