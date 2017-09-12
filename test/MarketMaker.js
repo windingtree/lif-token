@@ -174,7 +174,7 @@ contract('Market validation Mechanism', function(accounts) {
 
     assert.equal(data.MVMMonth >= periods, await mm.isFinished());
 
-    data.ethBalances[customerAddressIndex].should.be.bignumber.equal(web3.eth.getBalance(customer));
+    // data.ethBalances[customerAddressIndex].should.be.bignumber.equal(web3.eth.getBalance(customer));
     data.balances[customerAddressIndex].should.be.bignumber.equal(await token.balanceOf(customer));
 
     data.MVMMaxClaimableWei.should.be.bignumber.equal(await mm.getMaxClaimableWeiAmount());
@@ -188,16 +188,18 @@ contract('Market validation Mechanism', function(accounts) {
 
     const startingMMBalance = new BigNumber(web3.toWei(200, 'ether'));
     const weiPerUSD = parseInt(web3.toWei(200/20000000, 'ether'));
-    const rate = tokenTotalSupply / web3.fromWei(startingMMBalance.plus(web3.toWei(100, 'ether')), 'ether');
+    const tokensInCrowdsale = new BigNumber(tokenTotalSupply).mul(0.8).floor();
+    const rate = tokensInCrowdsale / web3.fromWei(startingMMBalance.plus(web3.toWei(100, 'ether')), 'ether');
 
-    crowdsale = await help.simulateCrowdsale(rate, [tokenTotalSupply], accounts, weiPerUSD);
+    crowdsale = await help.simulateCrowdsale(rate, [tokensInCrowdsale], accounts, weiPerUSD);
     token = LifToken.at( await crowdsale.token.call());
     mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
     await mm.calculateDistributionPeriods({from: accounts[4]});
-
     let customer = accounts[customerAddressIndex];
     const initialBuyPrice = startingMMBalance.mul(priceFactor).dividedBy(help.lif2LifWei(tokenTotalSupply)).floor();
 
+    help.lif2LifWei(tokenTotalSupply).should.be.bignumber.equal(await token.totalSupply());
+    startingMMBalance.should.be.bignumber.equal(await mm.initialWei());
     initialBuyPrice.should.be.bignumber.equal(await mm.initialBuyPrice());
 
     let state = {
@@ -302,17 +304,17 @@ contract('Market validation Mechanism', function(accounts) {
       await checkScenarioProperties(state, mm, customer);
     };
 
-    // Sell 300 tokens to the MM
-    await sendTokens(300);
+    // Sell 240 tokens to the MM
+    await sendTokens(240);
 
-    // Sell 600 tokens to the MM
-    await sendTokens(600);
+    // Sell 480 tokens to the MM
+    await sendTokens(480);
 
     // Month 1
     await waitForMonth(1, startTimestamp, secondsPerPeriod);
 
-    // Sell 300 tokens to the MM
-    await sendTokens(300);
+    // Sell 240 tokens to the MM
+    await sendTokens(240);
 
     // try to claim more than the max claimable and it should fail
     let thrown;
@@ -330,8 +332,8 @@ contract('Market validation Mechanism', function(accounts) {
     // Month 2
     await waitForMonth(2, startTimestamp, secondsPerPeriod);
 
-    // Sell 300 tokens to the MM
-    await sendTokens(300);
+    // Sell 240 tokens to the MM
+    await sendTokens(240);
 
     // Claim 18 ETH
     await claimEth(0.03);
@@ -339,8 +341,8 @@ contract('Market validation Mechanism', function(accounts) {
     // Month 3
     await waitForMonth(3, startTimestamp, secondsPerPeriod);
 
-    // Sell 1200 tokens to the MM
-    await sendTokens(1200);
+    // Sell 960 tokens to the MM
+    await sendTokens(960);
 
     await waitForMonth(12, startTimestamp, secondsPerPeriod);
     await waitForMonth(14, startTimestamp, secondsPerPeriod);
@@ -348,10 +350,11 @@ contract('Market validation Mechanism', function(accounts) {
 
     await claimEth(5);
 
-    // Sell 300 tokens to the MM
-    await sendTokens(300);
+    // Sell 240 tokens to the MM
+    await sendTokens(240);
 
-    new BigNumber(0).should.be.bignumber.equal(await token.totalSupply.call());
+    new BigNumber(help.lif2LifWei(tokenTotalSupply)).minus(help.lif2LifWei(tokensInCrowdsale))
+      .should.be.bignumber.equal(await token.totalSupply.call());
 
     await waitForMonth(25, startTimestamp, secondsPerPeriod);
 
