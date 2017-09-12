@@ -39,7 +39,6 @@ contract LifMarketValidationMechanism is Ownable {
   // Total supply of tokens when the MVM was created
   uint256 public originalTotalSupply;
 
-  uint256 constant PERCENTAGE_FACTOR = 100000;
   uint256 constant PRICE_FACTOR = 100000;
 
   // Has the MVM been funded by calling `fund`? It can be funded only once
@@ -168,8 +167,8 @@ contract LifMarketValidationMechanism is Ownable {
     uint256 accumulatedDistributionPercentage = getAccumulatedDistributionPercentage();
 
     return initialBuyPrice.
-      mul(PERCENTAGE_FACTOR.sub(accumulatedDistributionPercentage)).
-      div(PERCENTAGE_FACTOR);
+      mul(PRICE_FACTOR.sub(accumulatedDistributionPercentage)).
+      div(PRICE_FACTOR);
   }
 
   // Get the maximum amount of wei that the foundation can claim. It's a portion of
@@ -181,7 +180,7 @@ contract LifMarketValidationMechanism is Ownable {
       uint256 currentCirculation = lifToken.totalSupply();
       uint256 accumulatedDistributionPercentage = getAccumulatedDistributionPercentage();
       uint256 maxClaimable = initialWei.
-        mul(accumulatedDistributionPercentage).div(PERCENTAGE_FACTOR).
+        mul(accumulatedDistributionPercentage).div(PRICE_FACTOR).
         mul(currentCirculation).div(originalTotalSupply);
 
       if (maxClaimable > totalWeiClaimed) {
