@@ -28,40 +28,31 @@ contract VestedPayment is Ownable {
   // duration (in periods) of the initial cliff in the vesting schedule
   uint256 public cliffDuration;
 
-  // if the vested payment was funded or not
-  bool public funded = false;
-
   function VestedPayment(
     uint256 _startTimestamp, uint256 _secondsPerPeriod,
-    uint256 _totalPeriods, uint256 _cliffDuration, address tokenAddress
+    uint256 _totalPeriods, uint256 _cliffDuration,
+    uint256 _tokens, address tokenAddress
   ) {
     require(_startTimestamp >= block.timestamp);
     require(_secondsPerPeriod > 0);
     require(_totalPeriods > 0);
     require(tokenAddress != address(0));
     require(_cliffDuration < _totalPeriods);
+    require(_tokens > 0);
 
     startTimestamp = _startTimestamp;
     secondsPerPeriod = _secondsPerPeriod;
     totalPeriods = _totalPeriods;
     cliffDuration = _cliffDuration;
-    token = LifToken(tokenAddress);
-  }
-
-  // fund the vesting contract with tokens allowed to be spent by the contract
-  function fund(uint256 _tokens) onlyOwner {
-    assert(!funded);
-
-    token.transferFrom(owner, address(this), _tokens);
     tokens = _tokens;
-    funded = true;
+    token = LifToken(tokenAddress);
   }
 
   // how much tokens are available to be claimed
   function getAvailableTokens() public constant returns (uint256) {
     uint256 period = block.timestamp.sub(startTimestamp).div(secondsPerPeriod);
 
-    if ((period < cliffDuration) || !funded) {
+    if (period < cliffDuration) {
       return 0;
     } else if (period >= totalPeriods) {
       return tokens.sub(claimed);
@@ -72,7 +63,6 @@ contract VestedPayment is Ownable {
 
   // claim the tokens, they can be claimed only by the owner of the contract
   function claimTokens(uint256 amount) onlyOwner {
-    assert(funded);
     assert(getAvailableTokens() >= amount);
 
     claimed = claimed.add(amount);
