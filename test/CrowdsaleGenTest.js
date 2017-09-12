@@ -32,13 +32,12 @@ contract('LifCrowdsale Property-based test', function() {
     crowdsale: jsc.nonshrink(gen.crowdsaleGen)
   });
 
+  let sumBigNumbers = (arr) => _.reduce(arr, (accum, x) => accum.plus(x), zero);
+
   let checkCrowdsaleState = async function(state, crowdsaleData, crowdsale) {
     assert.equal(state.crowdsalePaused, await crowdsale.paused());
-    let tokensInPurchases = _.reduce(
-      _.map(state.purchases, (p) => p.tokens),
-      (accum, tokens) => accum.plus(tokens),
-      zero
-    );
+
+    let tokensInPurchases = sumBigNumbers(_.map(state.purchases, (p) => p.tokens));
     tokensInPurchases.should.be.bignumber.equal(help.lifWei2Lif(await crowdsale.tokensSold()));
 
     /*
@@ -47,11 +46,7 @@ contract('LifCrowdsale Property-based test', function() {
     assert.equal(inMemoryPresaleWei, parseInt(await crowdsale.totalPresaleWei.call()));
     */
     help.debug('checking purchases total wei, purchases:', JSON.stringify(state.purchases));
-    let weiInPurchases = _.reduce(
-      _.map(state.purchases, (p) => p.wei),
-      (accum, wei) => accum.plus(wei),
-      zero
-    );
+    let weiInPurchases = sumBigNumbers(_.map(state.purchases, (p) => p.wei));
     weiInPurchases.should.be.bignumber.equal(await crowdsale.weiRaised());
 
     // Check presale tokens sold
