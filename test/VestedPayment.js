@@ -37,7 +37,8 @@ contract('VestedPayment', function(accounts) {
   it('create the VestedPayment', async function() {
     const startTimestamp = latestTime() + duration.days(10);
     var vestedPayment = await VestedPayment.new(
-      startTimestamp, duration.days(30), 10, 4, token.address
+      startTimestamp, duration.days(30), 10, 4,
+      help.lif2LifWei(60), token.address
     );
     assert.equal(startTimestamp, await vestedPayment.startTimestamp.call());
     assert.equal(duration.days(30), parseInt(await vestedPayment.secondsPerPeriod.call()));
@@ -50,13 +51,11 @@ contract('VestedPayment', function(accounts) {
     const startTimestamp = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
       startTimestamp, duration.days(30), 12, 4,
-      token.address, {from: accounts[1]}
+      help.lif2LifWei(60), token.address, {from: accounts[1]}
     );
     var tokensAvailable = new BigNumber(0);
 
-    await token.approve(vestedPayment.address, help.lif2LifWei(61), {from: accounts[1]});
-    await vestedPayment.fund(help.lif2LifWei(60), {from: accounts[1]});
-    assert.equal(true, await vestedPayment.funded.call());
+    await token.transfer(vestedPayment.address, help.lif2LifWei(60), {from: accounts[1]});
 
     // Go to start
     await increaseTimeTestRPCTo(startTimestamp);
@@ -84,14 +83,11 @@ contract('VestedPayment', function(accounts) {
     const startTimestamp = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
       startTimestamp, duration.days(30), 12, 0,
-      token.address, {from: accounts[1]}
+      help.lif2LifWei(60), token.address, {from: accounts[1]}
     );
     var tokensAvailable = new BigNumber(0);
 
-    await token.approve(vestedPayment.address, help.lif2LifWei(61), {from: accounts[1]});
-    await vestedPayment.fund(help.lif2LifWei(60), {from: accounts[1]});
-    assert.equal(true, await vestedPayment.funded.call());
-
+    await token.transfer(vestedPayment.address, help.lif2LifWei(60), {from: accounts[1]});
     // Go to start
     await increaseTimeTestRPCTo(startTimestamp);
 
@@ -114,15 +110,12 @@ contract('VestedPayment', function(accounts) {
     const startTimestamp = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
       startTimestamp, duration.days(30), 12, 4,
-      token.address, {from: accounts[1]});
+      help.lif2LifWei(60), token.address, {from: accounts[1]});
     var tokensAvailable = new BigNumber(0);
 
-    await token.approve(vestedPayment.address, help.lif2LifWei(61), {from: accounts[1]});
-    await vestedPayment.fund(help.lif2LifWei(60), {from: accounts[1]});
+    await token.transfer(vestedPayment.address, help.lif2LifWei(60), {from: accounts[1]});
     await vestedPayment.transferOwnership(accounts[2], {from: accounts[1]});
-
     assert.equal(accounts[2], await vestedPayment.owner.call());
-    assert.equal(true, await vestedPayment.funded.call());
 
     // Go to start
     await increaseTimeTestRPCTo(startTimestamp);
@@ -178,15 +171,13 @@ contract('VestedPayment', function(accounts) {
     const startTimestamp = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
       startTimestamp, duration.days(30), 12, 4,
-      token.address, {from: accounts[1]}
+      help.lif2LifWei(60), token.address, {from: accounts[1]}
     );
 
-    await token.approve(vestedPayment.address, help.lif2LifWei(61), {from: accounts[1]});
-    await vestedPayment.fund(help.lif2LifWei(60), {from: accounts[1]});
+    await token.transfer(vestedPayment.address, help.lif2LifWei(60), {from: accounts[1]});
     await vestedPayment.transferOwnership(accounts[2], {from: accounts[1]});
 
     assert.equal(accounts[2], await vestedPayment.owner.call());
-    assert.equal(true, await vestedPayment.funded.call());
 
     // Go to period 1
     await increaseTimeTestRPCTo(startTimestamp+duration.days(30));
@@ -203,15 +194,13 @@ contract('VestedPayment', function(accounts) {
     const startTimestamp = latestTime() + duration.days(60);
     var vestedPayment = await VestedPayment.new(
       startTimestamp, duration.days(30), 12, 0,
-      token.address, {from: accounts[1]}
+      help.lif2LifWei(60), token.address, {from: accounts[1]}
     );
 
-    await token.approve(vestedPayment.address, help.lif2LifWei(61), {from: accounts[1]});
-    await vestedPayment.fund(help.lif2LifWei(60), {from: accounts[1]});
+    await token.transfer(vestedPayment.address, help.lif2LifWei(60), {from: accounts[1]});
     await vestedPayment.transferOwnership(accounts[2], {from: accounts[1]});
 
     assert.equal(accounts[2], await vestedPayment.owner.call());
-    assert.equal(true, await vestedPayment.funded.call());
 
     // Go to period 1
     await increaseTimeTestRPCTo(startTimestamp+duration.days(30));
