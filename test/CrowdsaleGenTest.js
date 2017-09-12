@@ -40,11 +40,11 @@ contract('LifCrowdsale Property-based test', function() {
     let tokensInPurchases = sumBigNumbers(_.map(state.purchases, (p) => p.tokens));
     tokensInPurchases.should.be.bignumber.equal(help.lifWei2Lif(await crowdsale.tokensSold()));
 
-    /*
-     * TODO: add this and similar checks
-    let inMemoryPresaleWei = web3.toWei(_.sumBy(state.presalePayments, (p) => p.amountEth), 'ether')
-    assert.equal(inMemoryPresaleWei, parseInt(await crowdsale.totalPresaleWei.call()));
-    */
+    let presaleLifWei = sumBigNumbers(_.map(state.presalePurchases, (p) => p.lifWei));
+    let presaleWei = sumBigNumbers(_.map(state.presalePurchases, (p) => p.wei));
+
+    presaleWei.should.be.bignumber.equal(await crowdsale.totalPresaleWei.call());
+
     help.debug('checking purchases total wei, purchases:', JSON.stringify(state.purchases));
     let weiInPurchases = sumBigNumbers(_.map(state.purchases, (p) => p.wei));
     weiInPurchases.should.be.bignumber.equal(await crowdsale.weiRaised());
@@ -55,6 +55,9 @@ contract('LifCrowdsale Property-based test', function() {
     if (state.crowdsaleFinalized && state.weiPerUSDinTGE > 0) {
       assert.equal(state.crowdsaleFunded, await crowdsale.funded());
     }
+
+    state.totalSupply.
+      should.be.bignumber.equal(await state.token.totalSupply.call());
   };
 
   let runGeneratedCrowdsaleAndCommands = async function(input) {
@@ -150,8 +153,10 @@ contract('LifCrowdsale Property-based test', function() {
         weiPerUSDinTGE: 0,
         crowdsaleFunded: false,
         owner: owner,
+        totalSupply: zero,
         MVMBuyPrice: new BigNumber(0),
         MVMBurnedTokens: new BigNumber(0),
+        burnedTokens: zero,
         returnedWeiForBurnedTokens: new BigNumber(0)
       };
 
