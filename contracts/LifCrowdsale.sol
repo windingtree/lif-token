@@ -343,7 +343,7 @@ contract LifCrowdsale is Ownable, Pausable {
 
       foundationWallet.transfer(this.balance);
 
-      mintExtraTokens(uint256(12));
+      mintExtraTokens(uint256(24));
 
     } else {
 
@@ -370,13 +370,20 @@ contract LifCrowdsale is Ownable, Pausable {
   }
 
   /**
-     @dev Internal. Distribute the rest of the tokens among founders and advisors
+     @dev Internal. Distribute extra tokens among founders,
+     team and the foundation long-term reserve. Founders receive
+     12.8% of tokens in a 4y (1y cliff) vesting schedule.
+     Foundation long-term reserve receives 5% of tokens in a
+     vesting schedule with the same duration as the MVM that
+     starts when the MVM ends. An extra 7.2% is transferred to
+     the foundation to be distributed among advisors and future hires
    */
   function mintExtraTokens(uint256 foundationMonthsStart) internal {
-    // calculate how much tokens will the founders, foundation and advisors will receive
+    // calculate how much tokens will the founders,
+    // foundation and advisors will receive
     uint256 foundersTokens = token.totalSupply().mul(128).div(1000);
     uint256 foundationTokens = token.totalSupply().mul(50).div(1000);
-    uint256 advisorsTokens = token.totalSupply().mul(72).div(1000);
+    uint256 teamTokens = token.totalSupply().mul(72).div(1000);
 
     // create the vested payment schedule for the founders
     foundersVestedPayment = new VestedPayment(
@@ -386,7 +393,7 @@ contract LifCrowdsale is Ownable, Pausable {
     foundersVestedPayment.transferOwnership(foundationWallet);
 
     // create the vested payment schedule for the foundation
-    uint256 foundationPaymentStart = foundationMonthsStart.mul(604800);
+    uint256 foundationPaymentStart = foundationMonthsStart.mul(30 days);
     foundationVestedPayment = new VestedPayment(
       block.timestamp.add(foundationPaymentStart), 30 days,
       foundationMonthsStart, 0, foundationTokens, token
@@ -395,17 +402,10 @@ contract LifCrowdsale is Ownable, Pausable {
     foundationVestedPayment.transferOwnership(foundationWallet);
 
     // transfer the token for advisors and future employees to the foundation
-    token.mint(foundationWallet, advisorsTokens);
+    token.mint(foundationWallet, teamTokens);
 
-    // finish the minting of the token and unpause it
-    token.finishMinting();
-    token.unpause();
-
-    // transfer the ownership of the token to the foundation
-    token.transferOwnership(owner);
   }
 
-  // @return true if the transaction can buy tokens on TGE
   /**
      @dev Modifier
      @return true if the transaction can buy tokens on TGE
@@ -475,6 +475,14 @@ contract LifCrowdsale is Ownable, Pausable {
     if (funded()) {
 
       forwardFunds();
+
+      // finish the minting of the token and unpause it
+      token.finishMinting();
+      token.unpause();
+
+      // transfer the ownership of the token to the foundation
+      token.transferOwnership(owner);
+
     }
 
     Finalized();
