@@ -439,8 +439,9 @@ async function runTransferCommand(command, state) {
     toAddress = gen.getAccount(command.toAccount),
     fromBalance = getBalance(state, command.fromAccount),
     lifWei = help.lif2LifWei(command.lif),
-    hasZeroAddress = _.some([fromAddress, toAddress], isZeroAddress),
-    shouldThrow = state.tokenPaused || fromBalance.lt(lifWei) || hasZeroAddress;
+    hasZeroAddress = _.some([fromAddress], isZeroAddress),
+    shouldThrow = state.tokenPaused || fromBalance.lt(lifWei) ||
+      (hasZeroAddress &  new BigNumber(lifWei).gt(0));
 
   try {
     await state.token.transfer(toAddress, lifWei, {from: fromAddress});
@@ -459,7 +460,7 @@ async function runTransferCommand(command, state) {
 function getAllowance(state, sender, from) {
   if (!state.allowances[sender])
     state.allowances[sender] = {};
-  return state.allowances[sender][from] || 0;
+  return state.allowances[sender][from] || new BigNumber(0);
 }
 
 function setAllowance(state, sender, from, allowance) {
@@ -473,8 +474,8 @@ async function runApproveCommand(command, state) {
   let fromAddress = gen.getAccount(command.fromAccount),
     spenderAddress = gen.getAccount(command.spenderAccount),
     lifWei = help.lif2LifWei(command.lif),
-    hasZeroAddress = _.some([fromAddress, spenderAddress], isZeroAddress),
-    shouldThrow = state.tokenPaused || hasZeroAddress;
+    hasZeroAddress = _.some([fromAddress], isZeroAddress),
+    shouldThrow = state.tokenPaused || (hasZeroAddress &  new BigNumber(lifWei).gt(0));
 
   try {
     await state.token.approve(spenderAddress, lifWei, {from: fromAddress});
@@ -497,22 +498,23 @@ async function runTransferFromCommand(command, state) {
     fromBalance = getBalance(state, command.fromAccount),
     lifWei = help.lif2LifWei(command.lif),
     allowance = getAllowance(state, command.senderAccount, command.fromAccount),
-    hasZeroAddress = _.some([senderAddress, fromAddress, toAddress], isZeroAddress);
+    hasZeroAddress = _.some([fromAddress], isZeroAddress);
 
   let shouldThrow = state.tokenPaused ||
     fromBalance.lt(lifWei) ||
+    (isZeroAddress(senderAddress) & new BigNumber(lifWei).gt(0)) ||
     hasZeroAddress ||
     (allowance < lifWei);
 
   try {
-    await state.token.transferFrom(fromAddress, toAddress, lifWei, {from: senderAddress});
+    await state.token.transferFrom(senderAddress, toAddress, lifWei, {from: fromAddress});
 
     assert.equal(false, shouldThrow, 'transferFrom should have thrown but it did not');
 
     // TODO: take spent gas into account?
     state.balances[command.fromAccount] = fromBalance.minus(lifWei);
     state.balances[command.toAccount] = getBalance(state, command.toAccount).plus(lifWei);
-    setAllowance(state, command.senderAccount, command.fromAccount, allowance.sub(lifWei));
+    setAllowance(state, command.senderAccount, command.fromAccount, allowance.minus(lifWei));
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
