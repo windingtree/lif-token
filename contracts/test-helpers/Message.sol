@@ -12,6 +12,12 @@ contract Message {
 
     }
 
+    function fail() {
+
+      throw;
+
+    }
+
     function call(address to, bytes data) returns (bool) {
       if (to.call(data))
         return true;
