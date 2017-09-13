@@ -132,6 +132,83 @@ contract('LifToken', function(accounts) {
     await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
   });
 
+  it('should fail when calling a function that fails inside approveData', async function() {
+    let message = await Message.new();
+    help.abiDecoder.addABI(Message._json.abi);
+
+    let data = message.contract.fail.getData();
+    let transaction;
+
+    try {
+      transaction = await token.approveData(
+        message.contract.address, help.lif2LifWei(10), data,
+        {from: accounts[1]}
+      );
+    } catch (error) {
+      if (!help.isInvalidOpcodeEx(error)) throw error;
+
+      let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
+      assert.equal(0, decodedEvents.length);
+    }
+
+    new BigNumber(help.lif2LifWei(10)).should.be.bignumber
+      .equal(await token.allowance(accounts[1], message.contract.address));
+
+    await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
+  });
+
+  it('should fail when calling a function that fails inside transferData', async function() {
+    let message = await Message.new();
+    help.abiDecoder.addABI(Message._json.abi);
+
+    let data = message.contract.fail.getData();
+    let transaction;
+
+    try {
+      transaction = await token.transferData(
+        message.contract.address, help.lif2LifWei(10), data,
+        {from: accounts[1]}
+      );
+    } catch (error) {
+      if (!help.isInvalidOpcodeEx(error)) throw error;
+
+      let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
+      assert.equal(0, decodedEvents.length);
+    }
+
+    new BigNumber(help.lif2LifWei(10)).should.be.bignumber
+      .equal(await token.balanceOf(message.contract.address));
+
+    await help.checkToken(token, accounts, 125, [30,30,20,10,0]);
+  });
+
+  it('should fail when calling a function that fails inside transferDataFrom', async function() {
+    let message = await Message.new();
+    help.abiDecoder.addABI(Message._json.abi);
+
+    let data = message.contract.fail.getData();
+    let transaction;
+
+    await token.approve(accounts[1], help.lif2LifWei(10), {from: accounts[2]});
+
+    try {
+      transaction = await token.transferDataFrom(
+        accounts[2], message.contract.address, help.lif2LifWei(10), data,
+        {from: accounts[1]}
+      );
+    } catch (error) {
+      if (!help.isInvalidOpcodeEx(error)) throw error;
+
+      let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
+      assert.equal(0, decodedEvents.length);
+    }
+
+    new BigNumber(help.lif2LifWei(10)).should.be.bignumber
+      .equal(await token.balanceOf(message.contract.address));
+
+    await help.checkToken(token, accounts, 125, [40,20,20,10,0]);
+  });
+
   it('should fail transferData when using LifToken contract address as receiver', async function() {
 
     try {
