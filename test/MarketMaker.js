@@ -216,6 +216,7 @@ contract('Market validation Mechanism', function(accounts) {
       MVMLifBalance: new BigNumber(0),
       ethBalances: {},
       balances: {},
+      totalSupply: new BigNumber(0),
       initialBuyPrice: initialBuyPrice,
       MVMBuyPrice: initialBuyPrice,
       claimablePercentage: 0, MVMMaxClaimableWei: new BigNumber(0),
