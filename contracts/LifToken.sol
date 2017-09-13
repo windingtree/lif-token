@@ -45,14 +45,18 @@ contract LifToken is MintableToken, Pausable {
      @param data ABI-encoded contract call. For example generated using web3's
      getData method
    */
-  function approveData(address spender, uint value, bytes data) {
+  function approveData(address spender, uint value, bytes data) whenNotPaused returns (bool) {
 
     require(spender != address(this));
 
     allowed[tx.origin][spender] = value;
 
-    if (spender.call(data))
+    if (spender.call(data)) {
       ApprovalData(tx.origin, spender, value, data);
+      return true;
+    } else {
+      return false;
+    }
 
   }
 
@@ -65,7 +69,7 @@ contract LifToken is MintableToken, Pausable {
      @param data ABI-encoded contract call. For example generated using web3's
      getData method
    */
-  function transferData(address to, uint value, bytes data) {
+  function transferData(address to, uint value, bytes data) whenNotPaused returns (bool) {
 
     require(to != address(this));
 
@@ -75,8 +79,12 @@ contract LifToken is MintableToken, Pausable {
       balances[to] = balances[to].add(value);
     }
 
-    if (to.call(data))
+    if (to.call(data)) {
       TransferData(tx.origin, to, value, data);
+      return true;
+    } else {
+      return false;
+    }
 
   }
 
@@ -90,7 +98,7 @@ contract LifToken is MintableToken, Pausable {
      @param data ABI-encoded contract call. For example generated using web3's
      getData method
    */
-  function transferDataFrom(address from, address to, uint value, bytes data) {
+  function transferDataFrom(address from, address to, uint value, bytes data) whenNotPaused returns (bool) {
 
     require(to != address(this));
 
@@ -102,8 +110,12 @@ contract LifToken is MintableToken, Pausable {
       allowed[from][tx.origin] = allowance.sub(value);
     }
 
-    if (to.call(data))
+    if (to.call(data)) {
       TransferData(tx.origin, to, value, data);
+      return true;
+    } else {
+      return false;
+    }
 
   }
 
