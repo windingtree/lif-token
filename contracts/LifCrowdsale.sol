@@ -356,9 +356,8 @@ contract LifCrowdsale is Ownable, Pausable {
 
       foundationWallet.transfer(foundationBalanceCapWei);
 
-      // TODO: create the MVM with a start block that equals one month after crowdsale ends
       MVM = new LifMarketValidationMechanism(
-        address(token), block.timestamp.add(10), 30 days, MVMPeriods, foundationWallet
+        address(token), block.timestamp.add(30 days), 30 days, MVMPeriods, foundationWallet
       );
 
       mintExtraTokens(uint256(MVMPeriods));
