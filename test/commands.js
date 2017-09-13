@@ -1,4 +1,5 @@
 var LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
+var VestedPayment = artifacts.require('./VestedPayment.sol');
 
 var BigNumber = web3.BigNumber;
 
@@ -322,6 +323,16 @@ async function runFinalizeCrowdsaleCommand(command, state) {
       assert.equal(state.crowdsaleData.foundationWallet, await MVM.foundationAddr());
       assert.equal(state.crowdsaleData.foundationWallet, await MVM.owner());
 
+      let vestedPaymentFounders = new VestedPayment(
+        await state.crowdsaleContract.foundersVestedPayment()
+      );
+      let vestedPaymentFoundation = new VestedPayment(
+        await state.crowdsaleContract.foundationVestedPayment()
+      );
+
+      assert.equal(state.crowdsaleData.foundationWallet, await vestedPaymentFounders.owner());
+      assert.equal(state.crowdsaleData.foundationWallet, await vestedPaymentFoundation.owner());
+
       state.MVM = MVM;
     }
 
@@ -508,7 +519,7 @@ async function runFundCrowdsaleBelowSoftCap(command, state) {
 
     // set weiPerUSDinTGE rate if needed
     if (state.weiPerUSDinTGE == 0) {
-      state = await runSetWeiPerUSDinTGECommand({wei: 10000, fromAccount: state.owner}, state);
+      state = await runSetWeiPerUSDinTGECommand({wei: 100, fromAccount: state.owner}, state);
     }
 
     let minCapUSD = await state.crowdsaleContract.minCapUSD.call(),

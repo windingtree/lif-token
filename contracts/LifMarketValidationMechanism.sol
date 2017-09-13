@@ -99,7 +99,7 @@ contract LifMarketValidationMechanism is Ownable {
     secondsPerPeriod = _secondsPerPeriod;
     totalPeriods = _totalPeriods;
     foundationAddr = _foundationAddr;
-    originalTotalSupply = lifToken.totalSupply();
+
   }
 
   /**
@@ -109,10 +109,11 @@ contract LifMarketValidationMechanism is Ownable {
   function fund() payable onlyOwner {
     assert(!funded);
 
+    originalTotalSupply = lifToken.totalSupply();
     initialWei = msg.value;
     initialBuyPrice = initialWei.
       mul(PRICE_FACTOR).
-      div(lifToken.totalSupply());
+      div(originalTotalSupply);
 
     funded = true;
   }

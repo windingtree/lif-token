@@ -13,13 +13,20 @@ var {increaseTimeTestRPC, increaseTimeTestRPCTo} = require('./helpers/increaseTi
 
 const DEBUG_MODE = (process.env.WT_DEBUG == 'true') || false;
 
+let gasPriceFromEnv = parseInt(process.env.GAS_PRICE);
+let gasPrice;
+if (isNaN(gasPriceFromEnv))
+  gasPrice = 21000000000;
+else
+  gasPrice = gasPriceFromEnv;
+
 module.exports = {
 
   zeroAddress: '0x0000000000000000000000000000000000000000',
 
   abiDecoder: abiDecoder,
 
-  gasPrice: new BigNumber(100000000000),
+  gasPrice: new BigNumber(gasPrice),
 
   hexEncode: function(str){
     var hex, i;
