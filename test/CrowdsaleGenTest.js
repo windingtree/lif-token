@@ -61,22 +61,18 @@ contract('LifCrowdsale Property-based test', function() {
 
   let runGeneratedCrowdsaleAndCommands = async function(input) {
     await increaseTimeTestRPC(60);
-    let publicPresaleStartTimestamp = latestTime() + duration.days(1);
-    let publicPresaleEndTimestamp = publicPresaleStartTimestamp + duration.days(1);
-    let startTimestamp = publicPresaleEndTimestamp + duration.days(1);
+    let startTimestamp = latestTime() + duration.days(1);
     let end1Timestamp = startTimestamp + duration.days(1);
     let end2Timestamp = end1Timestamp + duration.days(1);
 
-    help.debug('crowdsaleTestInput data:\n', input, publicPresaleStartTimestamp, publicPresaleEndTimestamp, startTimestamp, end1Timestamp, end2Timestamp);
+    help.debug('crowdsaleTestInput data:\n', input, startTimestamp, end1Timestamp, end2Timestamp);
 
-    let {publicPresaleRate, rate1, rate2, owner, setWeiLockSeconds} = input.crowdsale,
+    let {rate1, rate2, owner, setWeiLockSeconds} = input.crowdsale,
       ownerAddress = gen.getAccount(input.crowdsale.owner),
       foundationWallet = gen.getAccount(input.crowdsale.foundationWallet);
-    let shouldThrow = (publicPresaleRate == 0) ||
-      (rate1 == 0) ||
+    let shouldThrow = (rate1 == 0) ||
       (rate2 == 0) ||
-      (publicPresaleStartTimestamp >= publicPresaleEndTimestamp) ||
-      (publicPresaleEndTimestamp >= startTimestamp) ||
+      (latestTime() >= startTimestamp) ||
       (startTimestamp >= end1Timestamp) ||
       (end1Timestamp >= end2Timestamp) ||
       (setWeiLockSeconds == 0) ||
@@ -87,29 +83,23 @@ contract('LifCrowdsale Property-based test', function() {
 
     try {
       let crowdsaleData = {
-        publicPresaleStartTimestamp: publicPresaleStartTimestamp,
-        publicPresaleEndTimestamp: publicPresaleEndTimestamp,
-        startTimestamp: startTimestamp, end1Timestamp: end1Timestamp,
+        startTimestamp: startTimestamp,
+        end1Timestamp: end1Timestamp,
         end2Timestamp: end2Timestamp,
-        publicPresaleRate: input.crowdsale.publicPresaleRate,
         rate1: input.crowdsale.rate1,
         rate2: input.crowdsale.rate2,
         privatePresaleRate: input.crowdsale.privatePresaleRate,
         setWeiLockSeconds: input.crowdsale.setWeiLockSeconds,
         foundationWallet: gen.getAccount(input.crowdsale.foundationWallet),
-        maxPresaleCapUSD: 1000000,
         minCapUSD: 5000000,
         maxFoundationCapUSD: 10000000,
         MVM24PeriodsCapUSD: 40000000
       };
 
       let crowdsale = await LifCrowdsale.new(
-        crowdsaleData.publicPresaleStartTimestamp,
-        crowdsaleData.publicPresaleEndTimestamp,
         crowdsaleData.startTimestamp,
         crowdsaleData.end1Timestamp,
         crowdsaleData.end2Timestamp,
-        crowdsaleData.publicPresaleRate,
         crowdsaleData.rate1,
         crowdsaleData.rate2,
         crowdsaleData.privatePresaleRate,
@@ -141,14 +131,12 @@ contract('LifCrowdsale Property-based test', function() {
         ethBalances: {},
         allowances: {},
         purchases: [],
-        presalePurchases: [],
         claimedEth: {},
         weiRaised: zero,
         totalPresaleWei: zero,
         crowdsalePaused: false,
         tokenPaused: true,
         crowdsaleFinalized: false,
-        weiPerUSDinPresale: 0,
         weiPerUSDinTGE: 0,
         crowdsaleFunded: false,
         owner: owner,
@@ -199,7 +187,7 @@ contract('LifCrowdsale Property-based test', function() {
         { type:'sendTransaction','account':3,'beneficiary':0,'eth':9}
       ],
       crowdsale: {
-        publicPresaleRate: 33, rate1: 18, rate2: 33, privatePresaleRate: 48,
+        rate1: 18, rate2: 33, privatePresaleRate: 48,
         foundationWallet: 1, setWeiLockSeconds: 600, owner: 7
       }
     });
@@ -211,7 +199,7 @@ contract('LifCrowdsale Property-based test', function() {
         { type:'sendTransaction','account':0,'beneficiary':9,'eth':39}
       ],
       crowdsale: {
-        publicPresaleRate: 1, rate1: 39, rate2: 13, privatePresaleRate: 35,
+        rate1: 39, rate2: 13, privatePresaleRate: 35,
         foundationWallet: 8, setWeiLockSeconds: 600, owner: 9
       }
     });
@@ -221,7 +209,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'fundCrowdsaleBelowSoftCap','account':7,'finalize':false}
       ],
       crowdsale: {
-        publicPresaleRate: 5, rate1: 33, rate2: 12, privatePresaleRate: 28,
+        rate1: 33, rate2: 12, privatePresaleRate: 28,
         foundationWallet: 10, setWeiLockSeconds: 52, owner: 0
       }
     });
@@ -232,13 +220,12 @@ contract('LifCrowdsale Property-based test', function() {
       commands: [
         { type: 'checkRate' },
         { type: 'waitTime','seconds':duration.minutes(1430)},
-        { type: 'setWeiPerUSDinPresale', wei: 3000000000000000, fromAccount: 3 },
+        { type: 'setWeiPerUSDinTGE', wei: 3000000000000000, fromAccount: 3 },
         { type: 'checkRate' },
         { type: 'waitTime','seconds':duration.days(2.9)},
         { type: 'buyTokens', beneficiary: 3, account: 2, eth: 12 }
       ],
       crowdsale: {
-        publicPresaleRate: 20,
         rate1: 16,
         rate2: 14,
         privatePresaleRate: 14,
@@ -251,13 +238,10 @@ contract('LifCrowdsale Property-based test', function() {
     await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
   });
 
-  it('Execute a normal presale and TGE', async function() {
+  it('Execute a normal TGE', async function() {
     let crowdsaleAndCommands = {
       commands: [
         { type: 'checkRate' },
-        { type: 'setWeiPerUSDinPresale', wei: 3000000000000000, fromAccount: 3 },
-        { type: 'waitTime','seconds':duration.days(2)},
-        { type: 'buyPresaleTokens', beneficiary: 3, account: 4, eth: 3000 },
         { type: 'setWeiPerUSDinTGE', wei: 1500000000000000, fromAccount: 3 },
         { type: 'waitTime','seconds':duration.days(1)},
         { type: 'buyTokens', beneficiary: 3, account: 4, eth: 40000 },
@@ -267,7 +251,6 @@ contract('LifCrowdsale Property-based test', function() {
         { type: 'finalizeCrowdsale', fromAccount: 5 }
       ],
       crowdsale: {
-        publicPresaleRate: 11,
         rate1: 10,
         rate2: 9,
         privatePresaleRate: 13,
@@ -284,9 +267,7 @@ contract('LifCrowdsale Property-based test', function() {
     let crowdsaleAndCommands = {
       commands: [
         { type: 'checkRate' },
-        { type: 'setWeiPerUSDinPresale', wei: 3000000000000000, fromAccount: 3 },
         { type: 'waitTime','seconds':duration.days(1)},
-        { type: 'buyPresaleTokens', beneficiary: 3, account: 4, eth: 3000 },
         { type: 'waitTime','seconds':duration.days(0.8)},
         { type: 'pauseToken', 'pause':true, 'fromAccount':1 },
         { type: 'setWeiPerUSDinTGE', wei: 1500000000000000, fromAccount: 3 },
@@ -297,7 +278,6 @@ contract('LifCrowdsale Property-based test', function() {
         { type: 'pauseToken', 'pause':true, 'fromAccount':1 }
       ],
       crowdsale: {
-        publicPresaleRate: 11,
         rate1: 10,
         rate2: 9,
         privatePresaleRate: 13,
@@ -310,19 +290,8 @@ contract('LifCrowdsale Property-based test', function() {
     await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
   });
 
-  it('should not fail when setting wei for presale or tge before each stage starts', async function() {
+  it('should not fail when setting wei for tge before each stage starts', async function() {
     // trying multiple commands with different reasons to fail: wrong owner or wei==0
-    await runGeneratedCrowdsaleAndCommands({
-      commands: [
-        { type:'setWeiPerUSDinPresale','wei':3,'fromAccount':10},
-        { type:'setWeiPerUSDinPresale','wei':0,'fromAccount':6},
-        { type:'setWeiPerUSDinPresale','wei':5,'fromAccount':6}
-      ],
-      crowdsale: {
-        publicPresaleRate: 27, rate1: 10, rate2: 31, privatePresaleRate: 35,
-        foundationWallet: 10, setWeiLockSeconds: 1, owner: 6
-      }
-    });
 
     await runGeneratedCrowdsaleAndCommands({
       commands: [
@@ -331,7 +300,7 @@ contract('LifCrowdsale Property-based test', function() {
         { type:'setWeiPerUSDinTGE','wei':3,'fromAccount':6}
       ],
       crowdsale: {
-        publicPresaleRate: 27, rate1: 10, rate2: 31, privatePresaleRate: 35,
+        rate1: 10, rate2: 31, privatePresaleRate: 35,
         foundationWallet: 10, setWeiLockSeconds: 1, owner: 6
       }
     });
@@ -341,7 +310,7 @@ contract('LifCrowdsale Property-based test', function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [{ type:'approve','lif':0,'fromAccount':3,'spenderAccount':5}],
       crowdsale: {
-        publicPresaleRate: 23, rate1: 24, rate2: 15, privatePresaleRate: 15,
+        rate1: 24, rate2: 15, privatePresaleRate: 15,
         foundationWallet: 2, setWeiLockSeconds: 1, owner: 5
       }
     });
@@ -353,7 +322,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':true}
       ],
       crowdsale: {
-        publicPresaleRate: 41, rate1: 20, rate2: 46, privatePresaleRate: 0,
+        rate1: 20, rate2: 46, privatePresaleRate: 0,
         foundationWallet: 4, setWeiLockSeconds: 521, owner: 0
       }
     });
@@ -365,7 +334,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':false}
       ],
       crowdsale: {
-        publicPresaleRate: 41, rate1: 20, rate2: 46, privatePresaleRate: 0,
+        rate1: 20, rate2: 46, privatePresaleRate: 0,
         foundationWallet: 4, setWeiLockSeconds: 521, owner: 0
       }
     });
@@ -378,7 +347,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'transfer','lif':0,'fromAccount':4,'toAccount':2}
       ],
       crowdsale: {
-        publicPresaleRate: 16,rate1: 14, rate2: 20, privatePresaleRate: 7,
+        rate1: 14, rate2: 20, privatePresaleRate: 7,
         foundationWallet: 6, setWeiLockSeconds: 83, owner: 5
       }
     });
@@ -390,7 +359,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'fundCrowdsaleOverSoftCap','account':3,'softCapExcessWei':10,'finalize':true}
       ],
       crowdsale: {
-        publicPresaleRate: 41, rate1: 20, rate2: 46, privatePresaleRate: 0,
+        rate1: 20, rate2: 46, privatePresaleRate: 0,
         foundationWallet: 4, setWeiLockSeconds: 521, owner: 0
       }
     });
