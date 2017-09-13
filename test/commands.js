@@ -14,6 +14,8 @@ var gen = require('./generators');
 var latestTime = require('./helpers/latestTime');
 var {increaseTimeTestRPC, increaseTimeTestRPCTo} = require('./helpers/increaseTime');
 
+const priceFactor = 100000;
+
 const isZeroAddress = (addr) => addr === help.zeroAddress;
 
 let isCouldntUnlockAccount = (e) => e.message.search('could not unlock signer account') >= 0;
@@ -86,6 +88,7 @@ async function runBuyTokensCommand(command, state) {
     );
     state.balances[command.beneficiary] = getBalance(state, command.beneficiary).plus(help.lif2LifWei(tokens));
     state.weiRaised = state.weiRaised.plus(weiCost);
+    state.totalSupply = state.totalSupply.plus(help.lif2LifWei(tokens));
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
@@ -95,7 +98,7 @@ async function runBuyTokensCommand(command, state) {
 async function runBuyPresaleTokensCommand(command, state) {
   let crowdsale = state.crowdsaleData,
     { publicPresaleStartTimestamp, publicPresaleEndTimestamp } = crowdsale,
-    weiCost = parseInt(web3.toWei(command.eth, 'ether')),
+    weiCost = new BigNumber(web3.toWei(command.eth, 'ether')),
     nextTimestamp = latestTime(),
     rate = help.getCrowdsaleExpectedRate(crowdsale, nextTimestamp),
     account = gen.getAccount(command.account),
@@ -113,14 +116,21 @@ async function runBuyPresaleTokensCommand(command, state) {
     hasZeroAddress;
 
   try {
-    help.debug('buying presale tokens, rate:', rate, 'eth:', command.eth, 'endBlock:', crowdsale.publicPresaleEndTimestamp, 'blockTimestamp:', nextTimestamp);
+    help.debug('buying presale tokens, rate:', rate, 'eth:', command.eth,
+      'startBlock:', crowdsale.publicPresaleStartTimestamp,
+      'endBlock:', crowdsale.publicPresaleEndTimestamp,
+      'blockTimestamp:', nextTimestamp);
 
     await state.crowdsaleContract.buyPresaleTokens(beneficiaryAccount, {value: weiCost, from: account});
 
     assert.equal(false, shouldThrow, 'buyPresaleTokens should have thrown but it did not');
 
     state.totalPresaleWei = state.totalPresaleWei.plus(weiCost);
-
+    let lifWei = weiCost.mul(rate);
+    state.presalePurchases = _.concat(state.presalePurchases,
+      {lifWei: lifWei, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
+    );
+    state.totalSupply = state.totalSupply.plus(lifWei);
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
@@ -167,6 +177,7 @@ async function runSendTransactionCommand(command, state) {
     } else {
       throw(new Error('sendTransaction not in presale or TGE should have thrown'));
     }
+    state.totalSupply = state.totalSupply.plus(help.lif2LifWei(tokens));
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
@@ -187,6 +198,7 @@ async function runBurnTokensCommand(command, state) {
     assert.equal(false, shouldThrow, 'burn should have thrown but it did not');
 
     state.balances[account] = balance.minus(command.tokens);
+    state.totalSupply = state.totalSupply.minus(command.tokens);
 
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
@@ -310,18 +322,9 @@ async function runFinalizeCrowdsaleCommand(command, state) {
     let fundsRaised = state.weiRaised.div(state.weiPerUSDinTGE),
       minimumForMVM = await state.crowdsaleContract.maxFoundationCapUSD.call();
 
-    if (crowdsaleFunded && (fundsRaised.gt(minimumForMVM))) {
+    if (crowdsaleFunded) {
 
-      let MVMInitialBalance = state.weiRaised.minus(state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
-      let MVMPeriods = (MVMInitialBalance > (state.crowdsaleData.MVM24PeriodsCapUSD*state.weiPerUSDinTGE)) ? 48 : 24;
-      let mmAddress = await state.crowdsaleContract.MVM();
-      help.debug('MVM contract address', mmAddress);
-
-      let MVM = new LifMarketValidationMechanism(mmAddress);
-
-      assert.equal(MVMPeriods, parseInt(await MVM.totalPeriods()));
-      assert.equal(state.crowdsaleData.foundationWallet, await MVM.foundationAddr());
-      assert.equal(state.crowdsaleData.foundationWallet, await MVM.owner());
+      let totalSupplyBeforeFinalize = state.totalSupply;
 
       let vestedPaymentFounders = new VestedPayment(
         await state.crowdsaleContract.foundersVestedPayment()
@@ -333,7 +336,37 @@ async function runFinalizeCrowdsaleCommand(command, state) {
       assert.equal(state.crowdsaleData.foundationWallet, await vestedPaymentFounders.owner());
       assert.equal(state.crowdsaleData.foundationWallet, await vestedPaymentFoundation.owner());
 
-      state.MVM = MVM;
+      totalSupplyBeforeFinalize.mul(0.128).floor().should.be.bignumber.equal(
+        await state.token.balanceOf(vestedPaymentFounders.address)
+      );
+      totalSupplyBeforeFinalize.mul(0.05).floor().should.be.bignumber.equal(
+        await state.token.balanceOf(vestedPaymentFoundation.address)
+      );
+
+      // add founders, team and foundation long-term reserve to the totalSupply
+      // in separate steps to round after each of them, exactly as in the contract
+      let foundersVestingTokens = state.totalSupply.mul(0.128).floor(),
+        longTermReserve = state.totalSupply.mul(0.05).floor(),
+        teamTokens = state.totalSupply.mul(0.072).floor();
+
+      state.totalSupply = state.totalSupply.plus(foundersVestingTokens).
+        plus(longTermReserve).plus(teamTokens);
+
+      if (fundsRaised.gt(minimumForMVM)) {
+
+        let MVMInitialBalance = state.weiRaised.minus(state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
+        let MVMPeriods = (MVMInitialBalance > (state.crowdsaleData.MVM24PeriodsCapUSD*state.weiPerUSDinTGE)) ? 48 : 24;
+        let mmAddress = await state.crowdsaleContract.MVM();
+        help.debug('MVM contract address', mmAddress);
+
+        let MVM = LifMarketValidationMechanism.at(mmAddress);
+
+        assert.equal(MVMPeriods, parseInt(await MVM.totalPeriods()));
+        assert.equal(state.crowdsaleData.foundationWallet, await MVM.foundationAddr());
+        assert.equal(state.crowdsaleData.foundationWallet, await MVM.owner());
+
+        state.MVM = MVM;
+      }
     }
 
     assert.equal(false, shouldThrow);
@@ -491,8 +524,6 @@ async function runTransferFromCommand(command, state) {
 // Market Maker commands
 //
 
-let priceFactor = 100000;
-
 let getMMMaxClaimableWei = function(state) {
   if (state.MVMMonth >= state.MVMPeriods) {
     help.debug('calculating maxClaimableEth with', state.MVMStartingBalance,
@@ -646,6 +677,7 @@ async function runMVMSendTokensCommand(command, state) {
 
       help.debug('sold tokens to MVM');
 
+      state.totalSupply = state.totalSupply.minus(lifWei);
       state.ethBalances[command.from] = ethBalanceBeforeSend.plus(tokensCost).minus(help.gasPrice.mul(gas));
       state.MVMEthBalance = state.MVMEthBalance.minus(tokensCost);
       state.burnedTokens = state.burnedTokens.plus(lifWei);

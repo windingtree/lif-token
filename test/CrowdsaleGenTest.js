@@ -32,26 +32,21 @@ contract('LifCrowdsale Property-based test', function() {
     crowdsale: jsc.nonshrink(gen.crowdsaleGen)
   });
 
+  let sumBigNumbers = (arr) => _.reduce(arr, (accum, x) => accum.plus(x), zero);
+
   let checkCrowdsaleState = async function(state, crowdsaleData, crowdsale) {
     assert.equal(state.crowdsalePaused, await crowdsale.paused());
-    let tokensInPurchases = _.reduce(
-      _.map(state.purchases, (p) => p.tokens),
-      (accum, tokens) => accum.plus(tokens),
-      zero
-    );
+
+    let tokensInPurchases = sumBigNumbers(_.map(state.purchases, (p) => p.tokens));
     tokensInPurchases.should.be.bignumber.equal(help.lifWei2Lif(await crowdsale.tokensSold()));
 
-    /*
-     * TODO: add this and similar checks
-    let inMemoryPresaleWei = web3.toWei(_.sumBy(state.presalePayments, (p) => p.amountEth), 'ether')
-    assert.equal(inMemoryPresaleWei, parseInt(await crowdsale.totalPresaleWei.call()));
-    */
+    let presaleLifWei = sumBigNumbers(_.map(state.presalePurchases, (p) => p.lifWei));
+    let presaleWei = sumBigNumbers(_.map(state.presalePurchases, (p) => p.wei));
+
+    presaleWei.should.be.bignumber.equal(await crowdsale.totalPresaleWei.call());
+
     help.debug('checking purchases total wei, purchases:', JSON.stringify(state.purchases));
-    let weiInPurchases = _.reduce(
-      _.map(state.purchases, (p) => p.wei),
-      (accum, wei) => accum.plus(wei),
-      zero
-    );
+    let weiInPurchases = sumBigNumbers(_.map(state.purchases, (p) => p.wei));
     weiInPurchases.should.be.bignumber.equal(await crowdsale.weiRaised());
 
     // Check presale tokens sold
@@ -60,6 +55,9 @@ contract('LifCrowdsale Property-based test', function() {
     if (state.crowdsaleFinalized && state.weiPerUSDinTGE > 0) {
       assert.equal(state.crowdsaleFunded, await crowdsale.funded());
     }
+
+    state.totalSupply.
+      should.be.bignumber.equal(await state.token.totalSupply.call());
   };
 
   let runGeneratedCrowdsaleAndCommands = async function(input) {
@@ -90,8 +88,10 @@ contract('LifCrowdsale Property-based test', function() {
 
     try {
       let crowdsaleData = {
-        publicPresaleStartTimestamp: publicPresaleStartTimestamp, publicPresaleEndTimestamp: publicPresaleEndTimestamp,
-        startTimestamp: startTimestamp, end1Timestamp: end1Timestamp, end2Timestamp: end2Timestamp,
+        publicPresaleStartTimestamp: publicPresaleStartTimestamp,
+        publicPresaleEndTimestamp: publicPresaleEndTimestamp,
+        startTimestamp: startTimestamp, end1Timestamp: end1Timestamp,
+        end2Timestamp: end2Timestamp,
         publicPresaleRate: input.crowdsale.publicPresaleRate,
         rate1: input.crowdsale.rate1,
         rate2: input.crowdsale.rate2,
@@ -153,8 +153,10 @@ contract('LifCrowdsale Property-based test', function() {
         weiPerUSDinTGE: 0,
         crowdsaleFunded: false,
         owner: owner,
+        totalSupply: zero,
         MVMBuyPrice: new BigNumber(0),
         MVMBurnedTokens: new BigNumber(0),
+        burnedTokens: zero,
         returnedWeiForBurnedTokens: new BigNumber(0)
       };
 

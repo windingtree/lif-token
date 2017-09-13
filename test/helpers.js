@@ -126,12 +126,12 @@ module.exports = {
 
   getCrowdsaleExpectedRate: function(crowdsale, time) {
     let {
-      publicPresaleStartTime, publicPresaleEndTime, startTimestamp,
+      publicPresaleStartTimestamp, publicPresaleEndTimestamp, startTimestamp,
       end1Timestamp, end2Timestamp, publicPresaleRate, rate1, rate2 } = crowdsale;
 
-    if (time < publicPresaleStartTime) {
+    if (time < publicPresaleStartTimestamp) {
       return 0;
-    } else if (time <= publicPresaleEndTime) {
+    } else if (time <= publicPresaleEndTimestamp) {
       return publicPresaleRate;
     } else if (time < startTimestamp) {
       return 0;
