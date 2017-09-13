@@ -35,4 +35,4 @@ else
   testrpc_pid=$!
 fi
 
-SOLIDITY_COVERAGE=true GEN_TESTS_QTY=20 ./node_modules/.bin/solidity-coverage
+SOLIDITY_COVERAGE=true GEN_TESTS_QTY=20 GAS_PRICE=1 ./node_modules/.bin/solidity-coverage
