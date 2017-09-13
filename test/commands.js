@@ -555,9 +555,9 @@ async function runFundCrowdsaleBelowSoftCap(command, state) {
     }
 
     let minCapUSD = await state.crowdsaleContract.minCapUSD.call(),
-      currentUSDFunding = state.weiRaised.div(state.weiPerUSDinTGE);
+      currentUSDFunding = state.weiRaised.div(state.weiPerUSDinTGE).floor();
 
-    if (minCapUSD > currentUSDFunding) {
+    if (minCapUSD.gt(currentUSDFunding)) {
       // wait for crowdsale startTimestamp
       if (latestTime() < state.crowdsaleData.startTimestamp) {
         await increaseTimeTestRPCTo(state.crowdsaleData.startTimestamp);
@@ -569,9 +569,11 @@ async function runFundCrowdsaleBelowSoftCap(command, state) {
         buyTokensCommand = {account: command.account, eth: eth, beneficiary: command.account};
 
       state = await runBuyTokensCommand(buyTokensCommand, state);
-    }
 
-    minCapUSD.should.be.bignumber.equal(new BigNumber(state.weiRaised).div(state.weiPerUSDinTGE));
+      minCapUSD.should.be.bignumber.equal(new BigNumber(state.weiRaised).div(state.weiPerUSDinTGE));
+
+      currentUSDFunding = minCapUSD;
+    }
 
     if (command.finalize) {
       // wait for crowdsale end2Timestamp
@@ -581,10 +583,22 @@ async function runFundCrowdsaleBelowSoftCap(command, state) {
 
       state = await runFinalizeCrowdsaleCommand({fromAccount: command.account}, state);
 
-      // verify that the crowdsale is finalized and funded, but there's no MVM
+      // verify that the crowdsale is finalized and funded
       assert.equal(true, state.crowdsaleFinalized);
       assert.equal(true, state.crowdsaleFunded);
-      assert(state.MVM === undefined);
+
+      // it might be that the funding was already over the soft cap, so let's check
+      let softCap = await state.crowdsaleContract.maxFoundationCapUSD.call();
+
+      if (currentUSDFunding.gte(softCap)) {
+        assert(state.MVM);
+        assert.equal(24, parseInt(await state.MVM.totalPeriods()));
+        assert.equal(state.crowdsaleData.foundationWallet, await state.MVM.foundationAddr());
+      } else {
+        // verify that there's no MVM
+        assert(state.MVM === undefined,
+          'no MVM should have been created because funding is below soft cap');
+      }
     }
   }
 
@@ -606,7 +620,7 @@ async function runFundCrowdsaleOverSoftCap(command, state) {
     let softCap = await state.crowdsaleContract.maxFoundationCapUSD.call(),
       currentUSDFunding = state.weiRaised.div(state.weiPerUSDinTGE);
 
-    if (softCap > currentUSDFunding) {
+    if (softCap.gt(currentUSDFunding)) {
       // wait for crowdsale startTimestamp
       if (latestTime() < state.crowdsaleData.startTimestamp) {
         await increaseTimeTestRPCTo(state.crowdsaleData.startTimestamp);
