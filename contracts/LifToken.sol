@@ -44,6 +44,8 @@ contract LifToken is MintableToken, Pausable {
      @param value The amount of tokens to be spent.
      @param data ABI-encoded contract call. For example generated using web3's
      getData method
+
+     @return true if the call function was executed successfully
    */
   function approveData(address spender, uint value, bytes data) whenNotPaused returns (bool) {
 
@@ -68,6 +70,8 @@ contract LifToken is MintableToken, Pausable {
      @param value uint256 the amout of tokens to be transfered
      @param data ABI-encoded contract call. For example generated using web3's
      getData method
+
+     @return true if the call function was executed successfully
    */
   function transferData(address to, uint value, bytes data) whenNotPaused returns (bool) {
 
@@ -97,6 +101,8 @@ contract LifToken is MintableToken, Pausable {
      @param value The amout of tokens to be transferred
      @param data ABI-encoded contract call. For example generated using web3's
      getData method
+
+     @return true if the call function was executed successfully
    */
   function transferDataFrom(address from, address to, uint value, bytes data) whenNotPaused returns (bool) {
 
