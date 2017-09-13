@@ -40,7 +40,6 @@ contract('LifCrowdsale Property-based test', function() {
     let tokensInPurchases = sumBigNumbers(_.map(state.purchases, (p) => p.tokens));
     tokensInPurchases.should.be.bignumber.equal(help.lifWei2Lif(await crowdsale.tokensSold()));
 
-    let presaleLifWei = sumBigNumbers(_.map(state.presalePurchases, (p) => p.lifWei));
     let presaleWei = sumBigNumbers(_.map(state.presalePurchases, (p) => p.wei));
 
     presaleWei.should.be.bignumber.equal(await crowdsale.totalPresaleWei.call());
