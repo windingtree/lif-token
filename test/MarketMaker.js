@@ -174,7 +174,7 @@ contract('Market validation Mechanism', function(accounts) {
 
     assert.equal(data.MVMMonth >= periods, await mm.isFinished());
 
-    // data.ethBalances[customerAddressIndex].should.be.bignumber.equal(web3.eth.getBalance(customer));
+    data.ethBalances[customerAddressIndex].should.be.bignumber.equal(web3.eth.getBalance(customer));
     data.balances[customerAddressIndex].should.be.bignumber.equal(await token.balanceOf(customer));
 
     data.MVMMaxClaimableWei.should.be.bignumber.equal(await mm.getMaxClaimableWeiAmount());
