@@ -132,7 +132,7 @@ contract('LifToken', function(accounts) {
     await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
   });
 
-  it('should fail when calling a function that fails inside approveData', async function() {
+  it('should fail inside approveData and not trigger ApproveData event', async function() {
     let message = await Message.new();
     help.abiDecoder.addABI(Message._json.abi);
 
@@ -152,7 +152,7 @@ contract('LifToken', function(accounts) {
     await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
   });
 
-  it('should fail when calling a function that fails inside transferData', async function() {
+  it('should fail inside transferData and not trigger TransferData event', async function() {
     let message = await Message.new();
     help.abiDecoder.addABI(Message._json.abi);
 
@@ -172,7 +172,7 @@ contract('LifToken', function(accounts) {
     await help.checkToken(token, accounts, 125, [30,30,20,10,0]);
   });
 
-  it('should fail when calling a function that fails inside transferDataFrom', async function() {
+  it('should fail inside transferDataFrom and not trigger TransferData event', async function() {
     let message = await Message.new();
     help.abiDecoder.addABI(Message._json.abi);
 
