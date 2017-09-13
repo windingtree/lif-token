@@ -339,6 +339,7 @@ async function runFinalizeCrowdsaleCommand(command, state) {
     assert.equal(false, shouldThrow);
     state.crowdsaleFinalized = true;
     state.crowdsaleFunded = crowdsaleFunded;
+    state.tokenPaused = false;
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
