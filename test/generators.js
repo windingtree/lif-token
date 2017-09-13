@@ -24,7 +24,6 @@ module.exports = {
   getAccount: getAccount,
 
   crowdsaleGen: jsc.record({
-    publicPresaleRate: jsc.nat,
     rate1: jsc.nat,
     rate2: jsc.nat,
     privatePresaleRate: jsc.nat,
@@ -47,12 +46,6 @@ module.exports = {
     type: jsc.constant('checkRate')
   }),
 
-  setWeiPerUSDinPresaleCommandGen: jsc.record({
-    type: jsc.constant('setWeiPerUSDinPresale'),
-    wei: jsc.nat(0,10000000000000000), // between 0-0.01 ETH
-    fromAccount: accountGen
-  }),
-
   setWeiPerUSDinTGECommandGen: jsc.record({
     type: jsc.constant('setWeiPerUSDinTGE'),
     wei: jsc.nat(0,10000000000000000), // between 0-0.01 ETH
@@ -70,13 +63,6 @@ module.exports = {
     type: jsc.constant('burnTokens'),
     account: accountGen,
     tokens: jsc.nat
-  }),
-
-  buyPresaleTokensCommandGen: jsc.record({
-    type: jsc.constant('buyPresaleTokens'),
-    account: accountGen,
-    beneficiary: accountGen,
-    eth: jsc.nat
   }),
 
   sendTransactionCommandGen: jsc.record({

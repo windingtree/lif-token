@@ -69,9 +69,8 @@ module.exports = {
     var startTime = latestTime() + 5;
     var endTime = startTime + 20;
     var crowdsale = await LifCrowdsale.new(
-      startTime, startTime+2,
       startTime+3, startTime+15, endTime,
-      rate-1, rate, rate+10, rate+20, 1,
+      rate, rate+10, rate+20, 1,
       accounts[0]
     );
     await increaseTimeTestRPCTo(latestTime()+1);

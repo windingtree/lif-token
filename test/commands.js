@@ -48,7 +48,6 @@ async function runCheckRateCommand(command, state) {
 
   assert.equal(expectedRate, rate,
     'expected rate is different! Expected: ' + expectedRate + ', actual: ' + rate + '. blocks: ' + web3.eth.blockTimestamp +
-    ', public presale start/end: ' + state.crowdsaleData.publicPresaleStartTimestamp + '/' + state.crowdsaleData.publicPresaleEndTimestamp +
     ', start/end1/end2: ' + state.crowdsaleData.startTimestamp + '/' + state.crowdsaleData.end1Timestamp + '/' + state.crowdsaleData.end2Timestamp);
 
   return state;
@@ -95,67 +94,20 @@ async function runBuyTokensCommand(command, state) {
   return state;
 }
 
-async function runBuyPresaleTokensCommand(command, state) {
-  let crowdsale = state.crowdsaleData,
-    { publicPresaleStartTimestamp, publicPresaleEndTimestamp } = crowdsale,
-    weiCost = new BigNumber(web3.toWei(command.eth, 'ether')),
-    nextTimestamp = latestTime(),
-    rate = help.getCrowdsaleExpectedRate(crowdsale, nextTimestamp),
-    account = gen.getAccount(command.account),
-    beneficiaryAccount = gen.getAccount(command.beneficiary),
-    maxPresaleWei = crowdsale.maxPresaleCapUSD*state.weiPerUSDinPresale,
-    hasZeroAddress = _.some([beneficiaryAccount, account], isZeroAddress);
-
-  let shouldThrow = (nextTimestamp < publicPresaleStartTimestamp) ||
-    (state.totalPresaleWei.plus(weiCost) > maxPresaleWei) ||
-    (nextTimestamp > publicPresaleEndTimestamp) ||
-    (state.crowdsalePaused) ||
-    (state.crowdsaleFinalized) ||
-    (state.weiPerUSDinPresale == 0) ||
-    (command.eth == 0) ||
-    hasZeroAddress;
-
-  try {
-    help.debug('buying presale tokens, rate:', rate, 'eth:', command.eth,
-      'startBlock:', crowdsale.publicPresaleStartTimestamp,
-      'endBlock:', crowdsale.publicPresaleEndTimestamp,
-      'blockTimestamp:', nextTimestamp);
-
-    await state.crowdsaleContract.buyPresaleTokens(beneficiaryAccount, {value: weiCost, from: account});
-
-    assert.equal(false, shouldThrow, 'buyPresaleTokens should have thrown but it did not');
-
-    state.totalPresaleWei = state.totalPresaleWei.plus(weiCost);
-    let lifWei = weiCost.mul(rate);
-    state.presalePurchases = _.concat(state.presalePurchases,
-      {lifWei: lifWei, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
-    );
-    state.totalSupply = state.totalSupply.plus(lifWei);
-  } catch(e) {
-    assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
-  }
-  return state;
-}
-
 async function runSendTransactionCommand(command, state) {
   let crowdsale = state.crowdsaleData,
-    { publicPresaleStartTimestamp, publicPresaleEndTimestamp,
-      startTimestamp, end2Timestamp } = crowdsale,
+    { startTimestamp, end2Timestamp } = crowdsale,
     weiCost = parseInt(web3.toWei(command.eth, 'ether')),
     nextTimestamp = latestTime(),
     rate = help.getCrowdsaleExpectedRate(crowdsale, nextTimestamp),
     tokens = new BigNumber(command.eth).mul(rate),
-    account = gen.getAccount(command.account),
-    maxPresaleWei = crowdsale.maxPresaleCapUSD*state.weiPerUSDinPresale;
+    account = gen.getAccount(command.account);
 
-  let inPresale = nextTimestamp >= publicPresaleStartTimestamp && nextTimestamp <= publicPresaleEndTimestamp,
-    inTGE = nextTimestamp >= startTimestamp && nextTimestamp <= end2Timestamp,
+  let inTGE = nextTimestamp >= startTimestamp && nextTimestamp <= end2Timestamp,
     hasZeroAddress = isZeroAddress(account);
 
-  let shouldThrow = (!inPresale && !inTGE) ||
+  let shouldThrow = (!inTGE) ||
     (inTGE && state.weiPerUSDinTGE == 0) ||
-    (inPresale && state.weiPerUSDinPresale == 0) ||
-    (inPresale && (state.totalPresaleWei.plus(weiCost) > maxPresaleWei)) ||
     (state.crowdsalePaused) ||
     (state.crowdsaleFinalized) ||
     (command.eth == 0) ||
@@ -172,10 +124,8 @@ async function runSendTransactionCommand(command, state) {
         {tokens: tokens, rate: rate, wei: weiCost, beneficiary: command.beneficiary, account: command.account}
       );
       state.weiRaised = state.weiRaised.plus(weiCost);
-    } else if (inPresale) {
-      state.totalPresaleWei = state.totalPresaleWei.plus(weiCost);
     } else {
-      throw(new Error('sendTransaction not in presale or TGE should have thrown'));
+      throw(new Error('sendTransaction not in TGE should have thrown'));
     }
     state.totalSupply = state.totalSupply.plus(help.lif2LifWei(tokens));
   } catch(e) {
@@ -200,30 +150,6 @@ async function runBurnTokensCommand(command, state) {
     state.balances[account] = balance.minus(command.tokens);
     state.totalSupply = state.totalSupply.minus(command.tokens);
 
-  } catch(e) {
-    assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
-  }
-  return state;
-}
-
-async function runSetWeiPerUSDinPresaleCommand(command, state) {
-
-  let crowdsale = state.crowdsaleData,
-    { publicPresaleStartTimestamp, setWeiLockSeconds } = crowdsale,
-    nextTimestamp = latestTime(),
-    account = gen.getAccount(command.fromAccount),
-    hasZeroAddress = isZeroAddress(account);
-
-  let shouldThrow = (nextTimestamp >= publicPresaleStartTimestamp-setWeiLockSeconds) ||
-    (command.fromAccount != state.owner) ||
-    (command.wei == 0) ||
-    hasZeroAddress;
-
-  help.debug('seting wei per usd in presale:', command.wei);
-  try {
-    await state.crowdsaleContract.setWeiPerUSDinPresale(command.wei, {from: account});
-    assert.equal(false, shouldThrow);
-    state.weiPerUSDinPresale = command.wei;
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
@@ -700,10 +626,8 @@ const commands = {
   waitTime: {gen: gen.waitTimeCommandGen, run: runWaitTimeCommand},
   checkRate: {gen: gen.checkRateCommandGen, run: runCheckRateCommand},
   sendTransaction: {gen: gen.sendTransactionCommandGen, run: runSendTransactionCommand},
-  setWeiPerUSDinPresale: {gen: gen.setWeiPerUSDinPresaleCommandGen, run: runSetWeiPerUSDinPresaleCommand},
   setWeiPerUSDinTGE: {gen: gen.setWeiPerUSDinTGECommandGen, run: runSetWeiPerUSDinTGECommand},
   buyTokens: {gen: gen.buyTokensCommandGen, run: runBuyTokensCommand},
-  buyPresaleTokens: {gen: gen.buyPresaleTokensCommandGen, run: runBuyPresaleTokensCommand},
   burnTokens: {gen: gen.burnTokensCommandGen, run: runBurnTokensCommand},
   pauseCrowdsale: {gen: gen.pauseCrowdsaleCommandGen, run: runPauseCrowdsaleCommand},
   pauseToken: {gen: gen.pauseTokenCommandGen, run: runPauseTokenCommand},
