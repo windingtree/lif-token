@@ -137,19 +137,14 @@ contract('LifToken', function(accounts) {
     help.abiDecoder.addABI(Message._json.abi);
 
     let data = message.contract.fail.getData();
-    let transaction;
 
-    try {
-      transaction = await token.approveData(
-        message.contract.address, help.lif2LifWei(10), data,
-        {from: accounts[1]}
-      );
-    } catch (error) {
-      if (!help.isInvalidOpcodeEx(error)) throw error;
+    let transaction = await token.approveData(
+      message.contract.address, help.lif2LifWei(10), data,
+      {from: accounts[1]}
+    );
 
-      let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
-      assert.equal(0, decodedEvents.length);
-    }
+    let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
+    assert.equal(0, decodedEvents.length);
 
     new BigNumber(help.lif2LifWei(10)).should.be.bignumber
       .equal(await token.allowance(accounts[1], message.contract.address));
@@ -162,19 +157,14 @@ contract('LifToken', function(accounts) {
     help.abiDecoder.addABI(Message._json.abi);
 
     let data = message.contract.fail.getData();
-    let transaction;
 
-    try {
-      transaction = await token.transferData(
-        message.contract.address, help.lif2LifWei(10), data,
-        {from: accounts[1]}
-      );
-    } catch (error) {
-      if (!help.isInvalidOpcodeEx(error)) throw error;
+    let transaction = await token.transferData(
+      message.contract.address, help.lif2LifWei(10), data,
+      {from: accounts[1]}
+    );
 
-      let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
-      assert.equal(0, decodedEvents.length);
-    }
+    let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
+    assert.equal(0, decodedEvents.length);
 
     new BigNumber(help.lif2LifWei(10)).should.be.bignumber
       .equal(await token.balanceOf(message.contract.address));
@@ -187,21 +177,16 @@ contract('LifToken', function(accounts) {
     help.abiDecoder.addABI(Message._json.abi);
 
     let data = message.contract.fail.getData();
-    let transaction;
 
     await token.approve(accounts[1], help.lif2LifWei(10), {from: accounts[2]});
 
-    try {
-      transaction = await token.transferDataFrom(
-        accounts[2], message.contract.address, help.lif2LifWei(10), data,
-        {from: accounts[1]}
-      );
-    } catch (error) {
-      if (!help.isInvalidOpcodeEx(error)) throw error;
+    let transaction = await token.transferDataFrom(
+      accounts[2], message.contract.address, help.lif2LifWei(10), data,
+      {from: accounts[1]}
+    );
 
-      let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
-      assert.equal(0, decodedEvents.length);
-    }
+    let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
+    assert.equal(0, decodedEvents.length);
 
     new BigNumber(help.lif2LifWei(10)).should.be.bignumber
       .equal(await token.balanceOf(message.contract.address));
