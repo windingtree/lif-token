@@ -390,8 +390,8 @@ contract('LifCrowdsale Property-based test', function() {
   it('should handle fund, finalize and burn with 0 tokens', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {"type":"fundCrowdsaleBelowSoftCap","account":3,"finalize":true},
-        {"type":"burnTokens","account":4,"tokens":0}
+        {'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':true},
+        {'type':'burnTokens','account':4,'tokens':0}
       ],
       crowdsale: {
         rate1: 11, rate2: 13, foundationWallet: 3,
