@@ -88,7 +88,6 @@ contract('LifCrowdsale Property-based test', function() {
         end2Timestamp: end2Timestamp,
         rate1: input.crowdsale.rate1,
         rate2: input.crowdsale.rate2,
-        privatePresaleRate: input.crowdsale.privatePresaleRate,
         setWeiLockSeconds: input.crowdsale.setWeiLockSeconds,
         foundationWallet: gen.getAccount(input.crowdsale.foundationWallet),
         minCapUSD: 5000000,
@@ -102,7 +101,6 @@ contract('LifCrowdsale Property-based test', function() {
         crowdsaleData.end2Timestamp,
         crowdsaleData.rate1,
         crowdsaleData.rate2,
-        crowdsaleData.privatePresaleRate,
         crowdsaleData.setWeiLockSeconds,
         crowdsaleData.foundationWallet,
         {from: ownerAddress}
@@ -187,7 +185,7 @@ contract('LifCrowdsale Property-based test', function() {
         { type:'sendTransaction','account':3,'beneficiary':0,'eth':9}
       ],
       crowdsale: {
-        rate1: 18, rate2: 33, privatePresaleRate: 48,
+        rate1: 18, rate2: 33,
         foundationWallet: 1, setWeiLockSeconds: 600, owner: 7
       }
     });
@@ -199,7 +197,7 @@ contract('LifCrowdsale Property-based test', function() {
         { type:'sendTransaction','account':0,'beneficiary':9,'eth':39}
       ],
       crowdsale: {
-        rate1: 39, rate2: 13, privatePresaleRate: 35,
+        rate1: 39, rate2: 13,
         foundationWallet: 8, setWeiLockSeconds: 600, owner: 9
       }
     });
@@ -209,7 +207,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'fundCrowdsaleBelowSoftCap','account':7,'finalize':false}
       ],
       crowdsale: {
-        rate1: 33, rate2: 12, privatePresaleRate: 28,
+        rate1: 33, rate2: 12,
         foundationWallet: 10, setWeiLockSeconds: 52, owner: 0
       }
     });
@@ -228,7 +226,6 @@ contract('LifCrowdsale Property-based test', function() {
       crowdsale: {
         rate1: 16,
         rate2: 14,
-        privatePresaleRate: 14,
         setWeiLockSeconds: 3600,
         foundationWallet: 2,
         owner: 3
@@ -253,7 +250,6 @@ contract('LifCrowdsale Property-based test', function() {
       crowdsale: {
         rate1: 10,
         rate2: 9,
-        privatePresaleRate: 13,
         setWeiLockSeconds: 3600,
         foundationWallet: 2,
         owner: 3
@@ -280,7 +276,6 @@ contract('LifCrowdsale Property-based test', function() {
       crowdsale: {
         rate1: 10,
         rate2: 9,
-        privatePresaleRate: 13,
         setWeiLockSeconds: 5,
         foundationWallet: 2,
         owner: 3
@@ -300,7 +295,7 @@ contract('LifCrowdsale Property-based test', function() {
         { type:'setWeiPerUSDinTGE','wei':3,'fromAccount':6}
       ],
       crowdsale: {
-        rate1: 10, rate2: 31, privatePresaleRate: 35,
+        rate1: 10, rate2: 31,
         foundationWallet: 10, setWeiLockSeconds: 1, owner: 6
       }
     });
@@ -310,7 +305,7 @@ contract('LifCrowdsale Property-based test', function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [{ type:'approve','lif':0,'fromAccount':3,'spenderAccount':5}],
       crowdsale: {
-        rate1: 24, rate2: 15, privatePresaleRate: 15,
+        rate1: 24, rate2: 15,
         foundationWallet: 2, setWeiLockSeconds: 1, owner: 5
       }
     });
@@ -322,7 +317,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':true}
       ],
       crowdsale: {
-        rate1: 20, rate2: 46, privatePresaleRate: 0,
+        rate1: 20, rate2: 46,
         foundationWallet: 4, setWeiLockSeconds: 521, owner: 0
       }
     });
@@ -334,7 +329,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':false}
       ],
       crowdsale: {
-        rate1: 20, rate2: 46, privatePresaleRate: 0,
+        rate1: 20, rate2: 46,
         foundationWallet: 4, setWeiLockSeconds: 521, owner: 0
       }
     });
@@ -360,7 +355,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'transfer','lif':0,'fromAccount':4,'toAccount':2}
       ],
       crowdsale: {
-        rate1: 14, rate2: 20, privatePresaleRate: 7,
+        rate1: 14, rate2: 20,
         foundationWallet: 6, setWeiLockSeconds: 83, owner: 5
       }
     });
@@ -372,7 +367,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'fundCrowdsaleOverSoftCap','account':3,'softCapExcessWei':10,'finalize':true}
       ],
       crowdsale: {
-        rate1: 20, rate2: 46, privatePresaleRate: 0,
+        rate1: 20, rate2: 46,
         foundationWallet: 4, setWeiLockSeconds: 521, owner: 0
       }
     });

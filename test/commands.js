@@ -319,12 +319,13 @@ async function runAddPrivatePresalePaymentCommand(command, state) {
     (account != gen.getAccount(state.owner)) ||
     (state.crowdsaleFinalized) ||
     hasZeroAddress ||
-    (weiToSend == 0);
+    (weiToSend == 0) ||
+    (command.rate <= state.crowdsaleData.rate1);
 
   try {
     help.debug('Adding presale private tokens for account:', command.beneficiaryAccount, 'eth:', command.eth, 'fromAccount:', command.fromAccount, 'blockTimestamp:', nextTimestamp);
 
-    await state.crowdsaleContract.addPrivatePresaleTokens(beneficiary, weiToSend, {from: account});
+    await state.crowdsaleContract.addPrivatePresaleTokens(beneficiary, weiToSend, command.rate, {from: account});
 
     assert.equal(false, shouldThrow, 'buyTokens should have thrown but it did not');
 
