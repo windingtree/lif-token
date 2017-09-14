@@ -63,10 +63,6 @@ contract LifCrowdsale is Ownable, Pausable {
   // wei rate cannot be set by the owner anymore.
   uint256 public setWeiLockSeconds = 0;
 
-  // Quantity of Lif that is received in exchange of 1 Ether during the private
-  // presale
-  uint256 public privatePresaleRate;
-
   // Quantity of Lif that is received in exchage of 1 Ether during the first
   // week of the 2 weeks TGE
   uint256 public rate1;
@@ -130,7 +126,6 @@ contract LifCrowdsale is Ownable, Pausable {
      @param _end2Timestamp see `end2Timestamp
      @param _rate1 see `rate1`
      @param _rate2 see `rate2`
-     @param _privatePresaleRate see `privatePresaleRate`
      @param _foundationWallet see `foundationWallet`
    */
   function LifCrowdsale(
@@ -139,7 +134,6 @@ contract LifCrowdsale is Ownable, Pausable {
     uint256 _end2Timestamp,
     uint256 _rate1,
     uint256 _rate2,
-    uint256 _privatePresaleRate,
     uint256 _setWeiLockSeconds,
     address _foundationWallet
   ) {
@@ -160,7 +154,6 @@ contract LifCrowdsale is Ownable, Pausable {
     end2Timestamp = _end2Timestamp;
     rate1 = _rate1;
     rate2 = _rate2;
-    privatePresaleRate = _privatePresaleRate;
     setWeiLockSeconds = _setWeiLockSeconds;
     foundationWallet = _foundationWallet;
   }
@@ -238,13 +231,19 @@ contract LifCrowdsale is Ownable, Pausable {
 
      @param beneficiary Address to which Lif will be sent
      @param weiSent Amount of wei contributed
+     @param rate Lif per ether rate at the moment of the contribution
    */
-  function addPrivatePresaleTokens(address beneficiary, uint256 weiSent) onlyOwner {
+  function addPrivatePresaleTokens(
+    address beneficiary, uint256 weiSent, uint256 rate
+  ) onlyOwner {
     require(block.timestamp < startTimestamp);
     require(beneficiary != address(0));
     require(weiSent > 0);
 
-    uint256 tokens = weiSent.mul(privatePresaleRate);
+    // validate that rate is higher than TGE rate
+    require(rate > rate1);
+
+    uint256 tokens = weiSent.mul(rate);
 
     totalPresaleWei.add(weiSent);
 
