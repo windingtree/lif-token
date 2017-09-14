@@ -226,6 +226,19 @@ contract('LifCrowdsale Property-based test', function() {
     });
   });
 
+  it('does not fail when funding below soft cap and then sending tokens to the MVM', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {"type":"fundCrowdsaleBelowSoftCap","account":10,"finalize":true},
+        {"type":"MVMSendTokens","tokens":3,"from":10}
+      ],
+      crowdsale: {
+        rate1: 9, rate2: 1, privatePresaleRate: 3, foundationWallet: 0,
+        setWeiLockSeconds: 600, owner: 8
+      }
+    });
+  });
+
   it('calculates correct rate on the boundaries between end1Timestamp and end2Timestamp', async function() {
     let crowdsaleAndCommands = {
       commands: [
