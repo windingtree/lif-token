@@ -597,9 +597,9 @@ async function runMVMSendTokensCommand(command, state) {
     // or the soft cap was not reached
     let TGEFunding = state.weiRaised.div(state.weiPerUSDinTGE).floor(),
       MVMMinCap = await state.crowdsaleContract.maxFoundationCapUSD.call();
-    assert.equal(true, !state.crowdsaleFinalized ||
-      !state.crowdsaleFunded ||
-      (TGEFunding.lte(MVMMinCap)),
+    let shouldHaveMVM = state.crowdsaleFinalized && state.crowdsaleFunded &&
+      (TGEFunding.gt(MVMMinCap));
+    assert.equal(false, shouldHaveMVM,
       'if there is no MVM, crowdsale should not have been funded');
   } else {
     let lifWei = help.lif2LifWei(command.tokens),
