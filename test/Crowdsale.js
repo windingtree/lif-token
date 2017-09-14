@@ -13,7 +13,7 @@ contract('LifToken Crowdsale', function(accounts) {
 
     let crowdsale = await LifCrowdsale.new(
       startTimestamp, end1Timestamp, end2Timestamp,
-      100, 110, 150, duration.minutes(30),
+      100, 110, duration.minutes(30),
       accounts[0]
     );
 

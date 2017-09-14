@@ -26,7 +26,6 @@ module.exports = {
   crowdsaleGen: jsc.record({
     rate1: jsc.nat,
     rate2: jsc.nat,
-    privatePresaleRate: jsc.nat,
     foundationWallet: accountGen,
     setWeiLockSeconds: jsc.nat(600,3600),
     owner: accountGen
@@ -93,7 +92,8 @@ module.exports = {
     type: jsc.constant('addPrivatePresalePayment'),
     beneficiaryAccount: accountGen,
     fromAccount: accountGen,
-    eth: jsc.nat(0,200)
+    eth: jsc.nat(0,200),
+    rate: jsc.nat(10)
   }),
 
   claimEthCommandGen: jsc.record({
