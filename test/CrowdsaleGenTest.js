@@ -213,6 +213,19 @@ contract('LifCrowdsale Property-based test', function() {
     });
   });
 
+  it('does not fail when running a fund over soft cap and then one below soft cap commands', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {'type':'fundCrowdsaleOverSoftCap','account':7,'softCapExcessWei':7,'finalize':false},
+        {'type':'fundCrowdsaleBelowSoftCap','account':10,'finalize':true}
+      ],
+      crowdsale: {
+        publicPresaleRate: 12, rate1: 10, rate2: 27, privatePresaleRate: 44,
+        foundationWallet: 0, setWeiLockSeconds: 392, owner: 5
+      }
+    });
+  });
+
   it('calculates correct rate on the boundaries between end1Timestamp and end2Timestamp', async function() {
     let crowdsaleAndCommands = {
       commands: [
