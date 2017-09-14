@@ -400,8 +400,9 @@ async function runApproveCommand(command, state) {
   let fromAddress = gen.getAccount(command.fromAccount),
     spenderAddress = gen.getAccount(command.spenderAccount),
     lifWei = help.lif2LifWei(command.lif),
-    hasZeroAddress = _.some([fromAddress], isZeroAddress),
-    shouldThrow = state.tokenPaused || (hasZeroAddress &  new BigNumber(lifWei).gt(0));
+    shouldThrow = state.tokenPaused ||
+      (isZeroAddress(spenderAddress) &  new BigNumber(lifWei).gt(0)) ||
+      isZeroAddress(fromAddress);
 
   try {
     await state.token.approve(spenderAddress, lifWei, {from: fromAddress});
@@ -411,7 +412,7 @@ async function runApproveCommand(command, state) {
     // TODO: take spent gas into account?
     setAllowance(state, command.fromAccount, command.spenderAccount, lifWei);
   } catch(e) {
-    assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
+    assertExpectedException(e, shouldThrow, isZeroAddress(fromAddress), state, command);
   }
   return state;
 }

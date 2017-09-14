@@ -340,6 +340,19 @@ contract('LifCrowdsale Property-based test', function() {
     });
   });
 
+  it('should run the fund crowdsale below cap, finalize and try to approve form zero address', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':true},
+        {'type':'approve','lif':0,'fromAccount':'zero','spenderAccount':'zero'}
+      ],
+      crowdsale: {
+        rate1: 20, rate2: 46,
+        foundationWallet: 4, setWeiLockSeconds: 521, owner: 0
+      }
+    });
+  });
+
   it('should be able to transfer tokens in unpaused token after crowdsale funded over cap', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
