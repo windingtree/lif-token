@@ -9,7 +9,7 @@ cache:
 script:
   - set -e
   - yarn lint
-  - GEN_TESTS_QTY=20 yarn test test/LifToken.js test/Crowdsale.js test/CrowdsaleGenTest.js
-  - yarn test test/MarketValidationMechanism.js test/VestedPayment.js
+  - yarn test test/LifToken.js test/Crowdsale.js test/MarketValidationMechanism.js test/VestedPayment.js
+  - GEN_TESTS_QTY=40 yarn test test/CrowdsaleGenTest.js
 after_script:
   - yarn run coveralls
