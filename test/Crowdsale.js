@@ -34,7 +34,7 @@ contract('LifToken Crowdsale', function(accounts) {
       end2Timestamp = startTimestamp + duration.days(2);
 
     try {
-      let crowdsale = await LifCrowdsale.new(
+      await LifCrowdsale.new(
         startTimestamp, end1Timestamp, end2Timestamp,
         100, 110, duration.minutes(30), help.zeroAddress
       );
