@@ -27,7 +27,7 @@ module.exports = {
     rate1: jsc.nat,
     rate2: jsc.nat,
     foundationWallet: accountGen,
-    setWeiLockSeconds: jsc.nat(600,3600),
+    setWeiLockSeconds: jsc.integer(600,3600),
     owner: accountGen
   }),
 
@@ -47,7 +47,7 @@ module.exports = {
 
   setWeiPerUSDinTGECommandGen: jsc.record({
     type: jsc.constant('setWeiPerUSDinTGE'),
-    wei: jsc.nat(0,10000000000000000), // between 0-0.01 ETH
+    wei: jsc.integer(0,10000000000000000), // between 0-0.01 ETH
     fromAccount: accountGen
   }),
 
@@ -92,33 +92,33 @@ module.exports = {
     type: jsc.constant('addPrivatePresalePayment'),
     beneficiaryAccount: accountGen,
     fromAccount: accountGen,
-    eth: jsc.nat(0,200),
-    rate: jsc.nat(10)
+    eth: jsc.nat,
+    rate: jsc.integer(10, 200)
   }),
 
   claimEthCommandGen: jsc.record({
     type: jsc.constant('claimEth'),
-    eth: jsc.nat(0, 200),
+    eth: jsc.nat,
     fromAccount: accountGen
   }),
 
   transferCommandGen: jsc.record({
     type: jsc.constant('transfer'),
-    lif: jsc.nat(0, 200),
+    lif: jsc.nat,
     fromAccount: accountGen,
     toAccount: accountGen
   }),
 
   approveCommandGen: jsc.record({
     type: jsc.constant('approve'),
-    lif: jsc.nat(0, 200),
+    lif: jsc.nat,
     fromAccount: accountGen,
     spenderAccount: accountGen
   }),
 
   transferFromCommandGen: jsc.record({
     type: jsc.constant('transferFrom'),
-    lif: jsc.nat(0, 200),
+    lif: jsc.nat,
     senderAccount: accountGen,
     fromAccount: accountGen,
     toAccount: accountGen
