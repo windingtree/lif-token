@@ -149,7 +149,7 @@ contract LifCrowdsale is Ownable, Pausable {
     require(_rate1 > 0);
     require(_rate2 > 0);
     require(_setWeiLockSeconds > 0);
-    require(_foundationWallet != 0x0);
+    require(_foundationWallet != address(0));
 
     token = new LifToken();
     token.pause();
@@ -206,7 +206,7 @@ contract LifCrowdsale is Ownable, Pausable {
      @param beneficiary Address to which Lif should be sent
    */
   function buyTokens(address beneficiary) payable {
-    require(beneficiary != 0x0);
+    require(beneficiary != address(0));
     require(validPurchase());
     assert(weiPerUSDinTGE > 0);
 
