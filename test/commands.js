@@ -141,6 +141,7 @@ async function runBurnTokensCommand(command, state) {
 
   let shouldThrow = state.tokenPaused ||
     (balance < command.tokens) ||
+    (command.tokens == 0) ||
     hasZeroAddress;
 
   try {
