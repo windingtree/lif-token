@@ -26,9 +26,9 @@ module.exports = {
   crowdsaleGen: jsc.record({
     rate1: jsc.nat,
     rate2: jsc.nat,
-    foundationWallet: accountGen,
+    foundationWallet: knownAccountGen,
     setWeiLockSeconds: jsc.integer(600,3600),
-    owner: accountGen
+    owner: knownAccountGen
   }),
 
   waitBlockCommandGen: jsc.record({

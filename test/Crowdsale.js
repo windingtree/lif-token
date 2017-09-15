@@ -1,5 +1,7 @@
 var LifCrowdsale = artifacts.require('./LifCrowdsale.sol');
 
+let help = require('./helpers');
+
 var latestTime = require('./helpers/latestTime');
 var {duration} = require('./helpers/increaseTime');
 
@@ -26,4 +28,19 @@ contract('LifToken Crowdsale', function(accounts) {
 
   });
 
+  it('fails to create a Crowndsale with 0x0 as foundation wallet', async function() {
+    const startTimestamp = latestTime() + duration.days(1),
+      end1Timestamp = startTimestamp + duration.days(1),
+      end2Timestamp = startTimestamp + duration.days(2);
+
+    try {
+      await LifCrowdsale.new(
+        startTimestamp, end1Timestamp, end2Timestamp,
+        100, 110, duration.minutes(30), help.zeroAddress
+      );
+      assert(false, 'create crowdsale should have thrown');
+    } catch(e) {
+      if (!help.isInvalidOpcodeEx(e)) throw e;
+    }
+  });
 });
