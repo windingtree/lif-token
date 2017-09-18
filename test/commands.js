@@ -473,38 +473,54 @@ let getMMMaxClaimableWei = function(state) {
   }
 };
 
+async function startCrowdsaleAndBuyTokens(account, eth, weiPerUSD, state) {
+
+  // unpause the crowdsale if needed
+  if (state.crowdsalePaused) {
+    state = await runPauseCrowdsaleCommand({pause: false, fromAccount: state.owner}, state);
+  }
+
+  // set weiPerUSDinTGE rate if needed
+  if (state.weiPerUSDinTGE != weiPerUSD) {
+    state = await runSetWeiPerUSDinTGECommand({wei: weiPerUSD, fromAccount: state.owner}, state);
+  }
+
+  if (eth.gt(0)) {
+    // wait for crowdsale startTimestamp
+    if (latestTime() < state.crowdsaleData.startTimestamp) {
+      await increaseTimeTestRPCTo(state.crowdsaleData.startTimestamp);
+    }
+
+    let weiRaisedBeforeBuy = state.weiRaised;
+
+    // buy enough tokens to exactly reach the minCap (which is less than softCap)
+    let buyTokensCommand = {account: account, eth: eth, beneficiary: account};
+
+    state = await runBuyTokensCommand(buyTokensCommand, state);
+
+    web3.toWei(eth, 'ether').plus(weiRaisedBeforeBuy).
+      should.be.bignumber.equal(state.weiRaised);
+  }
+
+  return state;
+}
+
 async function runFundCrowdsaleBelowSoftCap(command, state) {
   if (!state.crowdsaleFinalized) {
-    // unpause the crowdsale if needed
-    if (state.crowdsalePaused) {
-      state = await runPauseCrowdsaleCommand({pause: false, fromAccount: state.owner}, state);
-    }
 
-    // set weiPerUSDinTGE rate if needed
-    if (state.weiPerUSDinTGE == 0) {
-      state = await runSetWeiPerUSDinTGECommand({wei: 100, fromAccount: state.owner}, state);
-    }
+    let weiPerUSD = 10000;
 
+    // buy enough tokens to exactly reach the minCap (which is less than softCap)
     let minCapUSD = await state.crowdsaleContract.minCapUSD.call(),
-      currentUSDFunding = state.weiRaised.div(state.weiPerUSDinTGE).floor();
+      currentUSDFunding = state.weiRaised.div(weiPerUSD).floor(),
+      wei = minCapUSD.minus(currentUSDFunding).mul(weiPerUSD),
+      eth = web3.fromWei(wei, 'ether');
 
-    if (minCapUSD.gt(currentUSDFunding)) {
-      // wait for crowdsale startTimestamp
-      if (latestTime() < state.crowdsaleData.startTimestamp) {
-        await increaseTimeTestRPCTo(state.crowdsaleData.startTimestamp);
-      }
+    state = await startCrowdsaleAndBuyTokens(command.account, eth, 10000, state);
 
-      // buy enough tokens to exactly reach the minCap (which is less than softCap)
-      let wei = minCapUSD.minus(currentUSDFunding).mul(state.weiPerUSDinTGE),
-        eth = web3.fromWei(wei, 'ether'),
-        buyTokensCommand = {account: command.account, eth: eth, beneficiary: command.account};
-
-      state = await runBuyTokensCommand(buyTokensCommand, state);
-
-      minCapUSD.should.be.bignumber.equal(new BigNumber(state.weiRaised).div(state.weiPerUSDinTGE));
-
-      currentUSDFunding = minCapUSD;
-    }
+    // take current funding again, because previous command might have skipped
+    // buying tokens if eth was lte 0
+    currentUSDFunding = state.weiRaised.div(weiPerUSD).floor();
 
     if (command.finalize) {
       // wait for crowdsale end2Timestamp
@@ -538,35 +554,14 @@ async function runFundCrowdsaleBelowSoftCap(command, state) {
 
 async function runFundCrowdsaleOverSoftCap(command, state) {
   if (!state.crowdsaleFinalized) {
-    // unpause the crowdsale if needed
-    if (state.crowdsalePaused) {
-      state = await runPauseCrowdsaleCommand({pause: false, fromAccount: state.owner}, state);
-    }
 
-    // set weiPerUSDinTGE rate if needed
-    if (state.weiPerUSDinTGE == 0) {
-      state = await runSetWeiPerUSDinTGECommand({wei: 10000, fromAccount: state.owner}, state);
-    }
+    let weiPerUSD = 10000,
+      softCap = await state.crowdsaleContract.maxFoundationCapUSD.call(),
+      currentUSDFunding = state.weiRaised.div(weiPerUSD),
+      wei = softCap.minus(currentUSDFunding).mul(weiPerUSD).plus(command.softCapExcessWei),
+      eth = web3.fromWei(wei, 'ether');
 
-    let softCap = await state.crowdsaleContract.maxFoundationCapUSD.call(),
-      currentUSDFunding = state.weiRaised.div(state.weiPerUSDinTGE);
-
-    if (softCap.gt(currentUSDFunding)) {
-      // wait for crowdsale startTimestamp
-      if (latestTime() < state.crowdsaleData.startTimestamp) {
-        await increaseTimeTestRPCTo(state.crowdsaleData.startTimestamp);
-      }
-
-      // buy enough tokens to exactly reach the minCap (which is less than softCap)
-      let wei = softCap.minus(currentUSDFunding).mul(state.weiPerUSDinTGE).plus(command.softCapExcessWei),
-        eth = web3.fromWei(wei, 'ether'),
-        buyTokensCommand = {account: command.account, eth: eth, beneficiary: command.account};
-
-      state = await runBuyTokensCommand(buyTokensCommand, state);
-
-      softCap.mul(state.weiPerUSDinTGE).plus(command.softCapExcessWei).
-        should.be.bignumber.equal(state.weiRaised);
-    }
+    state = await startCrowdsaleAndBuyTokens(command.account, eth, weiPerUSD, state);
 
     if (command.finalize) {
       // wait for crowdsale end2Timestamp
