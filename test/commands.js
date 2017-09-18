@@ -456,31 +456,11 @@ async function runTransferFromCommand(command, state) {
   return state;
 }
 
-
 //
-// Market Maker commands
+// Composed commands
 //
-
-let getMvmMaxClaimableWei = function(state) {
-  if (state.MVMMonth >= state.MVMPeriods) {
-    help.debug('calculating maxClaimableEth with', state.MVMStartingBalance,
-      state.MVMClaimedWei,
-      state.returnedWeiForBurnedTokens);
-    return state.MVMStartingBalance.
-      minus(state.MVMClaimedWei).
-      minus(state.returnedWeiForBurnedTokens);
-  } else {
-    const maxClaimable = state.MVMStartingBalance.
-      mul(state.claimablePercentage).dividedBy(priceFactor).
-      mul(state.initialTokenSupply - state.MVMBurnedTokens).
-      dividedBy(state.initialTokenSupply).
-      minus(state.MVMClaimedWei);
-    return _.max([0, maxClaimable]);
-  }
-};
 
 async function startCrowdsaleAndBuyTokens(account, eth, weiPerUSD, state) {
-
   // unpause the crowdsale if needed
   if (state.crowdsalePaused) {
     state = await runPauseCrowdsaleCommand({pause: false, fromAccount: state.owner}, state);
@@ -632,6 +612,28 @@ async function runFundCrowdsaleOverSoftCap(command, state) {
 
   return state;
 }
+
+//
+// Market Maker commands
+//
+
+let getMvmMaxClaimableWei = function(state) {
+  if (state.MVMMonth >= state.MVMPeriods) {
+    help.debug('calculating maxClaimableEth with', state.MVMStartingBalance,
+      state.MVMClaimedWei,
+      state.returnedWeiForBurnedTokens);
+    return state.MVMStartingBalance.
+      minus(state.MVMClaimedWei).
+      minus(state.returnedWeiForBurnedTokens);
+  } else {
+    const maxClaimable = state.MVMStartingBalance.
+      mul(state.claimablePercentage).dividedBy(priceFactor).
+      mul(state.initialTokenSupply - state.MVMBurnedTokens).
+      dividedBy(state.initialTokenSupply).
+      minus(state.MVMClaimedWei);
+    return _.max([0, maxClaimable]);
+  }
+};
 
 // TODO: implement finished, returns false, but references state to make eslint happy
 let isMVMFinished = (state) => state && false;
