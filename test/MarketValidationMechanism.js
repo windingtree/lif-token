@@ -167,12 +167,12 @@ contract('Market validation Mechanism', function(accounts) {
       should.be.bignumber.equal(await token.totalSupply.call());
     data.MVMBurnedTokens.should.be.bignumber.equal(await mm.totalBurnedTokens.call());
 
-    if (data.MVMMonth < periods) {
+    if (data.MVMMonth < data.MVMPeriods) {
       data.MVMBuyPrice.should.be.bignumber.equal(await mm.getBuyPrice());
       assert.equal(data.claimablePercentage, parseInt(await mm.getAccumulatedDistributionPercentage()));
     }
 
-    assert.equal(data.MVMMonth >= periods, await mm.isFinished());
+    assert.equal(data.MVMMonth >= data.MVMPeriods, await mm.isFinished());
 
     data.ethBalances[customerAddressIndex].should.be.bignumber.equal(web3.eth.getBalance(customer));
     data.balances[customerAddressIndex].should.be.bignumber.equal(await token.balanceOf(customer));
@@ -204,7 +204,7 @@ contract('Market validation Mechanism', function(accounts) {
 
     let state = {
       MVMMonth: 0,
-      periods: periods,
+      MVMPeriods: periods,
       token: token,
       initialTokenSupply: help.lif2LifWei(tokenTotalSupply),
       MVMBurnedTokens: new BigNumber(0), // burned tokens in MM, via sendTokens txs
@@ -241,31 +241,13 @@ contract('Market validation Mechanism', function(accounts) {
       6583, 7243, 7929, 8640, 9377, 10138
     ];
 
-    let getMaxClaimableWei = function(state) {
-      if (state.MVMMonth >= periods) {
-        help.debug('calculating maxClaimableEth with', startingMMBalance, state.MVMClaimedWei,
-          state.returnedWeiForBurnedTokens);
-        return startingMMBalance.
-          minus(state.MVMClaimedWei).
-          minus(state.returnedWeiForBurnedTokens);
-      } else {
-        const totalSupplyWei = web3.toWei(tokenTotalSupply, 'ether');
-        const maxClaimable = startingMMBalance.
-          mul(state.claimablePercentage).dividedBy(priceFactor).
-          mul(totalSupplyWei - state.MVMBurnedTokens).
-          dividedBy(totalSupplyWei).
-          minus(state.MVMClaimedWei);
-        return _.max([0, maxClaimable]);
-      }
-    };
-
     let waitForMonth = async function(month, startTimestamp, secondsPerPeriod) {
       await increaseTimeTestRPCTo(startTimestamp + secondsPerPeriod * month);
 
       let period;
 
-      if (month >= periods) {
-        period = periods;
+      if (month >= state.MVMPeriods) {
+        period = state.MVMPeriods;
         state.claimablePercentage = priceFactor;
       } else {
         period = month;
@@ -277,7 +259,7 @@ contract('Market validation Mechanism', function(accounts) {
         mul(priceFactor - state.claimablePercentage).
         dividedBy(priceFactor).floor();
       state.MVMMonth = month;
-      state.MVMMaxClaimableWei = getMaxClaimableWei(state);
+      state.MVMMaxClaimableWei = commands.getMvmMaxClaimableWei(state);
 
       await checkScenarioProperties(state, mm, customer);
     };
@@ -300,7 +282,7 @@ contract('Market validation Mechanism', function(accounts) {
 
       state.MVMClaimedWei = state.MVMClaimedWei.plus(weiToClaim);
       state.MVMEthBalance = state.MVMEthBalance.minus(weiToClaim);
-      state.MVMMaxClaimableWei = getMaxClaimableWei(state);
+      state.MVMMaxClaimableWei = commands.getMvmMaxClaimableWei(state);
 
       await checkScenarioProperties(state, mm, customer);
     };

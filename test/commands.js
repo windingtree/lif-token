@@ -461,7 +461,7 @@ async function runTransferFromCommand(command, state) {
 // Market Maker commands
 //
 
-let getMMMaxClaimableWei = function(state) {
+let getMvmMaxClaimableWei = function(state) {
   if (state.MVMMonth >= state.MVMPeriods) {
     help.debug('calculating maxClaimableEth with', state.MVMStartingBalance,
       state.MVMClaimedWei,
@@ -679,7 +679,7 @@ async function runMVMSendTokensCommand(command, state) {
       state.MVMBurnedTokens = state.MVMBurnedTokens.plus(lifWei);
       state.returnedWeiForBurnedTokens = state.returnedWeiForBurnedTokens.plus(tokensCost);
       state.balances[command.from] = getBalance(state, command.from).minus(lifWei);
-      state.MVMMaxClaimableWei = getMMMaxClaimableWei(state);
+      state.MVMMaxClaimableWei = getMvmMaxClaimableWei(state);
 
     } catch(e) {
       assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
@@ -722,5 +722,7 @@ module.exports = {
     return command;
   },
 
-  ExceptionRunningCommand: ExceptionRunningCommand
+  ExceptionRunningCommand: ExceptionRunningCommand,
+
+  getMvmMaxClaimableWei: getMvmMaxClaimableWei
 };
