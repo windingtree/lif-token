@@ -47,7 +47,7 @@ contract LifToken is MintableToken, Pausable {
 
      @return true if the call function was executed successfully
    */
-  function approveData(address spender, uint value, bytes data) whenNotPaused returns (bool) {
+  function approveData(address spender, uint256 value, bytes data) whenNotPaused returns (bool) {
 
     require(spender != address(this));
 
@@ -73,7 +73,7 @@ contract LifToken is MintableToken, Pausable {
 
      @return true if the call function was executed successfully
    */
-  function transferData(address to, uint value, bytes data) whenNotPaused returns (bool) {
+  function transferData(address to, uint256 value, bytes data) whenNotPaused returns (bool) {
 
     require(to != address(this));
 
@@ -104,13 +104,13 @@ contract LifToken is MintableToken, Pausable {
 
      @return true if the call function was executed successfully
    */
-  function transferDataFrom(address from, address to, uint value, bytes data) whenNotPaused returns (bool) {
+  function transferDataFrom(address from, address to, uint256 value, bytes data) whenNotPaused returns (bool) {
 
     require(to != address(this));
 
     // If transfer have value process it
     if (value > 0) {
-      uint allowance = allowed[from][tx.origin];
+      uint256 allowance = allowed[from][tx.origin];
       balances[from] = balances[from].sub(value);
       balances[to] = balances[to].add(value);
       allowed[from][tx.origin] = allowance.sub(value);
