@@ -457,6 +457,19 @@ contract('LifCrowdsale Property-based test', function() {
     });
   });
 
+  it('should fund and finalize over cap and then send tokens to MVM fine', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {'type':'fundCrowdsaleOverSoftCap','account':0,'softCapExcessWei':32,'finalize':true},
+        {'type':'MVMSendTokens','tokens':4,'from':4}
+      ],
+      crowdsale: {
+        rate1: 2, rate2: 32, foundationWallet: 7,
+        setWeiLockSeconds: 2098, owner: 9
+      }
+    });
+  });
+
   it('runs the fund over soft cap and finalize with 0 excess command fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [

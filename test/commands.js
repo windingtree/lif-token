@@ -652,12 +652,14 @@ async function runMVMSendTokensCommand(command, state) {
       lifBuyPrice = state.MVMBuyPrice.div(priceFactor),
       tokensCost = new BigNumber(lifWei).mul(lifBuyPrice),
       fromAddress = gen.getAccount(command.from),
+      lifBalanceBeforeSend = getBalance(state, command.from),
       ethBalanceBeforeSend = state.ethBalances[command.from] || new BigNumber(0),
       hasZeroAddress = isZeroAddress(fromAddress);
 
     let shouldThrow = !state.crowdsaleFinalized ||
       !state.crowdsaleFunded ||
       state.MVMPaused ||
+      (lifWei > lifBalanceBeforeSend) ||
       (command.tokens == 0) ||
       isMVMFinished(state) ||
       hasZeroAddress;
