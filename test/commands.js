@@ -575,9 +575,13 @@ async function runFundCrowdsaleOverSoftCap(command, state) {
       assert.equal(true, state.crowdsaleFinalized);
       assert.equal(true, state.crowdsaleFunded);
 
-      assert(state.MVM);
-      assert.equal(24, parseInt(await state.MVM.totalPeriods()));
-      assert.equal(state.crowdsaleData.foundationWallet, await state.MVM.foundationAddr());
+      if ((currentUSDFunding > softCap) || (command.softCapExcessWei > 0)) {
+        assert(state.MVM, 'there is MVM b/c funding is over the soft cap');
+        assert.equal(24, parseInt(await state.MVM.totalPeriods()));
+        assert.equal(state.crowdsaleData.foundationWallet, await state.MVM.foundationAddr());
+      } else {
+        assert(state.MVM === undefined, 'No MVM b/c funding is exactly the soft cap');
+      }
     }
   }
 
