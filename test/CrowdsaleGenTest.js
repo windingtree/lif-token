@@ -431,6 +431,19 @@ contract('LifCrowdsale Property-based test', function() {
     });
   });
 
+  it('should run fund and finalize crowdsale below cap, the burn tokens fine', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {'type':'fundCrowdsaleBelowSoftCap','account':8,'finalize':true},
+        {'type':'burnTokens','account':5,'tokens':44}
+      ],
+      crowdsale: {
+        rate1: 1, rate2: 6, foundationWallet: 5,
+        setWeiLockSeconds: 2176, owner: 10
+      }
+    });
+  });
+
   it('should run the fund and finalize below and over soft cap sequence fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [

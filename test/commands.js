@@ -137,19 +137,20 @@ async function runSendTransactionCommand(command, state) {
 async function runBurnTokensCommand(command, state) {
   let account = gen.getAccount(command.account),
     balance = getBalance(state, command.account),
-    hasZeroAddress = isZeroAddress(account);
+    hasZeroAddress = isZeroAddress(account),
+    lifWei = help.lif2LifWei(command.tokens);
 
   let shouldThrow = state.tokenPaused ||
-    (balance < command.tokens) ||
+    (balance < lifWei) ||
     (command.tokens == 0) ||
     hasZeroAddress;
 
   try {
-    await state.token.burn(command.tokens, {from: account});
+    await state.token.burn(lifWei, {from: account});
     assert.equal(false, shouldThrow, 'burn should have thrown but it did not');
 
-    state.balances[account] = balance.minus(command.tokens);
-    state.totalSupply = state.totalSupply.minus(command.tokens);
+    state.balances[account] = balance.minus(lifWei);
+    state.totalSupply = state.totalSupply.minus(lifWei);
 
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
