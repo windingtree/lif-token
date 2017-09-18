@@ -564,7 +564,8 @@ async function runFundCrowdsaleOverSoftCap(command, state) {
 
       state = await runBuyTokensCommand(buyTokensCommand, state);
 
-      wei.should.be.bignumber.equal(state.weiRaised);
+      softCap.mul(state.weiPerUSDinTGE).plus(command.softCapExcessWei).
+        should.be.bignumber.equal(state.weiRaised);
     }
 
     if (command.finalize) {
