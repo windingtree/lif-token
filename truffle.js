@@ -26,5 +26,9 @@ module.exports = {
       gas: 0xfffffffffff,
       gasPrice: 0x01
     }
+  },
+  mocha: {
+    // a commented out mocha option, shows how to pass mocha options
+    // bail: true  // bail makes mocha to stop as soon as a test failure is found
   }
 };
