@@ -145,6 +145,7 @@ contract('LifCrowdsale Property-based test', function() {
         MVMBurnedTokens: new BigNumber(0),
         MVMClaimedWei: zero,
         claimablePercentage: zero,
+        MVMPaused: false,
         burnedTokens: zero,
         returnedWeiForBurnedTokens: new BigNumber(0)
       };
@@ -503,6 +504,18 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'MVMClaimEth','eth':12}
       ],
       crowdsale: {rate1: 3, rate2: 11, foundationWallet: 5, setWeiLockSeconds: 3152, owner: 10
+      }
+    });
+
+    // should work fine on a paused MVM (even though it would not be able to actually claim the eth)
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {'type':'fundCrowdsaleOverSoftCap','account':7,'softCapExcessWei':13,'finalize':true},
+        {'type':'MVMPause','pause':true, 'fromAccount':7},
+        {'type':'MVMClaimEth','eth':12}
+      ],
+      crowdsale: {
+        rate1: 3, rate2: 11, foundationWallet: 5, setWeiLockSeconds: 3152, owner: 10
       }
     });
   });

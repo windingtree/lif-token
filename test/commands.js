@@ -649,8 +649,10 @@ let isMVMFinished = (state) => state && false;
 async function runMVMClaimEthCommand(command, state) {
   if (state.MVM !== undefined) {
     let weiToClaim = web3.toWei(command.eth),
-      hasZeroAddress = false,
-      shouldThrow = (weiToClaim > getMVMMaxClaimableWei(state));
+      hasZeroAddress = false;
+
+    let shouldThrow = (weiToClaim > getMVMMaxClaimableWei(state)) ||
+      state.MVMPaused;
 
     try {
       help.debug('Claiming ', weiToClaim.toString(), 'wei (', command.eth.toString(), 'eth)');
@@ -766,6 +768,28 @@ async function runMVMWaitForMonthCommand(command, state) {
 
   return state;
 }
+
+async function runMVMPauseCommand(command, state) {
+  if (state.MVM !== undefined) {
+    let fromAccount = gen.getAccount(command.fromAccount),
+      shouldThrow = (state.MVMPaused == command.pause) || (command.fromAccount != state.owner);
+
+    try {
+      if (command.pause) {
+        await state.MVM.pause({from: fromAccount});
+      } else {
+        await state.MVM.unpause({from: fromAccount});
+      }
+
+      state.MVMPaused = command.pause;
+    } catch(e) {
+      assertExpectedException(e, shouldThrow, false, state, command);
+    }
+  }
+
+  return state;
+}
+
 const commands = {
   waitTime: {gen: gen.waitTimeCommandGen, run: runWaitTimeCommand},
   checkRate: {gen: gen.checkRateCommandGen, run: runCheckRateCommand},
@@ -784,6 +808,7 @@ const commands = {
   MVMSendTokens: {gen: gen.MVMSendTokensCommandGen, run: runMVMSendTokensCommand},
   MVMClaimEth: {gen: gen.MVMClaimEthCommandGen, run: runMVMClaimEthCommand},
   MVMWaitForMonth: {gen: gen.MVMWaitForMonthCommandGen, run: runMVMWaitForMonthCommand},
+  MVMPause: {gen: gen.MVMPauseCommandGen, run: runMVMPauseCommand},
   fundCrowdsaleBelowMinCap: {gen: gen.fundCrowdsaleBelowMinCap, run: runFundCrowdsaleBelowMinCap},
   fundCrowdsaleBelowSoftCap: {gen: gen.fundCrowdsaleBelowSoftCap, run: runFundCrowdsaleBelowSoftCap},
   fundCrowdsaleOverSoftCap: {gen: gen.fundCrowdsaleOverSoftCap, run: runFundCrowdsaleOverSoftCap}
