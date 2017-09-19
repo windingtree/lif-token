@@ -12,7 +12,7 @@ var jsc = require('jsverify');
 var help = require('./helpers');
 var gen = require('./generators');
 var latestTime = require('./helpers/latestTime');
-var {increaseTimeTestRPC, increaseTimeTestRPCTo} = require('./helpers/increaseTime');
+var {increaseTimeTestRPC, increaseTimeTestRPCTo, duration} = require('./helpers/increaseTime');
 
 const priceFactor = 100000;
 
@@ -295,6 +295,10 @@ async function runFinalizeCrowdsaleCommand(command, state) {
         assert.equal(state.crowdsaleData.foundationWallet, await MVM.owner());
 
         state.MVM = MVM;
+        state.MVMStartTimestamp = nextTimestamp + duration.days(30);
+        state.MVMInitialBuyPrice = MVMInitialBalance.
+          mul(priceFactor).
+          dividedBy(help.lif2LifWei(state.totalSupply)).floor();
       }
     }
 
@@ -712,6 +716,52 @@ async function runMVMSendTokensCommand(command, state) {
   return state;
 }
 
+let distributionDeltas24 = [
+  0, 18, 99, 234, 416, 640,
+  902, 1202, 1536, 1905, 2305, 2738,
+  3201, 3693, 4215, 4766, 5345, 5951,
+  6583, 7243, 7929, 8640, 9377, 10138
+];
+
+let distributionDeltas48 = [
+  0, 3, 15, 36, 63, 97,
+  137, 183, 233, 289, 350, 416,
+  486, 561, 641, 724, 812, 904,
+  1000, 1101, 1205, 1313, 1425, 1541,
+  1660, 1783, 1910, 2041, 2175, 2312,
+  2454, 2598, 2746, 2898, 3053, 3211,
+  3373, 3537, 3706, 3877, 4052, 4229,
+  4410, 4595, 4782, 4972, 5166, 5363
+];
+
+async function runMVMWaitForMonthCommand(command, state) {
+
+  const targetTimestamp = state.MVMStartTimestamp + command.month * duration.days(30);
+
+  if (targetTimestamp > latestTime()) {
+    await increaseTimeTestRPCTo(targetTimestamp);
+
+    let period;
+
+    if (command.month >= state.MVMPeriods) {
+      period = state.MVMPeriods; // use last period as period
+      state.claimablePercentage = priceFactor;
+    } else {
+      period = command.month;
+      const distributionDeltas = state.MVMPeriods == 24 ? distributionDeltas24 : distributionDeltas48;
+      state.claimablePercentage = _.sumBy(_.take(distributionDeltas, period + 1), (x) => x);
+    }
+
+    help.debug('updating state on new month', command.month, '(period:', period, ')');
+    state.MVMBuyPrice = state.MVMInitialBuyPrice.
+      mul(priceFactor - state.claimablePercentage).
+      dividedBy(priceFactor).floor();
+    state.MVMMonth = command.month;
+    state.MVMMaxClaimableWei = getMvmMaxClaimableWei(state);
+  }
+
+  return state;
+}
 const commands = {
   waitTime: {gen: gen.waitTimeCommandGen, run: runWaitTimeCommand},
   checkRate: {gen: gen.checkRateCommandGen, run: runCheckRateCommand},
@@ -729,6 +779,7 @@ const commands = {
   transferFrom: {gen: gen.transferFromCommandGen, run: runTransferFromCommand},
   MVMSendTokens: {gen: gen.MVMSendTokensCommandGen, run: runMVMSendTokensCommand},
   MVMClaimEth: {gen: gen.MVMClaimEthCommandGen, run: runMVMClaimEthCommand},
+  MVMWaitForMonth: {gen: gen.MVMWaitForMonthCommandGen, run: runMVMWaitForMonthCommand},
   fundCrowdsaleBelowMinCap: {gen: gen.fundCrowdsaleBelowMinCap, run: runFundCrowdsaleBelowMinCap},
   fundCrowdsaleBelowSoftCap: {gen: gen.fundCrowdsaleBelowSoftCap, run: runFundCrowdsaleBelowSoftCap},
   fundCrowdsaleOverSoftCap: {gen: gen.fundCrowdsaleOverSoftCap, run: runFundCrowdsaleOverSoftCap}

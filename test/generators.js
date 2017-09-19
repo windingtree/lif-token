@@ -135,6 +135,11 @@ module.exports = {
     eth: jsc.nat
   }),
 
+  MVMWaitForMonthCommandGen: jsc.record({
+    type: jsc.constant('MVMWaitForMonth'),
+    month: jsc.nat
+  }),
+
   fundCrowdsaleBelowMinCap: jsc.record({
     type: jsc.constant('fundCrowdsaleBelowSoftCap'),
     account: knownAccountGen, // we don't want this one to fail with 0x0 addresses

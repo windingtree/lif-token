@@ -1,6 +1,6 @@
 var help = require('./helpers');
 var commands = require('./commands');
-var _ = require('lodash');
+require('lodash');
 
 var BigNumber = web3.BigNumber;
 
@@ -204,9 +204,13 @@ contract('Market validation Mechanism', function(accounts) {
     startingMMBalance.should.be.bignumber.equal(await mm.initialWei());
     initialBuyPrice.should.be.bignumber.equal(await mm.initialBuyPrice());
 
+    const startTimestamp = parseInt(await mm.startTimestamp.call());
+
     let state = {
       MVMMonth: 0,
       MVMPeriods: periods,
+      MVMStartTimestamp: startTimestamp,
+      MVMInitialBuyPrice: initialBuyPrice,
       token: token,
       initialTokenSupply: help.lif2LifWei(tokenTotalSupply),
       crowdsaleData: {
@@ -230,45 +234,20 @@ contract('Market validation Mechanism', function(accounts) {
     state.ethBalances[customerAddressIndex] = web3.eth.getBalance(customer);
     state.balances[customerAddressIndex] = await token.balanceOf(customer);
 
-    const startTimestamp = parseInt(await mm.startTimestamp.call());
-    const secondsPerPeriod = duration.days(30);
-
     assert.equal(foundationWallet, await mm.owner());
 
     state.MVM = mm;
 
-    let distributionDeltas = [
-      0, 18, 99, 234, 416, 640,
-      902, 1202, 1536, 1905, 2305, 2738,
-      3201, 3693, 4215, 4766, 5345, 5951,
-      6583, 7243, 7929, 8640, 9377, 10138
-    ];
-
-    let waitForMonth = async function(month, startTimestamp, secondsPerPeriod) {
-      await increaseTimeTestRPCTo(startTimestamp + secondsPerPeriod * month);
-
-      let period;
-
-      if (month >= state.MVMPeriods) {
-        period = state.MVMPeriods;
-        state.claimablePercentage = priceFactor;
-      } else {
-        period = month;
-        state.claimablePercentage = _.sumBy(_.take(distributionDeltas, period + 1), (x) => x);
-      }
-
-      help.debug('updating state on new month', month, '(period:', period, ')');
-      state.MVMBuyPrice = initialBuyPrice.
-        mul(priceFactor - state.claimablePercentage).
-        dividedBy(priceFactor).floor();
-      state.MVMMonth = month;
-      state.MVMMaxClaimableWei = commands.getMvmMaxClaimableWei(state);
+    let waitForMonth = async function(month) {
+      await commands.commands.MVMWaitForMonth.run({
+        month: month
+      }, state);
 
       await checkScenarioProperties(state, mm, customer);
     };
 
     // Month 0
-    await waitForMonth(0, startTimestamp, secondsPerPeriod);
+    await waitForMonth(0);
 
     let sendTokens = async (tokens) => {
       await commands.commands.MVMSendTokens.run({
@@ -294,7 +273,7 @@ contract('Market validation Mechanism', function(accounts) {
     await sendTokens(480);
 
     // Month 1
-    await waitForMonth(1, startTimestamp, secondsPerPeriod);
+    await waitForMonth(1);
 
     // Sell 240 tokens to the MM
     await sendTokens(240);
@@ -315,7 +294,7 @@ contract('Market validation Mechanism', function(accounts) {
       equal(claimedWeiBeforeClaiming.plus(maxClaimableBeforeClaiming));
 
     // Month 2
-    await waitForMonth(2, startTimestamp, secondsPerPeriod);
+    await waitForMonth(2);
 
     // Sell 240 tokens to the MM
     await sendTokens(240);
@@ -324,14 +303,14 @@ contract('Market validation Mechanism', function(accounts) {
     await claimEth(0.03);
 
     // Month 3
-    await waitForMonth(3, startTimestamp, secondsPerPeriod);
+    await waitForMonth(3);
 
     // Sell 960 tokens to the MM
     await sendTokens(960);
 
-    await waitForMonth(12, startTimestamp, secondsPerPeriod);
-    await waitForMonth(14, startTimestamp, secondsPerPeriod);
-    await waitForMonth(15, startTimestamp, secondsPerPeriod);
+    await waitForMonth(12);
+    await waitForMonth(14);
+    await waitForMonth(15);
 
     await claimEth(5);
 
@@ -341,7 +320,7 @@ contract('Market validation Mechanism', function(accounts) {
     new BigNumber(help.lif2LifWei(tokenTotalSupply)).minus(help.lif2LifWei(tokensInCrowdsale))
       .should.be.bignumber.equal(await token.totalSupply.call());
 
-    await waitForMonth(25, startTimestamp, secondsPerPeriod);
+    await waitForMonth(25);
 
     (await web3.eth.getBalance(mm.address)).should.be.bignumber.gt(web3.toWei(0.3, 'ether'));
 
