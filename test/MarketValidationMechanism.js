@@ -191,6 +191,8 @@ contract('Market validation Mechanism', function(accounts) {
     const tokensInCrowdsale = new BigNumber(tokenTotalSupply).mul(0.8).floor();
     const rate = tokensInCrowdsale / web3.fromWei(startingMMBalance.plus(web3.toWei(100, 'ether')), 'ether');
 
+    const foundationWallet = accounts[0];
+
     crowdsale = await help.simulateCrowdsale(rate, [tokensInCrowdsale], accounts, weiPerUSD);
     token = LifToken.at( await crowdsale.token.call());
     mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
@@ -207,6 +209,9 @@ contract('Market validation Mechanism', function(accounts) {
       MVMPeriods: periods,
       token: token,
       initialTokenSupply: help.lif2LifWei(tokenTotalSupply),
+      crowdsaleData: {
+        foundationWallet: foundationWallet
+      },
       MVMBurnedTokens: new BigNumber(0), // burned tokens in MM, via sendTokens txs
       burnedTokens: new BigNumber(0), // total burned tokens, in MM or not (for compat with gen-test state)
       returnedWeiForBurnedTokens: new BigNumber(0),
@@ -227,8 +232,6 @@ contract('Market validation Mechanism', function(accounts) {
 
     const startTimestamp = parseInt(await mm.startTimestamp.call());
     const secondsPerPeriod = duration.days(30);
-
-    const foundationWallet = accounts[0];
 
     assert.equal(foundationWallet, await mm.owner());
 
@@ -276,13 +279,10 @@ contract('Market validation Mechanism', function(accounts) {
     };
 
     let claimEth = async (eth) => {
-      let weiToClaim = web3.toWei(eth);
-      help.debug('Claiming ', weiToClaim.toString(), 'wei (', eth.toString(), 'eth)');
-      await mm.claimEth(weiToClaim, {from: foundationWallet});
 
-      state.MVMClaimedWei = state.MVMClaimedWei.plus(weiToClaim);
-      state.MVMEthBalance = state.MVMEthBalance.minus(weiToClaim);
-      state.MVMMaxClaimableWei = commands.getMvmMaxClaimableWei(state);
+      await commands.commands.MVMClaimEth.run({
+        eth: eth
+      }, state);
 
       await checkScenarioProperties(state, mm, customer);
     };
@@ -299,18 +299,20 @@ contract('Market validation Mechanism', function(accounts) {
     // Sell 240 tokens to the MM
     await sendTokens(240);
 
+    let claimedWeiBeforeClaiming = state.MVMClaimedWei,
+      maxClaimableBeforeClaiming = state.MVMMaxClaimableWei;
+    assert(maxClaimableBeforeClaiming.gt(0));
+
     // try to claim more than the max claimable and it should fail
-    let thrown;
-    try {
-      thrown = false;
-      await claimEth(state.MVMMaxClaimableWei + 1);
-    } catch(e) {
-      thrown = true;
-    }
-    assert.equal(true, thrown, 'claimEth should have thrown');
+    await claimEth(web3.fromWei(state.MVMMaxClaimableWei + 1));
+    assert.equal(claimedWeiBeforeClaiming, state.MVMClaimedWei,
+      'claimEth should have failed so claimedWei should have stayed the same');
 
     // Claim all ether
     await claimEth(web3.fromWei(state.MVMMaxClaimableWei));
+
+    state.MVMClaimedWei.should.be.bignumber.
+      equal(claimedWeiBeforeClaiming.plus(maxClaimableBeforeClaiming));
 
     // Month 2
     await waitForMonth(2, startTimestamp, secondsPerPeriod);

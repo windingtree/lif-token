@@ -130,6 +130,11 @@ module.exports = {
     from: accountGen
   }),
 
+  MVMClaimEthCommandGen: jsc.record({
+    type: jsc.constant('MVMClaimEth'),
+    eth: jsc.nat
+  }),
+
   fundCrowdsaleBelowMinCap: jsc.record({
     type: jsc.constant('fundCrowdsaleBelowSoftCap'),
     account: knownAccountGen, // we don't want this one to fail with 0x0 addresses

@@ -638,6 +638,27 @@ let getMvmMaxClaimableWei = function(state) {
 // TODO: implement finished, returns false, but references state to make eslint happy
 let isMVMFinished = (state) => state && false;
 
+async function runMVMClaimEthCommand(command, state) {
+  if (state.MVM !== undefined) {
+    let weiToClaim = web3.toWei(command.eth),
+      hasZeroAddress = false,
+      shouldThrow = (weiToClaim > getMvmMaxClaimableWei(state));
+
+    try {
+      help.debug('Claiming ', weiToClaim.toString(), 'wei (', command.eth.toString(), 'eth)');
+      await state.MVM.claimEth(weiToClaim, {from: state.crowdsaleData.foundationWallet});
+
+      state.MVMClaimedWei = state.MVMClaimedWei.plus(weiToClaim);
+      state.MVMEthBalance = state.MVMEthBalance.minus(weiToClaim);
+      state.MVMMaxClaimableWei = getMvmMaxClaimableWei(state);
+    } catch(e) {
+      assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
+    }
+  }
+
+  return state;
+}
+
 async function runMVMSendTokensCommand(command, state) {
   if (state.MVM === undefined) {
     // doesn't make sense to execute the rest of the command, let's just assert
@@ -707,6 +728,7 @@ const commands = {
   approve: {gen: gen.approveCommandGen, run: runApproveCommand},
   transferFrom: {gen: gen.transferFromCommandGen, run: runTransferFromCommand},
   MVMSendTokens: {gen: gen.MVMSendTokensCommandGen, run: runMVMSendTokensCommand},
+  MVMClaimEth: {gen: gen.MVMClaimEthCommandGen, run: runMVMClaimEthCommand},
   fundCrowdsaleBelowMinCap: {gen: gen.fundCrowdsaleBelowMinCap, run: runFundCrowdsaleBelowMinCap},
   fundCrowdsaleBelowSoftCap: {gen: gen.fundCrowdsaleBelowSoftCap, run: runFundCrowdsaleBelowSoftCap},
   fundCrowdsaleOverSoftCap: {gen: gen.fundCrowdsaleOverSoftCap, run: runFundCrowdsaleOverSoftCap}
