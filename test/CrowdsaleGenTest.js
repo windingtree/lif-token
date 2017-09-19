@@ -154,7 +154,11 @@ contract('LifCrowdsale Property-based test', function() {
           help.debug('An error occurred, block timestamp: ' + latestTime() + '\nError: ' + error);
           if (error instanceof commands.ExceptionRunningCommand) {
             throw(new Error('command ' + JSON.stringify(commandParams) + ' has thrown.'
-              + '\nError: ' + error.error));
+              + '\nError: ' + error.error
+              + '\n\nUse the following to reproduce the failure:\n\n'
+              + 'await runGeneratedCrowdsaleAndCommands('
+              + JSON.stringify(input, null, 2) + ');'
+            ));
           } else
             throw(error);
         }
