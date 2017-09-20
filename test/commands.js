@@ -37,6 +37,7 @@ function ExceptionRunningCommand(e, state, command) {
   this.error = e;
   this.state = state;
   this.command = command;
+  this.message = 'command ' + JSON.stringify(command) + ' has thrown.' + '\nError: ' + e;
 }
 
 ExceptionRunningCommand.prototype = Object.create(Error.prototype);
