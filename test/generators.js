@@ -130,6 +130,13 @@ module.exports = {
     from: accountGen
   }),
 
+  fundCrowdsaleBelowMinCap: jsc.record({
+    type: jsc.constant('fundCrowdsaleBelowSoftCap'),
+    account: knownAccountGen, // we don't want this one to fail with 0x0 addresses
+    fundingEth: jsc.nat,
+    finalize: jsc.bool
+  }),
+
   fundCrowdsaleBelowSoftCap: jsc.record({
     type: jsc.constant('fundCrowdsaleBelowSoftCap'),
     account: knownAccountGen, // we don't want this one to fail with 0x0 addresses
