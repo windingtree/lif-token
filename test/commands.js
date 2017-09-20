@@ -506,6 +506,45 @@ async function startCrowdsaleAndBuyTokens(account, eth, weiPerUSD, state) {
   return state;
 }
 
+async function runFundCrowdsaleBelowMinCap(command, state) {
+
+  let weiPerUSD = 10000,
+    minCapUSD = await state.crowdsaleContract.minCapUSD.call(),
+    currentUSDFunding = state.weiRaised.div(weiPerUSD).floor();
+
+  if (!state.crowdsaleFinalized && currentUSDFunding.lt(minCapUSD)) {
+
+    let minCapUSD = await state.crowdsaleContract.minCapUSD.call(),
+      eth = command.fundingEth;
+
+    state = await startCrowdsaleAndBuyTokens(command.account, eth, weiPerUSD, state);
+
+    // take current funding again, because previous command might have skipped
+    // buying tokens if eth was lte 0
+    currentUSDFunding = state.weiRaised.div(weiPerUSD).floor();
+
+    currentUSDFunding.should.be.bignumber.lt(minCapUSD);
+
+    if (command.finalize) {
+      // wait for crowdsale end2Timestamp
+      if (latestTime() < state.crowdsaleData.end2Timestamp) {
+        await increaseTimeTestRPCTo(state.crowdsaleData.end2Timestamp + 1);
+      }
+
+      state = await runFinalizeCrowdsaleCommand({fromAccount: command.account}, state);
+
+      // verify that the crowdsale is finalized and funded
+      assert.equal(true, state.crowdsaleFinalized);
+      assert.equal(false, state.crowdsaleFunded);
+
+      // verify that there's no MVM
+      assert(state.MVM === undefined, 'no MVM should have been created because funding is below min cap');
+    }
+  }
+
+  return state;
+}
+
 async function runFundCrowdsaleBelowSoftCap(command, state) {
   if (!state.crowdsaleFinalized) {
 
@@ -517,7 +556,7 @@ async function runFundCrowdsaleBelowSoftCap(command, state) {
       wei = minCapUSD.minus(currentUSDFunding).mul(weiPerUSD),
       eth = web3.fromWei(wei, 'ether');
 
-    state = await startCrowdsaleAndBuyTokens(command.account, eth, 10000, state);
+    state = await startCrowdsaleAndBuyTokens(command.account, eth, weiPerUSD, state);
 
     // take current funding again, because previous command might have skipped
     // buying tokens if eth was lte 0
@@ -659,6 +698,7 @@ const commands = {
   approve: {gen: gen.approveCommandGen, run: runApproveCommand},
   transferFrom: {gen: gen.transferFromCommandGen, run: runTransferFromCommand},
   MVMSendTokens: {gen: gen.MVMSendTokensCommandGen, run: runMVMSendTokensCommand},
+  fundCrowdsaleBelowMinCap: {gen: gen.fundCrowdsaleBelowMinCap, run: runFundCrowdsaleBelowMinCap},
   fundCrowdsaleBelowSoftCap: {gen: gen.fundCrowdsaleBelowSoftCap, run: runFundCrowdsaleBelowSoftCap},
   fundCrowdsaleOverSoftCap: {gen: gen.fundCrowdsaleOverSoftCap, run: runFundCrowdsaleOverSoftCap}
 };
