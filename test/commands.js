@@ -346,7 +346,7 @@ async function runClaimEthCommand(command, state) {
     hasZeroAddress = isZeroAddress(account);
 
   let shouldThrow = !state.crowdsaleFinalized ||
-    !state.crowdsaleFunded ||
+    state.crowdsaleFunded ||
     (purchases.length == 0) ||
     hasZeroAddress ||
     state.claimedEth[command.account] > 0;
