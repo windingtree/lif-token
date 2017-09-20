@@ -8,7 +8,7 @@ var {duration} = require('./helpers/increaseTime');
 
 contract('LifToken Crowdsale', function(accounts) {
 
-  it('can create a Crowndsale', async function() {
+  it('can create a Crowdsale', async function() {
     const startTimestamp = latestTime() + duration.days(1),
       end1Timestamp = startTimestamp + duration.days(1),
       end2Timestamp = startTimestamp + duration.days(2);
@@ -28,7 +28,7 @@ contract('LifToken Crowdsale', function(accounts) {
 
   });
 
-  it('fails to create a Crowndsale with 0x0 as foundation wallet', async function() {
+  it('fails to create a Crowdsale with 0x0 as foundation wallet', async function() {
     const startTimestamp = latestTime() + duration.days(1),
       end1Timestamp = startTimestamp + duration.days(1),
       end2Timestamp = startTimestamp + duration.days(2);
