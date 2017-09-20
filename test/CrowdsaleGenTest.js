@@ -129,6 +129,7 @@ contract('LifCrowdsale Property-based test', function() {
         ethBalances: {},
         allowances: {},
         purchases: [],
+        presalePurchases: [],
         claimedEth: {},
         weiRaised: zero,
         totalPresaleWei: zero,
@@ -477,6 +478,17 @@ contract('LifCrowdsale Property-based test', function() {
       'crowdsale': {
         'rate1': 23, 'rate2': 40, 'foundationWallet': 1,
         'setWeiLockSeconds': 1445, 'owner': 2
+      }
+    });
+  });
+
+  it('runs an addPrivatePresalePayment command fine', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {'type':'addPrivatePresalePayment','beneficiaryAccount':1,'fromAccount':9,'eth':24,'rate':50}
+      ],
+      crowdsale: {
+        rate1: 5, rate2: 21, foundationWallet: 0, setWeiLockSeconds: 1967, owner: 9
       }
     });
   });

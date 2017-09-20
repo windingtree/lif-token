@@ -250,7 +250,7 @@ contract LifCrowdsale is Ownable, Pausable {
 
     uint256 tokens = weiSent.mul(rate);
 
-    totalPresaleWei.add(weiSent);
+    totalPresaleWei = totalPresaleWei.add(weiSent);
 
     token.mint(beneficiary, tokens);
 
