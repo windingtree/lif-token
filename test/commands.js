@@ -281,6 +281,9 @@ async function runFinalizeCrowdsaleCommand(command, state) {
       state.totalSupply = state.totalSupply.plus(foundersVestingTokens).
         plus(longTermReserve).plus(teamTokens);
 
+      // used for some MVM calculations
+      state.initialTokenSupply = state.totalSupply;
+
       if (fundsRaised.gt(minimumForMVM)) {
 
         let MVMInitialBalance = state.weiRaised.minus(state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
@@ -296,6 +299,7 @@ async function runFinalizeCrowdsaleCommand(command, state) {
 
         state.MVM = MVM;
         state.MVMStartTimestamp = nextTimestamp + duration.days(30);
+        state.MVMStartingBalance = MVMInitialBalance;
         state.MVMInitialBuyPrice = MVMInitialBalance.
           mul(priceFactor).
           dividedBy(help.lif2LifWei(state.totalSupply)).floor();

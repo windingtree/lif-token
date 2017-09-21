@@ -140,8 +140,11 @@ contract('LifCrowdsale Property-based test', function() {
         crowdsaleFunded: false,
         owner: owner,
         totalSupply: zero,
+        initialTokenSupply: zero,
         MVMBuyPrice: new BigNumber(0),
         MVMBurnedTokens: new BigNumber(0),
+        MVMClaimedWei: zero,
+        claimablePercentage: zero,
         burnedTokens: zero,
         returnedWeiForBurnedTokens: new BigNumber(0)
       };
@@ -491,6 +494,15 @@ contract('LifCrowdsale Property-based test', function() {
       'crowdsale': {
         'rate1': 23, 'rate2': 40, 'foundationWallet': 1,
         'setWeiLockSeconds': 1445, 'owner': 2
+      }
+    });
+
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {'type':'fundCrowdsaleOverSoftCap','account':7,'softCapExcessWei':13,'finalize':true},
+        {'type':'MVMClaimEth','eth':12}
+      ],
+      crowdsale: {rate1: 3, rate2: 11, foundationWallet: 5, setWeiLockSeconds: 3152, owner: 10
       }
     });
   });
