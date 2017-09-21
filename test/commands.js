@@ -332,7 +332,11 @@ async function runAddPrivatePresalePaymentCommand(command, state) {
 
     assert.equal(false, shouldThrow, 'buyTokens should have thrown but it did not');
 
+    state.totalSupply = state.totalSupply.plus(weiToSend * command.rate);
     state.totalPresaleWei = state.totalPresaleWei.plus(weiToSend);
+    state.presalePurchases = _.concat(state.presalePurchases,
+      {rate: command.rate, wei: weiToSend, beneficiary: command.beneficiary, account: command.fromAccount}
+    );
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
