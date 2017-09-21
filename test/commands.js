@@ -621,7 +621,7 @@ async function runFundCrowdsaleOverSoftCap(command, state) {
 // Market Maker commands
 //
 
-let getMvmMaxClaimableWei = function(state) {
+let getMVMMaxClaimableWei = function(state) {
   if (state.MVMMonth >= state.MVMPeriods) {
     help.debug('calculating maxClaimableEth with', state.MVMStartingBalance,
       state.MVMClaimedWei,
@@ -646,7 +646,7 @@ async function runMVMClaimEthCommand(command, state) {
   if (state.MVM !== undefined) {
     let weiToClaim = web3.toWei(command.eth),
       hasZeroAddress = false,
-      shouldThrow = (weiToClaim > getMvmMaxClaimableWei(state));
+      shouldThrow = (weiToClaim > getMVMMaxClaimableWei(state));
 
     try {
       help.debug('Claiming ', weiToClaim.toString(), 'wei (', command.eth.toString(), 'eth)');
@@ -654,7 +654,7 @@ async function runMVMClaimEthCommand(command, state) {
 
       state.MVMClaimedWei = state.MVMClaimedWei.plus(weiToClaim);
       state.MVMEthBalance = state.MVMEthBalance.minus(weiToClaim);
-      state.MVMMaxClaimableWei = getMvmMaxClaimableWei(state);
+      state.MVMMaxClaimableWei = getMVMMaxClaimableWei(state);
     } catch(e) {
       assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
     }
@@ -706,7 +706,7 @@ async function runMVMSendTokensCommand(command, state) {
       state.MVMBurnedTokens = state.MVMBurnedTokens.plus(lifWei);
       state.returnedWeiForBurnedTokens = state.returnedWeiForBurnedTokens.plus(tokensCost);
       state.balances[command.from] = getBalance(state, command.from).minus(lifWei);
-      state.MVMMaxClaimableWei = getMvmMaxClaimableWei(state);
+      state.MVMMaxClaimableWei = getMVMMaxClaimableWei(state);
 
     } catch(e) {
       assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
@@ -757,7 +757,7 @@ async function runMVMWaitForMonthCommand(command, state) {
       mul(priceFactor - state.claimablePercentage).
       dividedBy(priceFactor).floor();
     state.MVMMonth = command.month;
-    state.MVMMaxClaimableWei = getMvmMaxClaimableWei(state);
+    state.MVMMaxClaimableWei = getMVMMaxClaimableWei(state);
   }
 
   return state;
@@ -797,7 +797,5 @@ module.exports = {
     return command;
   },
 
-  ExceptionRunningCommand: ExceptionRunningCommand,
-
-  getMvmMaxClaimableWei: getMvmMaxClaimableWei
+  ExceptionRunningCommand: ExceptionRunningCommand
 };
