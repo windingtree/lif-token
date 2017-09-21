@@ -8,7 +8,7 @@ import "./VestedPayment.sol";
 import "./LifMarketValidationMechanism.sol";
 
 /**
-   @title Crowdsale for the Lif Token Generation Even
+   @title Crowdsale for the Lif Token Generation Event
 
    Implementation of the Lif Token Generation Event (TGE) Crowdsale: A 2 week
    fixed price, uncapped token sale, with a discounted ratefor contributions
