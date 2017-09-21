@@ -373,9 +373,9 @@ async function runTransferCommand(command, state) {
     toAddress = gen.getAccount(command.toAccount),
     fromBalance = getBalance(state, command.fromAccount),
     lifWei = help.lif2LifWei(command.lif),
-    hasZeroAddress = _.some([fromAddress], isZeroAddress),
+    hasZeroAddress = _.some([fromAddress, toAddress], isZeroAddress),
     shouldThrow = state.tokenPaused || fromBalance.lt(lifWei) ||
-      (hasZeroAddress &  new BigNumber(lifWei).gt(0));
+      hasZeroAddress;
 
   try {
     await state.token.transfer(toAddress, lifWei, {from: fromAddress});
