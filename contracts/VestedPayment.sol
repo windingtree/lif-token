@@ -4,30 +4,51 @@ import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "./LifToken.sol";
 
+/**
+   @title Vested Payment Schedule for LifToken
+
+   An ownable vesting schedule for the LifToken, the tokens can only be
+   claimed by the owner. The contract has a start timestamp, a duration
+   of each period in seconds (it can be days, months, years), a total
+   amount of periods and a cliff. The available amount of tokens will
+   be calculated based on the balance of LifTokens of the contract at
+   that time.
+ */
+
 contract VestedPayment is Ownable {
   using SafeMath for uint256;
 
-  // when the vested schedule starts
+  // When the vested schedule starts
   uint256 public startTimestamp;
 
-  // how much seconds each period will last
+  // How many seconds each period will last
   uint256 public secondsPerPeriod;
 
-  // how much periods will have in total
+  // How many periods will have in total
   uint256 public totalPeriods;
 
-  // the amount of tokens to be vested in total
+  // The amount of tokens to be vested in total
   uint256 public tokens;
 
-  // how much tokens were claimed
+  // How many tokens were claimed
   uint256 public claimed;
 
-  // the token contract
+  // The token contract
   LifToken public token;
 
-  // duration (in periods) of the initial cliff in the vesting schedule
+  // Duration (in periods) of the initial cliff in the vesting schedule
   uint256 public cliffDuration;
 
+  /**
+     @dev Constructor.
+
+     @param _startTimestamp see `startTimestamp`
+     @param _secondsPerPeriod see `secondsPerPeriod`
+     @param _totalPeriods see `totalPeriods
+     @param _cliffDuration see `cliffDuration`
+     @param _tokens see `tokens`
+     @param tokenAddress the address of the token contract
+   */
   function VestedPayment(
     uint256 _startTimestamp, uint256 _secondsPerPeriod,
     uint256 _totalPeriods, uint256 _cliffDuration,
@@ -48,9 +69,13 @@ contract VestedPayment is Ownable {
     token = LifToken(tokenAddress);
   }
 
-  // how much tokens are available to be claimed
+  //
+  /**
+     @dev Get how many tokens are available to be claimed
+   */
   function getAvailableTokens() public constant returns (uint256) {
-    uint256 period = block.timestamp.sub(startTimestamp).div(secondsPerPeriod);
+    uint256 period = block.timestamp.sub(startTimestamp)
+      .div(secondsPerPeriod);
 
     if (period < cliffDuration) {
       return 0;
@@ -61,7 +86,13 @@ contract VestedPayment is Ownable {
     }
   }
 
-  // claim the tokens, they can be claimed only by the owner of the contract
+  //
+  /**
+     @dev Claim the tokens, they can be claimed only by the owner
+     of the contract
+
+     @param amount how many tokens to be claimed
+   */
   function claimTokens(uint256 amount) onlyOwner {
     assert(getAvailableTokens() >= amount);
 
