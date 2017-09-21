@@ -1564,10 +1564,11 @@ ethereumjs-block@^1.2.2:
     ethereumjs-util "^4.0.1"
     merkle-patricia-tree "^2.1.2"
 
-ethereumjs-testrpc-sc@4.0.1:
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/ethereumjs-testrpc-sc/-/ethereumjs-testrpc-sc-4.0.1.tgz#072f0d145e4f7212fb2d7bc8f7bcf544389b3577"
+ethereumjs-testrpc-sc@4.0.3:
+  version "4.0.3"
+  resolved "https://registry.yarnpkg.com/ethereumjs-testrpc-sc/-/ethereumjs-testrpc-sc-4.0.3.tgz#eddce95bbd8e157c510b24a8a13333edc398bb0e"
   dependencies:
+    ethereumjs-vm "https://github.com/sc-forks/ethereumjs-vm-sc.git"
     webpack "^3.0.0"
 
 ethereumjs-testrpc@4.1.1:
@@ -1609,6 +1610,20 @@ ethereumjs-util@^5.0.0, ethereumjs-util@^5.0.1:
 ethereumjs-vm@^2.0.2:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/ethereumjs-vm/-/ethereumjs-vm-2.0.2.tgz#84e2372a5715a80a62f7f2a312f8c64537e8a842"
+  dependencies:
+    async "^2.1.2"
+    async-eventemitter "^0.2.2"
+    ethereum-common "0.0.18"
+    ethereumjs-account "^2.0.3"
+    ethereumjs-block "^1.2.2"
+    ethereumjs-util "^4.0.1"
+    fake-merkle-patricia-tree "^1.0.1"
+    functional-red-black-tree "^1.0.1"
+    merkle-patricia-tree "^2.1.2"
+
+"ethereumjs-vm@git+https://github.com/sc-forks/ethereumjs-vm-sc.git":
+  version "2.0.2"
+  resolved "git+https://github.com/sc-forks/ethereumjs-vm-sc.git#0aa274178f0a257ae76436fe16b1ad18b8cf2725"
   dependencies:
     async "^2.1.2"
     async-eventemitter "^0.2.2"
@@ -3769,13 +3784,13 @@ solc@0.4.15, solc@^0.4.2:
     semver "^5.3.0"
     yargs "^4.7.1"
 
-solidity-coverage@^0.2.2:
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/solidity-coverage/-/solidity-coverage-0.2.2.tgz#7bc1843f4f6a617db490ad2f11caff946df7bd13"
+solidity-coverage@^0.2.3:
+  version "0.2.3"
+  resolved "https://registry.yarnpkg.com/solidity-coverage/-/solidity-coverage-0.2.3.tgz#77446e9ad596c57a7b95e2b4a0f2219bde1aab70"
   dependencies:
     commander "^2.9.0"
     death "^1.1.0"
-    ethereumjs-testrpc-sc "4.0.1"
+    ethereumjs-testrpc-sc "4.0.3"
     istanbul "^0.4.5"
     keccakjs "^0.2.1"
     mkdirp "^0.5.1"
