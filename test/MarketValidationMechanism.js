@@ -146,6 +146,59 @@ contract('Market validation Mechanism', function(accounts) {
     assert.equal(4, parseInt(await mm.getCurrentPeriodIndex()));
   });
 
+  it('allows only the owner to pause & unpause the MVM', async function() {
+
+    const mmInitialBalance = 20000000,
+      totalTokenSupply = 100,
+      rate = totalTokenSupply / web3.fromWei(mmInitialBalance+10000000, 'ether'),
+      crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1),
+      mvm = LifMarketValidationMechanism.at(await crowdsale.MVM.call());
+
+    await mvm.calculateDistributionPeriods({from: accounts[4]});
+
+    const startTimestamp = parseInt(await mvm.startTimestamp.call());
+
+    await increaseTimeTestRPCTo(startTimestamp);
+
+    try {
+      await mvm.unpause({from: accounts[0]});
+      assert(false, 'unpause should throw because it is not paused');
+    } catch(e) {
+      // do nothing
+    }
+
+    try {
+      await mvm.pause({from: accounts[1]});
+      assert(false, 'pause should have thrown because it was not made by owner');
+    } catch(e) {
+      // do nothing
+    }
+
+    await mvm.pause({from: accounts[0]});
+    assert.equal(true, await mvm.paused.call(), 'mvm should be paused');
+
+    try {
+      await mvm.pause({from: accounts[0]});
+      assert(false, 'pause should throw because it is paused already');
+    } catch(e) {
+      // do nothing
+    }
+
+    try {
+      await mvm.unpause({from: accounts[1]});
+      assert(false, 'unpause should have thrown because it was not made by owner');
+    } catch(e) {
+      // do nothing
+    }
+
+    await mvm.unpause({from: accounts[0]});
+    assert.equal(false, await mvm.paused.call(), 'mvm should not be paused');
+
+    // can pause again
+    await mvm.pause({from: accounts[0]});
+    assert.equal(true, await mvm.paused.call(), 'mvm should be paused');
+  });
+
   const periods = 24;
   const tokenTotalSupply = 3000;
   let customerAddressIndex = 1;
