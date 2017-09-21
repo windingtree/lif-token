@@ -56,14 +56,7 @@ contract LifMarketValidationMechanism is Ownable {
   // the timestamp where the MVM was paused
   uint256 public pausedTimestamp;
 
-  struct Period {
-    // delta % of the initialWei that can be claimed by the foundation from this period
-    uint256 deltaDistribution;
-    // accumulated % of the initialWei that can be claimed by the foundation on this period
-    uint256 accumDistribution;
-  }
-
-  Period[] public periods;
+  uint256[] public periods;
 
   modifier whenNotPaused(){
     assert(!paused);
@@ -134,40 +127,27 @@ contract LifMarketValidationMechanism is Ownable {
     // The sum is less than 100% because the last % is missing: after the last period
     // the 100% remaining can be claimed by the foundation. Values multipled by 10^5
 
-    uint256[24] memory deltas24 = [
-      uint256(0), 18, 99, 234, 416, 640,
-      902, 1202, 1536, 1905, 2305, 2738,
-      3201, 3693, 4215, 4766, 5345, 5951,
-      6583, 7243, 7929, 8640, 9377, 10138
+    uint256[24] memory accumDistribution24 = [
+      uint256(0), 18, 117, 351, 767, 1407, 2309,3511, 5047, 6952, 9257
+      ,11995, 15196, 18889, 23104, 27870, 33215, 39166, 45749
+      ,52992, 60921, 69561, 78938, 89076
     ];
 
-    uint256[48] memory deltas48 = [
-      uint256(0), 3, 15, 36, 63, 97,
-      137, 183, 233, 289, 350, 416,
-      486, 561, 641, 724, 812, 904,
-      1000, 1101, 1205, 1313, 1425, 1541,
-      1660, 1783, 1910, 2041, 2175, 2312,
-      2454, 2598, 2746, 2898, 3053, 3211,
-      3373, 3537, 3706, 3877, 4052, 4229,
-      4410, 4595, 4782, 4972, 5166, 5363
+    uint256[48] memory accumDistribution48 = [
+      uint256(0), 3, 18, 54, 117, 214, 351, 534, 767, 1056, 1406, 1822
+      ,2308, 2869, 3510, 4234, 5046, 5950, 6950, 8051, 9256, 10569
+      ,11994, 13535, 15195, 16978, 18888, 20929, 23104, 25416, 27870
+      ,30468, 33214, 36112, 39165, 42376, 45749, 49286, 52992, 56869
+      ,60921, 65150, 69560, 74155, 78937, 83909, 89075, 94438
     ];
-
-    uint256 accumDistribution = 0;
-    uint256 deltaDistribution = 0;
 
     for (uint8 i = 0; i < totalPeriods; i++) {
 
       if (totalPeriods == 24) {
-        deltaDistribution = deltas24[i];
+        periods.push(accumDistribution24[i]);
       } else {
-        deltaDistribution = deltas48[i];
+        periods.push(accumDistribution48[i]);
       }
-
-      accumDistribution = accumDistribution.add(deltaDistribution);
-
-      periods.push(Period(
-        deltaDistribution, accumDistribution
-      ));
 
     }
   }
@@ -196,7 +176,7 @@ contract LifMarketValidationMechanism is Ownable {
 
     assert(period < totalPeriods);
 
-    return periods[period].accumDistribution;
+    return periods[period];
   }
 
   /**

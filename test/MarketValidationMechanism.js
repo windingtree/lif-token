@@ -39,17 +39,16 @@ contract('Market validation Mechanism', function(accounts) {
       6583, 7243, 7929, 8640, 9377, 10138
     ];
 
+    let accumDistribution = 0;
+
     for (var i = 0; i < distributionDeltas.length; i++) {
-      assert.equal(distributionDeltas[i], parseInt((await mm.periods.call(i))[0]));
+      accumDistribution += distributionDeltas[i];
+      assert.equal(accumDistribution, parseInt((await mm.periods.call(i))));
     }
 
-    // a few specific examples to double-check
-    assert.equal( parseInt((await mm.periods.call(0))[0]), 0 );
-    assert.equal( parseInt((await mm.periods.call(1))[0]), 18 );
-    assert.equal( parseInt((await mm.periods.call(9))[0]), 1905 );
-    assert.equal( parseInt((await mm.periods.call(15))[0]), 4766 );
-    assert.equal( parseInt((await mm.periods.call(16))[0]), 5345 );
-    assert.equal( parseInt((await mm.periods.call(23))[0]), 10138 );
+    // just a few examples to double-check
+    assert.equal(1407, parseInt(await mm.periods.call(5)));
+    assert.equal(78938, parseInt(await mm.periods.call(22)));
 
   });
 
@@ -77,21 +76,17 @@ contract('Market validation Mechanism', function(accounts) {
       4410, 4595, 4782, 4972, 5166, 5363
     ];
 
+    let accumDistribution = 0;
+
     for (var i = 0; i < distributionDeltas.length; i++) {
-      assert.equal(distributionDeltas[i], parseInt((await mm.periods.call(i))[0]));
+      accumDistribution += distributionDeltas[i];
+      assert.equal(accumDistribution, parseInt((await mm.periods.call(i))));
     }
 
     // just a few examples to double-check
-    assert.equal(97, parseInt((await mm.periods.call(5))[0]));
-    assert.equal(416, parseInt((await mm.periods.call(11))[0]));
-    assert.equal(1425, parseInt((await mm.periods.call(22))[0]));
-    assert.equal(2746, parseInt((await mm.periods.call(32))[0]));
-    assert.equal(2898, parseInt((await mm.periods.call(33))[0]));
-    assert.equal(4595, parseInt((await mm.periods.call(43))[0]));
-    assert.equal(4782, parseInt((await mm.periods.call(44))[0]));
-    assert.equal(4972, parseInt((await mm.periods.call(45))[0]));
-    assert.equal(5166, parseInt((await mm.periods.call(46))[0]));
-    assert.equal(5363, parseInt((await mm.periods.call(47))[0]));
+    assert.equal(214, parseInt(await mm.periods.call(5)));
+    assert.equal(11994, parseInt(await mm.periods.call(22)));
+    assert.equal(94438, parseInt(await mm.periods.call(47)));
   });
 
   it('should return correct periods using getCurrentPeriodIndex', async function() {
