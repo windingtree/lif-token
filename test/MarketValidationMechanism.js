@@ -1,6 +1,6 @@
 var help = require('./helpers');
 var commands = require('./commands');
-var _ = require('lodash');
+require('lodash');
 
 var BigNumber = web3.BigNumber;
 
@@ -162,12 +162,12 @@ contract('Market validation Mechanism', function(accounts) {
       should.be.bignumber.equal(await token.totalSupply.call());
     data.MVMBurnedTokens.should.be.bignumber.equal(await mm.totalBurnedTokens.call());
 
-    if (data.MVMMonth < periods) {
+    if (data.MVMMonth < data.MVMPeriods) {
       data.MVMBuyPrice.should.be.bignumber.equal(await mm.getBuyPrice());
       assert.equal(data.claimablePercentage, parseInt(await mm.getAccumulatedDistributionPercentage()));
     }
 
-    assert.equal(data.MVMMonth >= periods, await mm.isFinished());
+    assert.equal(data.MVMMonth >= data.MVMPeriods, await mm.isFinished());
 
     data.ethBalances[customerAddressIndex].should.be.bignumber.equal(web3.eth.getBalance(customer));
     data.balances[customerAddressIndex].should.be.bignumber.equal(await token.balanceOf(customer));
@@ -186,6 +186,8 @@ contract('Market validation Mechanism', function(accounts) {
     const tokensInCrowdsale = new BigNumber(tokenTotalSupply).mul(0.8).floor();
     const rate = tokensInCrowdsale / web3.fromWei(startingMMBalance.plus(web3.toWei(100, 'ether')), 'ether');
 
+    const foundationWallet = accounts[0];
+
     crowdsale = await help.simulateCrowdsale(rate, [tokensInCrowdsale], accounts, weiPerUSD);
     token = LifToken.at( await crowdsale.token.call());
     mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
@@ -197,11 +199,18 @@ contract('Market validation Mechanism', function(accounts) {
     startingMMBalance.should.be.bignumber.equal(await mm.initialWei());
     initialBuyPrice.should.be.bignumber.equal(await mm.initialBuyPrice());
 
+    const startTimestamp = parseInt(await mm.startTimestamp.call());
+
     let state = {
       MVMMonth: 0,
-      periods: periods,
+      MVMPeriods: periods,
+      MVMStartTimestamp: startTimestamp,
+      MVMInitialBuyPrice: initialBuyPrice,
       token: token,
       initialTokenSupply: help.lif2LifWei(tokenTotalSupply),
+      crowdsaleData: {
+        foundationWallet: foundationWallet
+      },
       MVMBurnedTokens: new BigNumber(0), // burned tokens in MM, via sendTokens txs
       burnedTokens: new BigNumber(0), // total burned tokens, in MM or not (for compat with gen-test state)
       returnedWeiForBurnedTokens: new BigNumber(0),
@@ -220,65 +229,20 @@ contract('Market validation Mechanism', function(accounts) {
     state.ethBalances[customerAddressIndex] = web3.eth.getBalance(customer);
     state.balances[customerAddressIndex] = await token.balanceOf(customer);
 
-    const startTimestamp = parseInt(await mm.startTimestamp.call());
-    const secondsPerPeriod = duration.days(30);
-
-    const foundationWallet = accounts[0];
-
     assert.equal(foundationWallet, await mm.owner());
 
     state.MVM = mm;
 
-    let distributionDeltas = [
-      0, 18, 99, 234, 416, 640,
-      902, 1202, 1536, 1905, 2305, 2738,
-      3201, 3693, 4215, 4766, 5345, 5951,
-      6583, 7243, 7929, 8640, 9377, 10138
-    ];
-
-    let getMaxClaimableWei = function(state) {
-      if (state.MVMMonth >= periods) {
-        help.debug('calculating maxClaimableEth with', startingMMBalance, state.MVMClaimedWei,
-          state.returnedWeiForBurnedTokens);
-        return startingMMBalance.
-          minus(state.MVMClaimedWei).
-          minus(state.returnedWeiForBurnedTokens);
-      } else {
-        const totalSupplyWei = web3.toWei(tokenTotalSupply, 'ether');
-        const maxClaimable = startingMMBalance.
-          mul(state.claimablePercentage).dividedBy(priceFactor).
-          mul(totalSupplyWei - state.MVMBurnedTokens).
-          dividedBy(totalSupplyWei).
-          minus(state.MVMClaimedWei);
-        return _.max([0, maxClaimable]);
-      }
-    };
-
-    let waitForMonth = async function(month, startTimestamp, secondsPerPeriod) {
-      await increaseTimeTestRPCTo(startTimestamp + secondsPerPeriod * month);
-
-      let period;
-
-      if (month >= periods) {
-        period = periods;
-        state.claimablePercentage = priceFactor;
-      } else {
-        period = month;
-        state.claimablePercentage = _.sumBy(_.take(distributionDeltas, period + 1), (x) => x);
-      }
-
-      help.debug('updating state on new month', month, '(period:', period, ')');
-      state.MVMBuyPrice = initialBuyPrice.
-        mul(priceFactor - state.claimablePercentage).
-        dividedBy(priceFactor).floor();
-      state.MVMMonth = month;
-      state.MVMMaxClaimableWei = getMaxClaimableWei(state);
+    let waitForMonth = async function(month) {
+      await commands.commands.MVMWaitForMonth.run({
+        month: month
+      }, state);
 
       await checkScenarioProperties(state, mm, customer);
     };
 
     // Month 0
-    await waitForMonth(0, startTimestamp, secondsPerPeriod);
+    await waitForMonth(0);
 
     let sendTokens = async (tokens) => {
       await commands.commands.MVMSendTokens.run({
@@ -289,13 +253,10 @@ contract('Market validation Mechanism', function(accounts) {
     };
 
     let claimEth = async (eth) => {
-      let weiToClaim = web3.toWei(eth);
-      help.debug('Claiming ', weiToClaim.toString(), 'wei (', eth.toString(), 'eth)');
-      await mm.claimEth(weiToClaim, {from: foundationWallet});
 
-      state.MVMClaimedWei = state.MVMClaimedWei.plus(weiToClaim);
-      state.MVMEthBalance = state.MVMEthBalance.minus(weiToClaim);
-      state.MVMMaxClaimableWei = getMaxClaimableWei(state);
+      await commands.commands.MVMClaimEth.run({
+        eth: eth
+      }, state);
 
       await checkScenarioProperties(state, mm, customer);
     };
@@ -307,26 +268,28 @@ contract('Market validation Mechanism', function(accounts) {
     await sendTokens(480);
 
     // Month 1
-    await waitForMonth(1, startTimestamp, secondsPerPeriod);
+    await waitForMonth(1);
 
     // Sell 240 tokens to the MM
     await sendTokens(240);
 
+    let claimedWeiBeforeClaiming = state.MVMClaimedWei,
+      maxClaimableBeforeClaiming = state.MVMMaxClaimableWei;
+    assert(maxClaimableBeforeClaiming.gt(0));
+
     // try to claim more than the max claimable and it should fail
-    let thrown;
-    try {
-      thrown = false;
-      await claimEth(state.MVMMaxClaimableWei + 1);
-    } catch(e) {
-      thrown = true;
-    }
-    assert.equal(true, thrown, 'claimEth should have thrown');
+    await claimEth(web3.fromWei(state.MVMMaxClaimableWei + 1));
+    assert.equal(claimedWeiBeforeClaiming, state.MVMClaimedWei,
+      'claimEth should have failed so claimedWei should have stayed the same');
 
     // Claim all ether
     await claimEth(web3.fromWei(state.MVMMaxClaimableWei));
 
+    state.MVMClaimedWei.should.be.bignumber.
+      equal(claimedWeiBeforeClaiming.plus(maxClaimableBeforeClaiming));
+
     // Month 2
-    await waitForMonth(2, startTimestamp, secondsPerPeriod);
+    await waitForMonth(2);
 
     // Sell 240 tokens to the MM
     await sendTokens(240);
@@ -335,14 +298,14 @@ contract('Market validation Mechanism', function(accounts) {
     await claimEth(0.03);
 
     // Month 3
-    await waitForMonth(3, startTimestamp, secondsPerPeriod);
+    await waitForMonth(3);
 
     // Sell 960 tokens to the MM
     await sendTokens(960);
 
-    await waitForMonth(12, startTimestamp, secondsPerPeriod);
-    await waitForMonth(14, startTimestamp, secondsPerPeriod);
-    await waitForMonth(15, startTimestamp, secondsPerPeriod);
+    await waitForMonth(12);
+    await waitForMonth(14);
+    await waitForMonth(15);
 
     await claimEth(5);
 
@@ -352,7 +315,7 @@ contract('Market validation Mechanism', function(accounts) {
     new BigNumber(help.lif2LifWei(tokenTotalSupply)).minus(help.lif2LifWei(tokensInCrowdsale))
       .should.be.bignumber.equal(await token.totalSupply.call());
 
-    await waitForMonth(25, startTimestamp, secondsPerPeriod);
+    await waitForMonth(25);
 
     (await web3.eth.getBalance(mm.address)).should.be.bignumber.gt(web3.toWei(0.3, 'ether'));
 
