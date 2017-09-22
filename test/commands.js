@@ -777,8 +777,11 @@ async function runMVMPauseCommand(command, state) {
     try {
       if (command.pause) {
         await state.MVM.pause({from: fromAccount});
+        state.MVMLastPausedAt = latestTime();
       } else {
         await state.MVM.unpause({from: fromAccount});
+        const pausedSeconds = latestTime() - state.MVMLastPausedAt;
+        state.MVMPausedSeconds = state.MVMPausedSeconds.plus(pausedSeconds);
       }
 
       state.MVMPaused = command.pause;
