@@ -58,10 +58,20 @@ contract('LifCrowdsale Property-based test', function() {
     state.totalSupply.
       should.be.bignumber.equal(await state.token.totalSupply.call());
 
+    if (state.crowdsaleFinalized) {
+      state.burnedTokens.plus(await state.token.totalSupply()).
+        should.be.bignumber.equal(state.initialTokenSupply);
+    } else {
+      state.burnedTokens.should.be.bignumber.equal(0);
+    }
+
     if (state.MVM !== undefined) {
+      state.MVMBurnedTokens.should.be.bignumber.equal(await state.MVM.totalBurnedTokens.call());
       assert.equal(state.MVMPaused, await state.MVM.paused.call());
       state.MVMPausedSeconds.should.be.bignumber.equal(await state.MVM.totalPausedSeconds.call());
+      state.MVMClaimedWei.should.be.bignumber.equal(await state.MVM.totalWeiClaimed.call());
     } else {
+      state.MVMBurnedTokens.should.be.bignumber.equal(0);
       state.MVMPausedSeconds.should.be.bignumber.equal(0);
     }
   };
