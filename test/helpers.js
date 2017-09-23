@@ -71,7 +71,7 @@ module.exports = {
     var crowdsale = await LifCrowdsale.new(
       startTime+3, startTime+15, endTime,
       rate, rate+10, 1,
-      accounts[0]
+      accounts[0], accounts[1]
     );
     await increaseTimeTestRPCTo(latestTime()+1);
     await crowdsale.setWeiPerUSDinTGE(weiPerUSD);

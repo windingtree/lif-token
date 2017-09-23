@@ -69,7 +69,8 @@ contract('LifCrowdsale Property-based test', function() {
 
     let {rate1, rate2, owner, setWeiLockSeconds} = input.crowdsale,
       ownerAddress = gen.getAccount(input.crowdsale.owner),
-      foundationWallet = gen.getAccount(input.crowdsale.foundationWallet);
+      foundationWallet = gen.getAccount(input.crowdsale.foundationWallet),
+      foundersWallet = gen.getAccount(input.crowdsale.foundersWallet);
     let shouldThrow = (rate1 == 0) ||
       (rate2 == 0) ||
       (latestTime() >= startTimestamp) ||
@@ -77,7 +78,8 @@ contract('LifCrowdsale Property-based test', function() {
       (end1Timestamp >= end2Timestamp) ||
       (setWeiLockSeconds == 0) ||
       (ownerAddress == 0) ||
-      (foundationWallet == 0);
+      (foundationWallet == 0) ||
+      (foundersWallet == 0);
 
     var eventsWatcher;
 
@@ -90,6 +92,7 @@ contract('LifCrowdsale Property-based test', function() {
         rate2: input.crowdsale.rate2,
         setWeiLockSeconds: input.crowdsale.setWeiLockSeconds,
         foundationWallet: gen.getAccount(input.crowdsale.foundationWallet),
+        foundersWallet: gen.getAccount(input.crowdsale.foundersWallet),
         minCapUSD: 5000000,
         maxFoundationCapUSD: 10000000,
         MVM24PeriodsCapUSD: 40000000
@@ -103,6 +106,7 @@ contract('LifCrowdsale Property-based test', function() {
         crowdsaleData.rate2,
         crowdsaleData.setWeiLockSeconds,
         crowdsaleData.foundationWallet,
+        crowdsaleData.foundersWallet,
         {from: ownerAddress}
       );
 
@@ -193,7 +197,7 @@ contract('LifCrowdsale Property-based test', function() {
       ],
       crowdsale: {
         rate1: 18, rate2: 33,
-        foundationWallet: 1, setWeiLockSeconds: 600, owner: 7
+        foundationWallet: 1, foundersWallet: 2, setWeiLockSeconds: 600, owner: 7
       }
     });
 
@@ -205,7 +209,7 @@ contract('LifCrowdsale Property-based test', function() {
       ],
       crowdsale: {
         rate1: 39, rate2: 13,
-        foundationWallet: 8, setWeiLockSeconds: 600, owner: 9
+        foundationWallet: 8, foundersWallet: 2, setWeiLockSeconds: 600, owner: 9
       }
     });
 
@@ -215,7 +219,7 @@ contract('LifCrowdsale Property-based test', function() {
       ],
       crowdsale: {
         rate1: 33, rate2: 12,
-        foundationWallet: 10, setWeiLockSeconds: 52, owner: 0
+        foundationWallet: 10, foundersWallet: 2, setWeiLockSeconds: 52, owner: 0
       }
     });
   });
@@ -228,7 +232,7 @@ contract('LifCrowdsale Property-based test', function() {
       ],
       crowdsale: {
         publicPresaleRate: 12, rate1: 10, rate2: 27, privatePresaleRate: 44,
-        foundationWallet: 0, setWeiLockSeconds: 392, owner: 5
+        foundationWallet: 0, foundersWallet: 2, setWeiLockSeconds: 392, owner: 5
       }
     });
   });
@@ -241,7 +245,7 @@ contract('LifCrowdsale Property-based test', function() {
       ],
       crowdsale: {
         rate1: 9, rate2: 1, privatePresaleRate: 3, foundationWallet: 0,
-        setWeiLockSeconds: 600, owner: 8
+        foundersWallet: 2, setWeiLockSeconds: 600, owner: 8
       }
     });
   });
@@ -261,6 +265,7 @@ contract('LifCrowdsale Property-based test', function() {
         rate2: 14,
         setWeiLockSeconds: 3600,
         foundationWallet: 2,
+        foundersWallet: 2,
         owner: 3
       }
     };
@@ -285,6 +290,7 @@ contract('LifCrowdsale Property-based test', function() {
         rate2: 9,
         setWeiLockSeconds: 3600,
         foundationWallet: 2,
+        foundersWallet: 2,
         owner: 3
       }
     };
@@ -311,6 +317,7 @@ contract('LifCrowdsale Property-based test', function() {
         rate2: 9,
         setWeiLockSeconds: 5,
         foundationWallet: 2,
+        foundersWallet: 3,
         owner: 3
       }
     };
@@ -329,7 +336,9 @@ contract('LifCrowdsale Property-based test', function() {
       ],
       crowdsale: {
         rate1: 10, rate2: 31,
-        foundationWallet: 10, setWeiLockSeconds: 1, owner: 6
+        foundationWallet: 10,
+        foundersWallet: 3,
+        setWeiLockSeconds: 1, owner: 6
       }
     });
   });
@@ -339,7 +348,9 @@ contract('LifCrowdsale Property-based test', function() {
       commands: [{ type:'approve','lif':0,'fromAccount':3,'spenderAccount':5}],
       crowdsale: {
         rate1: 24, rate2: 15,
-        foundationWallet: 2, setWeiLockSeconds: 1, owner: 5
+        foundationWallet: 2,
+        foundersWallet: 3,
+        setWeiLockSeconds: 1, owner: 5
       }
     });
   });
@@ -351,7 +362,7 @@ contract('LifCrowdsale Property-based test', function() {
       ],
       crowdsale: {
         rate1: 20, rate2: 46,
-        foundationWallet: 4, setWeiLockSeconds: 521, owner: 0
+        foundationWallet: 4, foundersWallet: 2, setWeiLockSeconds: 521, owner: 0
       }
     });
   });
@@ -363,7 +374,8 @@ contract('LifCrowdsale Property-based test', function() {
       ],
       crowdsale: {
         rate1: 20, rate2: 46,
-        foundationWallet: 4, setWeiLockSeconds: 521, owner: 0
+        foundationWallet: 4, foundersWallet: 2,
+        setWeiLockSeconds: 521, owner: 0
       }
     });
   });
@@ -376,7 +388,7 @@ contract('LifCrowdsale Property-based test', function() {
       ],
       crowdsale: {
         rate1: 20, rate2: 46,
-        foundationWallet: 4, setWeiLockSeconds: 521, owner: 0
+        foundationWallet: 4, foundersWallet: 2, setWeiLockSeconds: 521, owner: 0
       }
     });
   });
@@ -391,7 +403,7 @@ contract('LifCrowdsale Property-based test', function() {
       ],
       crowdsale: {
         rate1: 23, rate2: 16, foundationWallet: 0,
-        setWeiLockSeconds: 1726, owner: 0
+        foundersWallet: 2, setWeiLockSeconds: 1726, owner: 0
       }
     });
   });
@@ -404,7 +416,9 @@ contract('LifCrowdsale Property-based test', function() {
       ],
       crowdsale: {
         rate1: 14, rate2: 20,
-        foundationWallet: 6, setWeiLockSeconds: 83, owner: 5
+        foundationWallet: 6,
+        foundersWallet: 2,
+        setWeiLockSeconds: 83, owner: 5
       }
     });
   });
@@ -416,7 +430,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'burnTokens','account':4,'tokens':0}
       ],
       crowdsale: {
-        rate1: 11, rate2: 13, foundationWallet: 3,
+        rate1: 11, rate2: 13, foundationWallet: 3, foundersWallet: 2,
         setWeiLockSeconds: 2273, owner: 1
       }
     });
@@ -429,7 +443,8 @@ contract('LifCrowdsale Property-based test', function() {
       ],
       crowdsale: {
         rate1: 20, rate2: 46,
-        foundationWallet: 4, setWeiLockSeconds: 521, owner: 0
+        foundationWallet: 4, foundersWallet: 2,
+        setWeiLockSeconds: 521, owner: 0
       }
     });
   });
@@ -441,7 +456,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'burnTokens','account':5,'tokens':44}
       ],
       crowdsale: {
-        rate1: 1, rate2: 6, foundationWallet: 5,
+        rate1: 1, rate2: 6, foundationWallet: 5, foundersWallet: 2,
         setWeiLockSeconds: 2176, owner: 10
       }
     });
@@ -454,7 +469,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'fundCrowdsaleOverSoftCap','account':10,'softCapExcessWei':15,'finalize':false}
       ],
       crowdsale: {
-        rate1: 26, rate2: 28, foundationWallet: 9,
+        rate1: 26, rate2: 28, foundationWallet: 9, foundersWallet: 2,
         setWeiLockSeconds: 2696, owner: 6
       }
     });
@@ -479,7 +494,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'fundCrowdsaleOverSoftCap','account':0,'softCapExcessWei':0,'finalize': true}
       ],
       crowdsale: {
-        rate1: 3, rate2: 3, foundationWallet: 2,
+        rate1: 3, rate2: 3, foundationWallet: 2, foundersWallet: 3,
         setWeiLockSeconds: 2464, owner: 9
       }
     });
@@ -492,7 +507,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type': 'claimEth', 'eth': 33, 'fromAccount': 8}
       ],
       'crowdsale': {
-        'rate1': 23, 'rate2': 40, 'foundationWallet': 1,
+        'rate1': 23, 'rate2': 40, 'foundationWallet': 1, 'foundersWallet': 2,
         'setWeiLockSeconds': 1445, 'owner': 2
       }
     });

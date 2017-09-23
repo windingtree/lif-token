@@ -16,7 +16,7 @@ contract('LifToken Crowdsale', function(accounts) {
     let crowdsale = await LifCrowdsale.new(
       startTimestamp, end1Timestamp, end2Timestamp,
       100, 110, duration.minutes(30),
-      accounts[0]
+      accounts[0], accounts[1]
     );
 
     assert.equal(startTimestamp, parseInt(await crowdsale.startTimestamp.call()));
@@ -25,6 +25,7 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(100, parseInt(await crowdsale.rate1.call()));
     assert.equal(110, parseInt(await crowdsale.rate2.call()));
     assert.equal(accounts[0], parseInt(await crowdsale.foundationWallet.call()));
+    assert.equal(accounts[1], parseInt(await crowdsale.foundersWallet.call()));
 
   });
 
