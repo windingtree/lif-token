@@ -262,7 +262,7 @@ async function runFinalizeCrowdsaleCommand(command, state) {
         await state.crowdsaleContract.foundationVestedPayment()
       );
 
-      assert.equal(state.crowdsaleData.foundationWallet, await vestedPaymentFounders.owner());
+      assert.equal(state.crowdsaleData.foundersWallet, await vestedPaymentFounders.owner());
       assert.equal(state.crowdsaleData.foundationWallet, await vestedPaymentFoundation.owner());
 
       totalSupplyBeforeFinalize.mul(0.128).floor().should.be.bignumber.equal(

@@ -45,6 +45,11 @@ contract LifCrowdsale is Ownable, Pausable {
   // long-term reserve for the foundation.
   address public foundationWallet;
 
+  // Address of the Winding Tree Founders wallet. An extra 12.8% of tokens
+  // are put in a Vested Payment with this address as beneficiary, with 1 year
+  // cliff and 4 years duration.
+  address public foundersWallet;
+
   // TGE min cap, in USD. Converted to wei using `weiPerUSDinTGE`.
   uint256 public minCapUSD = 5000000;
 
@@ -140,7 +145,8 @@ contract LifCrowdsale is Ownable, Pausable {
     uint256 _rate1,
     uint256 _rate2,
     uint256 _setWeiLockSeconds,
-    address _foundationWallet
+    address _foundationWallet,
+    address _foundersWallet
   ) {
 
     require(_startTimestamp > block.timestamp);
@@ -150,6 +156,7 @@ contract LifCrowdsale is Ownable, Pausable {
     require(_rate2 > 0);
     require(_setWeiLockSeconds > 0);
     require(_foundationWallet != address(0));
+    require(_foundersWallet != address(0));
 
     token = new LifToken();
     token.pause();
@@ -161,6 +168,7 @@ contract LifCrowdsale is Ownable, Pausable {
     rate2 = _rate2;
     setWeiLockSeconds = _setWeiLockSeconds;
     foundationWallet = _foundationWallet;
+    foundersWallet = _foundersWallet;
   }
 
   /**
@@ -318,7 +326,7 @@ contract LifCrowdsale is Ownable, Pausable {
       block.timestamp, 30 days, 48, 12, foundersTokens, token
     );
     token.mint(foundersVestedPayment, foundersTokens);
-    foundersVestedPayment.transferOwnership(foundationWallet);
+    foundersVestedPayment.transferOwnership(foundersWallet);
 
     // create the vested payment schedule for the foundation
     uint256 foundationPaymentStart = foundationMonthsStart.mul(30 days);
