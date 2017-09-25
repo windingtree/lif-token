@@ -277,7 +277,8 @@ contract('Market validation Mechanism', function(accounts) {
       initialBuyPrice: initialBuyPrice,
       MVMBuyPrice: initialBuyPrice,
       claimablePercentage: 0, MVMMaxClaimableWei: new BigNumber(0),
-      MVMClaimedWei: new BigNumber(0)
+      MVMClaimedWei: new BigNumber(0),
+      MVMPausedSeconds: new BigNumber(0)
     };
     state.ethBalances[customerAddressIndex] = web3.eth.getBalance(customer);
     state.balances[customerAddressIndex] = await token.balanceOf(customer);
