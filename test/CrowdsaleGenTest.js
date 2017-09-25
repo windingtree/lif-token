@@ -555,7 +555,8 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'MVMWaitForMonth','month':6}, // to check that waitForMonth works fine with pausedSeconds > 0
       ],
       crowdsale: {
-        rate1: 3, rate2: 11, foundationWallet: 5, setWeiLockSeconds: 3152, owner: 10
+        rate1: 3, rate2: 11, foundationWallet: 5, foundersWallet: 2,
+        setWeiLockSeconds: 3152, owner: 10
       }
     });
   });
