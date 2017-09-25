@@ -36,7 +36,7 @@
     "coveralls": "^2.13.1",
     "eslint": "^4.6.1",
     "ethereumjs-testrpc": "4.1.1",
-    "solidity-coverage": "^0.2.3",
+    "solidity-coverage": "^0.2.4",
     "truffle": "3.4.11"
   }
 }
