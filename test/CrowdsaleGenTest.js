@@ -478,8 +478,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'burnTokens','account':5,'tokens':44}
       ],
       crowdsale: {
-        rate1: 1, rate2: 6, foundationWallet: 5, foundersWallet: 2,
-        setWeiLockSeconds: 2176, owner: 10
+        rate1: 1, rate2: 6, foundationWallet: 5, foundersWallet: 2, setWeiLockSeconds: 2176, owner: 10
       }
     });
   });
@@ -504,8 +503,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'MVMSendTokens','tokens':4,'from':4}
       ],
       crowdsale: {
-        rate1: 2, rate2: 32, foundationWallet: 7,
-        setWeiLockSeconds: 2098, owner: 9
+        rate1: 2, rate2: 32, foundationWallet: 7, foundersWallet: 2, setWeiLockSeconds: 2098, owner: 9
       }
     });
   });
@@ -539,7 +537,9 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'fundCrowdsaleOverSoftCap','account':7,'softCapExcessWei':13,'finalize':true},
         {'type':'MVMClaimEth','eth':12}
       ],
-      crowdsale: {rate1: 3, rate2: 11, foundationWallet: 5, setWeiLockSeconds: 3152, owner: 10
+      crowdsale: {
+        rate1: 3, rate2: 11, foundationWallet: 5, foundersWallet: 2,
+        setWeiLockSeconds: 3152, owner: 10
       }
     });
 
@@ -566,7 +566,8 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'addPrivatePresalePayment','beneficiaryAccount':1,'fromAccount':9,'eth':24,'rate':50}
       ],
       crowdsale: {
-        rate1: 5, rate2: 21, foundationWallet: 0, setWeiLockSeconds: 1967, owner: 9
+        rate1: 5, rate2: 21, foundationWallet: 0, foundersWallet: 2,
+        setWeiLockSeconds: 1967, owner: 9
       }
     });
   });
@@ -578,7 +579,8 @@ contract('LifCrowdsale Property-based test', function() {
         { 'type': 'transfer', 'lif': 0, 'fromAccount': 'zero', 'toAccount': 7 }
       ],
       'crowdsale': {
-        'rate1': 5, 'rate2': 6, 'foundationWallet': 5, 'setWeiLockSeconds': 2137, 'owner': 7
+        'rate1': 5, 'rate2': 6, 'foundationWallet': 5, 'foundersWallet': 2,
+        'setWeiLockSeconds': 2137, 'owner': 7
       }
     });
   });
