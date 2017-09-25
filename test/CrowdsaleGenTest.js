@@ -586,6 +586,18 @@ contract('LifCrowdsale Property-based test', function() {
     });
   });
 
+  it('can try to burn tokens on a non-funded finalized crowdsale', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      'commands': [
+        { 'type': 'fundCrowdsaleBelowSoftCap', 'account': 9, 'fundingEth': 0, 'finalize': true },
+        { 'type': 'burnTokens', 'account': 9, 'tokens': 18 }
+      ],
+      'crowdsale': {
+        'rate1': 8, 'rate2': 20, 'foundationWallet': 1, 'foundersWallet': 6, 'setWeiLockSeconds': 687, 'owner': 6
+      }
+    });
+  });
+
   it('distributes tokens correctly on any combination of bids', async function() {
     // stateful prob based tests can take a long time to finish when shrinking...
     this.timeout(GEN_TESTS_TIMEOUT * 1000);
