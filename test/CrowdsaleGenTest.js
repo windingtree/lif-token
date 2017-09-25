@@ -70,6 +70,9 @@ contract('LifCrowdsale Property-based test', function() {
       assert.equal(state.MVMPaused, await state.MVM.paused.call());
       state.MVMPausedSeconds.should.be.bignumber.equal(await state.MVM.totalPausedSeconds.call());
       state.MVMClaimedWei.should.be.bignumber.equal(await state.MVM.totalWeiClaimed.call());
+      if (latestTime() >= state.MVMStartTimestamp) {
+        assert.equal(state.MVMMonth, parseInt(await state.MVM.getCurrentPeriodIndex()));
+      }
     } else {
       state.MVMBurnedTokens.should.be.bignumber.equal(0);
       state.MVMPausedSeconds.should.be.bignumber.equal(0);
@@ -534,6 +537,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'MVMClaimEth','eth':12},
         {'type':'MVMWaitForMonth','month':4},
         {'type':'MVMPause','pause':false, 'fromAccount':5},
+        {'type':'MVMWaitForMonth','month':6}, // to check that waitForMonth works fine with pausedSeconds > 0
       ],
       crowdsale: {
         rate1: 3, rate2: 11, foundationWallet: 5, setWeiLockSeconds: 3152, owner: 10

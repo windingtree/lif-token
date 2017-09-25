@@ -742,7 +742,7 @@ let distributionDeltas48 = [
 
 async function runMVMWaitForMonthCommand(command, state) {
 
-  const targetTimestamp = state.MVMStartTimestamp + command.month * duration.days(30);
+  const targetTimestamp = state.MVMStartTimestamp + command.month * duration.days(30) + parseInt(state.MVMPausedSeconds);
 
   if (targetTimestamp > latestTime()) {
     await increaseTimeTestRPCTo(targetTimestamp);
