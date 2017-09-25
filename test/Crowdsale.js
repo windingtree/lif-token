@@ -37,7 +37,7 @@ contract('LifToken Crowdsale', function(accounts) {
     try {
       await LifCrowdsale.new(
         startTimestamp, end1Timestamp, end2Timestamp,
-        100, 110, duration.minutes(30), help.zeroAddress
+        100, 110, duration.minutes(30), help.zeroAddress, accounts[1]
       );
       assert(false, 'create crowdsale should have thrown');
     } catch(e) {
