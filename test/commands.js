@@ -142,7 +142,7 @@ async function runBurnTokensCommand(command, state) {
     lifWei = help.lif2LifWei(command.tokens);
 
   let shouldThrow = state.tokenPaused ||
-    (balance < lifWei) ||
+    (balance.lt(lifWei)) ||
     (command.tokens == 0) ||
     hasZeroAddress;
 
