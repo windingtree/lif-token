@@ -141,6 +141,12 @@ module.exports = {
     month: jsc.nat
   }),
 
+  MVMPauseCommandGen: jsc.record({
+    type: jsc.constant('MVMPause'),
+    pause: jsc.bool,
+    fromAccount: knownAccountGen
+  }),
+
   fundCrowdsaleBelowMinCap: jsc.record({
     type: jsc.constant('fundCrowdsaleBelowSoftCap'),
     account: knownAccountGen, // we don't want this one to fail with 0x0 addresses

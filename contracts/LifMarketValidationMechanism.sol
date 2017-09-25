@@ -58,6 +58,10 @@ contract LifMarketValidationMechanism is Ownable {
 
   uint256[] public periods;
 
+  // Events
+  event Pause();
+  event Unpause(uint256 pausedSeconds);
+
   modifier whenNotPaused(){
     assert(!paused);
     _;
@@ -270,15 +274,19 @@ contract LifMarketValidationMechanism is Ownable {
   function pause() onlyOwner whenNotPaused {
     paused = true;
     pausedTimestamp = block.timestamp;
+
+    Pause();
   }
 
   /**
      @dev Unpauses the MVM. See `pause` for more details about pausing
     */
   function unpause() onlyOwner whenPaused {
-    uint256 pausedTimestamps = block.timestamp.sub(pausedTimestamp);
-    totalPausedSeconds = totalPausedSeconds.add(pausedTimestamps);
+    uint256 pausedSeconds = block.timestamp.sub(pausedTimestamp);
+    totalPausedSeconds = totalPausedSeconds.add(pausedSeconds);
     paused = false;
+
+    Unpause(pausedSeconds);
   }
 
 }

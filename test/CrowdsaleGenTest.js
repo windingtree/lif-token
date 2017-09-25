@@ -57,6 +57,26 @@ contract('LifCrowdsale Property-based test', function() {
 
     state.totalSupply.
       should.be.bignumber.equal(await state.token.totalSupply.call());
+
+    if (state.crowdsaleFinalized) {
+      state.burnedTokens.plus(await state.token.totalSupply()).
+        should.be.bignumber.equal(state.initialTokenSupply);
+    } else {
+      state.burnedTokens.should.be.bignumber.equal(0);
+    }
+
+    if (state.MVM !== undefined) {
+      state.MVMBurnedTokens.should.be.bignumber.equal(await state.MVM.totalBurnedTokens.call());
+      assert.equal(state.MVMPaused, await state.MVM.paused.call());
+      state.MVMPausedSeconds.should.be.bignumber.equal(await state.MVM.totalPausedSeconds.call());
+      state.MVMClaimedWei.should.be.bignumber.equal(await state.MVM.totalWeiClaimed.call());
+      if (latestTime() >= state.MVMStartTimestamp) {
+        assert.equal(state.MVMMonth, parseInt(await state.MVM.getCurrentPeriodIndex()));
+      }
+    } else {
+      state.MVMBurnedTokens.should.be.bignumber.equal(0);
+      state.MVMPausedSeconds.should.be.bignumber.equal(0);
+    }
   };
 
   let runGeneratedCrowdsaleAndCommands = async function(input) {
@@ -149,6 +169,8 @@ contract('LifCrowdsale Property-based test', function() {
         MVMBurnedTokens: new BigNumber(0),
         MVMClaimedWei: zero,
         claimablePercentage: zero,
+        MVMPaused: false,
+        MVMPausedSeconds: zero,
         burnedTokens: zero,
         returnedWeiForBurnedTokens: new BigNumber(0)
       };
@@ -518,6 +540,22 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'MVMClaimEth','eth':12}
       ],
       crowdsale: {rate1: 3, rate2: 11, foundationWallet: 5, setWeiLockSeconds: 3152, owner: 10
+      }
+    });
+
+    // should work fine on a paused MVM (even though it would not be able to actually claim the eth)
+    // and unpausing should also work fine
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {'type':'fundCrowdsaleOverSoftCap','account':7,'softCapExcessWei':13,'finalize':true},
+        {'type':'MVMPause','pause':true, 'fromAccount':5},
+        {'type':'MVMClaimEth','eth':12},
+        {'type':'MVMWaitForMonth','month':4},
+        {'type':'MVMPause','pause':false, 'fromAccount':5},
+        {'type':'MVMWaitForMonth','month':6}, // to check that waitForMonth works fine with pausedSeconds > 0
+      ],
+      crowdsale: {
+        rate1: 3, rate2: 11, foundationWallet: 5, setWeiLockSeconds: 3152, owner: 10
       }
     });
   });
