@@ -531,6 +531,9 @@ contract('LifCrowdsale Property-based test', function() {
         'setWeiLockSeconds': 1445, 'owner': 2
       }
     });
+  });
+
+  it('should fund over soft cap + MVM claim eth fine', async function() {
 
     await runGeneratedCrowdsaleAndCommands({
       commands: [
@@ -542,6 +545,9 @@ contract('LifCrowdsale Property-based test', function() {
         setWeiLockSeconds: 3152, owner: 10
       }
     });
+  });
+
+  it('should fund over soft cap, do some pause/unpause, do some waiting and claim eth in the MVM fine', async function() {
 
     // should work fine on a paused MVM (even though it would not be able to actually claim the eth)
     // and unpausing should also work fine
