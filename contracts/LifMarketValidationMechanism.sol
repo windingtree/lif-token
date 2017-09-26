@@ -221,6 +221,8 @@ contract LifMarketValidationMechanism is Ownable {
     }
   }
 
+  event SentTokens(address indexed sender, uint256 price, uint256 tokens, uint256 returnedWei);
+
   /**
      @dev allows to send tokens to the MVM in exchange of Eth at the price
      determined by getBuyPrice. The tokens are burned
@@ -234,6 +236,8 @@ contract LifMarketValidationMechanism is Ownable {
     lifToken.transferFrom(msg.sender, address(this), tokens);
     lifToken.burn(tokens);
     totalBurnedTokens = totalBurnedTokens.add(tokens);
+
+    SentTokens(msg.sender, price, tokens, totalWei);
 
     msg.sender.transfer(totalWei);
   }
