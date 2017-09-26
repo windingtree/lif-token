@@ -1,4 +1,5 @@
 var help = require('./helpers');
+var _ = require('lodash');
 
 var BigNumber = web3.BigNumber;
 
@@ -77,21 +78,23 @@ contract('LifToken', function(accounts) {
     await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
   });
 
-  it('should return correct balances after transferData and show the event on receiver contract', async function() {
-    let message = await Message.new();
-    help.abiDecoder.addABI(Message._json.abi);
+  _.forEach([0, 1], function(tokens) {
+    it('should return correct balances after transferData with ' + tokens + ' tokens and show the event on receiver contract', async function() {
+      let message = await Message.new();
+      help.abiDecoder.addABI(Message._json.abi);
 
-    let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
+      let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
 
-    let transaction = await token.transferData(message.contract.address, help.lif2LifWei(1), data, {from: accounts[1]});
-    let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
+      let transaction = await token.transferData(message.contract.address, help.lif2LifWei(tokens), data, {from: accounts[1]});
+      let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-    assert.equal(2, decodedEvents.length);
-    assert.equal(data, decodedEvents[1].events[3].value);
+      assert.equal(2, decodedEvents.length);
+      assert.equal(data, decodedEvents[1].events[3].value);
 
-    assert.equal(help.lif2LifWei(1), await token.balanceOf(message.contract.address));
+      assert.equal(help.lif2LifWei(tokens), await token.balanceOf(message.contract.address));
 
-    await help.checkToken(token, accounts, 125, [39,30,20,10,0]);
+      await help.checkToken(token, accounts, 125, [40 - tokens,30,20,10,0]);
+    });
   });
 
   it('should return correct balances after transferDataFrom and show the event on receiver contract', async function() {
@@ -130,6 +133,17 @@ contract('LifToken', function(accounts) {
     new BigNumber(help.lif2LifWei(1000)).should.be.bignumber.equal(await token.allowance(accounts[1], message.contract.address));
 
     await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
+  });
+
+  it('should fail on approveData when spender is the same LifToken contract', async function() {
+    let data = token.contract.approve.getData(accounts[5], help.lif2LifWei(666));
+
+    try {
+      await token.approveData(token.contract.address, help.lif2LifWei(1000), data, {from: accounts[1]});
+      assert(false, 'approveData should have thrown because the spender should not be the LifToken itself');
+    } catch(e) {
+      if (!help.isInvalidOpcodeEx(e)) throw e;
+    }
   });
 
   it('should fail inside approveData and not trigger ApproveData event', async function() {
