@@ -652,7 +652,7 @@ async function runMVMClaimEthCommand(command, state) {
     let weiToClaim = web3.toWei(command.eth),
       hasZeroAddress = false;
 
-    let shouldThrow = (weiToClaim > getMVMMaxClaimableWei(state)) ||
+    let shouldThrow = getMVMMaxClaimableWei(state).lt(weiToClaim) ||
       state.MVMMonth < 0 ||
       state.MVMPaused;
 
