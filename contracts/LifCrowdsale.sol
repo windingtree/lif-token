@@ -296,6 +296,7 @@ contract LifCrowdsale is Ownable, Pausable {
       MVM = new LifMarketValidationMechanism(
         address(token), block.timestamp.add(30 days), 30 days, MVMPeriods, foundationWallet
       );
+      MVM.calculateDistributionPeriods();
 
       mintExtraTokens(uint256(MVMPeriods));
 
