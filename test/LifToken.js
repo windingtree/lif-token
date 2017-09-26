@@ -132,6 +132,17 @@ contract('LifToken', function(accounts) {
     await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
   });
 
+  it('should fail on approveData when spender is the same LifToken contract', async function() {
+    let data = token.contract.approve.getData(accounts[5], help.lif2LifWei(666));
+
+    try {
+      await token.approveData(token.contract.address, help.lif2LifWei(1000), data, {from: accounts[1]});
+      assert(false, 'approveData should have thrown because the spender should not be the LifToken itself');
+    } catch(e) {
+      if (!help.isInvalidOpcodeEx(e)) throw e;
+    }
+  });
+
   it('should fail inside approveData and not trigger ApproveData event', async function() {
     let message = await Message.new();
     help.abiDecoder.addABI(Message._json.abi);
