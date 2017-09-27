@@ -62,6 +62,8 @@ contract LifMarketValidationMechanism is Ownable {
   event Pause();
   event Unpause(uint256 pausedSeconds);
 
+  event SentTokens(address indexed sender, uint256 price, uint256 tokens, uint256 returnedWei);
+
   modifier whenNotPaused(){
     assert(!paused);
     _;
@@ -220,8 +222,6 @@ contract LifMarketValidationMechanism is Ownable {
       }
     }
   }
-
-  event SentTokens(address indexed sender, uint256 price, uint256 tokens, uint256 returnedWei);
 
   /**
      @dev allows to send tokens to the MVM in exchange of Eth at the price
