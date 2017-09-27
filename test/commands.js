@@ -653,6 +653,7 @@ async function runMVMClaimEthCommand(command, state) {
       hasZeroAddress = false;
 
     let shouldThrow = (weiToClaim > getMVMMaxClaimableWei(state)) ||
+      state.MVMMonth < 0 ||
       state.MVMPaused;
 
     try {

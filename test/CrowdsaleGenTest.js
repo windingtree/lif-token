@@ -171,6 +171,7 @@ contract('LifCrowdsale Property-based test', function() {
         MVMBurnedTokens: new BigNumber(0),
         MVMClaimedWei: zero,
         claimablePercentage: zero,
+        MVMMonth: -1, // start as -1, as if the MVM didn't start yet
         MVMPaused: false,
         MVMPausedSeconds: zero,
         burnedTokens: zero,
@@ -616,6 +617,19 @@ contract('LifCrowdsale Property-based test', function() {
       'crowdsale': {
         'rate1': 2, 'rate2': 24, 'foundationWallet': 3, 'foundersWallet': 10,
         'setWeiLockSeconds': 1684, 'owner': 9
+      }
+    });
+  });
+
+  it('runs a fund over soft cap and MVM claim eth commands fine', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      'commands': [
+        {'type': 'fundCrowdsaleOverSoftCap', 'account': 7, 'softCapExcessWei': 21, 'finalize': true},
+        {'type': 'MVMClaimEth', 'eth': 0}
+      ],
+      'crowdsale': {
+        'rate1': 18, 'rate2': 16, 'foundationWallet': 4, 'foundersWallet': 0,
+        'setWeiLockSeconds': 3461, 'owner': 5
       }
     });
   });
