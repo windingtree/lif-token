@@ -39,6 +39,9 @@ contract LifMarketValidationMechanism is Ownable {
   // Amount of tokens that were burned by the MVM
   uint256 public totalBurnedTokens = 0;
 
+  // Amount of wei that was reimbursed via sendTokens calls
+  uint256 public totalReimbursedWei = 0;
+
   // Total supply of tokens when the MVM was created
   uint256 public originalTotalSupply;
 
@@ -239,6 +242,7 @@ contract LifMarketValidationMechanism is Ownable {
 
     SentTokens(msg.sender, price, tokens, totalWei);
 
+    totalReimbursedWei = totalReimbursedWei.add(totalWei);
     msg.sender.transfer(totalWei);
   }
 
