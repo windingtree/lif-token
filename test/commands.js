@@ -640,7 +640,8 @@ let getMVMMaxClaimableWei = function(state) {
       mul(state.initialTokenSupply - state.MVMBurnedTokens).
       dividedBy(state.initialTokenSupply).
       minus(state.MVMClaimedWei);
-    return _.max([0, maxClaimable]);
+
+    return maxClaimable.gt(0) ? maxClaimable : new BigNumber(0);
   }
 };
 
@@ -652,7 +653,7 @@ async function runMVMClaimEthCommand(command, state) {
     let weiToClaim = web3.toWei(command.eth),
       hasZeroAddress = false;
 
-    let shouldThrow = (weiToClaim > getMVMMaxClaimableWei(state)) ||
+    let shouldThrow = getMVMMaxClaimableWei(state).lt(weiToClaim) ||
       state.MVMMonth < 0 ||
       state.MVMPaused;
 
