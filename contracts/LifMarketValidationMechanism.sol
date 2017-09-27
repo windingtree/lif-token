@@ -62,6 +62,7 @@ contract LifMarketValidationMechanism is Ownable {
   event Pause();
   event Unpause(uint256 pausedSeconds);
 
+  event ClaimedEth(uint256 claimedWei);
   event SentTokens(address indexed sender, uint256 price, uint256 tokens, uint256 returnedWei);
 
   modifier whenNotPaused(){
@@ -268,6 +269,8 @@ contract LifMarketValidationMechanism is Ownable {
     foundationAddr.transfer(weiAmount);
 
     totalWeiClaimed = totalWeiClaimed.add(weiAmount);
+
+    ClaimedEth(weiAmount);
   }
 
   /**
