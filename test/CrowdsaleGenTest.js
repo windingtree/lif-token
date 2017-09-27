@@ -606,6 +606,20 @@ contract('LifCrowdsale Property-based test', function() {
     });
   });
 
+  it('can fund over soft cap, wait then send tokens to MVM', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      'commands': [
+        { 'type': 'fundCrowdsaleOverSoftCap', 'account': 7, 'softCapExcessWei': 21, 'finalize': true },
+        { 'type': 'MVMWaitForMonth', month: 5},
+        { 'type': 'MVMSendTokens', 'tokens': 0.00000014, 'from': 7 }
+      ],
+      'crowdsale': {
+        'rate1': 2, 'rate2': 24, 'foundationWallet': 3, 'foundersWallet': 10,
+        'setWeiLockSeconds': 1684, 'owner': 9
+      }
+    });
+  });
+
   it('distributes tokens correctly on any combination of bids', async function() {
     // stateful prob based tests can take a long time to finish when shrinking...
     this.timeout(GEN_TESTS_TIMEOUT * 1000);

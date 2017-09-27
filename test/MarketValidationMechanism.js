@@ -26,7 +26,6 @@ contract('Market validation Mechanism', function(accounts) {
     crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
     token = LifToken.at( await crowdsale.token.call());
     mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
-    await mm.calculateDistributionPeriods({from: accounts[4]});
 
     assert.equal(mmInitialBalance, parseInt(await web3.eth.getBalance(mm.address)));
     assert.equal(mmInitialBalance, parseInt(await mm.initialWei.call()));
@@ -59,7 +58,6 @@ contract('Market validation Mechanism', function(accounts) {
     crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
     token = LifToken.at( await crowdsale.token.call());
     mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
-    await mm.calculateDistributionPeriods({from: accounts[4]});
 
     assert.equal(mmInitialBalance, parseInt(await web3.eth.getBalance(mm.address)));
     assert.equal(mmInitialBalance, parseInt(await mm.initialWei.call()));
@@ -96,7 +94,6 @@ contract('Market validation Mechanism', function(accounts) {
     crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
     token = LifToken.at( await crowdsale.token.call());
     mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
-    await mm.calculateDistributionPeriods({from: accounts[4]});
 
     assert.equal(24, parseInt(await mm.totalPeriods.call()));
 
@@ -121,7 +118,6 @@ contract('Market validation Mechanism', function(accounts) {
     crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
     token = LifToken.at( await crowdsale.token.call());
     mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
-    await mm.calculateDistributionPeriods({from: accounts[4]});
 
     assert.equal(24, parseInt(await mm.totalPeriods.call()));
 
@@ -153,8 +149,6 @@ contract('Market validation Mechanism', function(accounts) {
       rate = totalTokenSupply / web3.fromWei(mmInitialBalance+10000000, 'ether'),
       crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1),
       mvm = LifMarketValidationMechanism.at(await crowdsale.MVM.call());
-
-    await mvm.calculateDistributionPeriods({from: accounts[4]});
 
     const startTimestamp = parseInt(await mvm.startTimestamp.call());
 
@@ -244,7 +238,6 @@ contract('Market validation Mechanism', function(accounts) {
     crowdsale = await help.simulateCrowdsale(rate, [tokensInCrowdsale], accounts, weiPerUSD);
     token = LifToken.at( await crowdsale.token.call());
     mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
-    await mm.calculateDistributionPeriods({from: accounts[4]});
     let customer = accounts[customerAddressIndex];
     const initialBuyPrice = startingMMBalance.mul(priceFactor).dividedBy(help.lif2LifWei(tokenTotalSupply)).floor();
 

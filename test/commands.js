@@ -300,6 +300,7 @@ async function runFinalizeCrowdsaleCommand(command, state) {
         state.MVM = MVM;
         state.MVMStartTimestamp = nextTimestamp + duration.days(30);
         state.MVMStartingBalance = MVMInitialBalance;
+        state.MVMEthBalance = MVMInitialBalance;
         state.MVMInitialBuyPrice = MVMInitialBalance.
           mul(priceFactor).
           dividedBy(help.lif2LifWei(state.totalSupply)).floor();
@@ -692,7 +693,7 @@ async function runMVMSendTokensCommand(command, state) {
     let shouldThrow = !state.crowdsaleFinalized ||
       !state.crowdsaleFunded ||
       state.MVMPaused ||
-      (lifWei > lifBalanceBeforeSend) ||
+      lifBalanceBeforeSend.lt(lifWei) ||
       (command.tokens == 0) ||
       isMVMFinished(state) ||
       hasZeroAddress;
