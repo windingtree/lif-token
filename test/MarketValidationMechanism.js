@@ -201,7 +201,7 @@ contract('Market validation Mechanism', function(accounts) {
     // help.debug('checking scenario', data);
 
     assert.equal(data.MVMMonth, await mm.getCurrentPeriodIndex());
-    data.MVMEthBalance.should.be.bignumber.equal(web3.eth.getBalance(mm.address));
+    data.MVMWeiBalance.should.be.bignumber.equal(web3.eth.getBalance(mm.address));
     data.MVMLifBalance.should.be.bignumber.equal(await token.balanceOf(mm.address));
 
     new BigNumber(web3.toWei(tokenTotalSupply, 'ether')).
@@ -261,7 +261,7 @@ contract('Market validation Mechanism', function(accounts) {
       burnedTokens: new BigNumber(0), // total burned tokens, in MM or not (for compat with gen-test state)
       returnedWeiForBurnedTokens: new BigNumber(0),
       MVM: mm,
-      MVMEthBalance: startingMMBalance,
+      MVMWeiBalance: startingMMBalance,
       MVMStartingBalance: startingMMBalance,
       MVMLifBalance: new BigNumber(0),
       ethBalances: {},
@@ -299,9 +299,9 @@ contract('Market validation Mechanism', function(accounts) {
       await checkScenarioProperties(state, mm, customer);
     };
 
-    let claimEth = async (eth) => {
+    let claimWei = async (eth) => {
 
-      await commands.commands.MVMClaimEth.run({
+      await commands.commands.MVMClaimWei.run({
         eth: eth
       }, state);
 
@@ -325,12 +325,12 @@ contract('Market validation Mechanism', function(accounts) {
     assert(maxClaimableBeforeClaiming.gt(0));
 
     // try to claim more than the max claimable and it should fail
-    await claimEth(web3.fromWei(state.MVMMaxClaimableWei + 1));
+    await claimWei(web3.fromWei(state.MVMMaxClaimableWei + 1));
     assert.equal(claimedWeiBeforeClaiming, state.MVMClaimedWei,
-      'claimEth should have failed so claimedWei should have stayed the same');
+      'claimWei should have failed so claimedWei should have stayed the same');
 
     // Claim all ether
-    await claimEth(web3.fromWei(state.MVMMaxClaimableWei));
+    await claimWei(web3.fromWei(state.MVMMaxClaimableWei));
 
     state.MVMClaimedWei.should.be.bignumber.
       equal(claimedWeiBeforeClaiming.plus(maxClaimableBeforeClaiming));
@@ -342,7 +342,7 @@ contract('Market validation Mechanism', function(accounts) {
     await sendTokens(240);
 
     // Claim 18 ETH
-    await claimEth(0.03);
+    await claimWei(0.03);
 
     // Month 3
     await waitForMonth(3);
@@ -354,7 +354,7 @@ contract('Market validation Mechanism', function(accounts) {
     await waitForMonth(14);
     await waitForMonth(15);
 
-    await claimEth(5);
+    await claimWei(5);
 
     // Sell 240 tokens to the MM
     await sendTokens(240);
@@ -367,7 +367,7 @@ contract('Market validation Mechanism', function(accounts) {
     (await web3.eth.getBalance(mm.address)).should.be.bignumber.gt(web3.toWei(0.3, 'ether'));
 
     help.debug('claiming remaining eth');
-    await claimEth(web3.fromWei(await web3.eth.getBalance(mm.address)));
+    await claimWei(web3.fromWei(await web3.eth.getBalance(mm.address)));
 
     assert.equal(0, await web3.eth.getBalance(mm.address));
   });

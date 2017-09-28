@@ -65,7 +65,7 @@ contract LifMarketValidationMechanism is Ownable {
   event Pause();
   event Unpause(uint256 pausedSeconds);
 
-  event ClaimedEth(uint256 claimedWei);
+  event ClaimedWei(uint256 claimedWei);
   event SentTokens(address indexed sender, uint256 price, uint256 tokens, uint256 returnedWei);
 
   modifier whenNotPaused(){
@@ -263,7 +263,7 @@ contract LifMarketValidationMechanism is Ownable {
      Maximum amount that can be claimed is determined by
      getMaxClaimableWeiAmount
     */
-  function claimEth(uint256 weiAmount) public whenNotPaused {
+  function claimWei(uint256 weiAmount) public whenNotPaused {
     require(msg.sender == foundationAddr);
 
     uint256 claimable = getMaxClaimableWeiAmount();
@@ -274,7 +274,7 @@ contract LifMarketValidationMechanism is Ownable {
 
     totalWeiClaimed = totalWeiClaimed.add(weiAmount);
 
-    ClaimedEth(weiAmount);
+    ClaimedWei(weiAmount);
   }
 
   /**

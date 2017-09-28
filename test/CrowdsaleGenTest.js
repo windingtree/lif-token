@@ -537,12 +537,12 @@ contract('LifCrowdsale Property-based test', function() {
     });
   });
 
-  it('should fund over soft cap + MVM claim eth fine', async function() {
+  it('should fund over soft cap + MVM claim wei fine', async function() {
 
     await runGeneratedCrowdsaleAndCommands({
       commands: [
         {'type':'fundCrowdsaleOverSoftCap','account':7,'softCapExcessWei':13,'finalize':true},
-        {'type':'MVMClaimEth','eth':12}
+        {'type':'MVMClaimWei','eth':12}
       ],
       crowdsale: {
         rate1: 3, rate2: 11, foundationWallet: 5, foundersWallet: 2,
@@ -559,7 +559,7 @@ contract('LifCrowdsale Property-based test', function() {
       commands: [
         {'type':'fundCrowdsaleOverSoftCap','account':7,'softCapExcessWei':13,'finalize':true},
         {'type':'MVMPause','pause':true, 'fromAccount':5},
-        {'type':'MVMClaimEth','eth':12},
+        {'type':'MVMClaimWei','eth':12},
         {'type':'MVMWaitForMonth','month':4},
         {'type':'MVMPause','pause':false, 'fromAccount':5},
         {'type':'MVMWaitForMonth','month':6}, // to check that waitForMonth works fine with pausedSeconds > 0
@@ -626,7 +626,7 @@ contract('LifCrowdsale Property-based test', function() {
     await runGeneratedCrowdsaleAndCommands({
       'commands': [
         {'type': 'fundCrowdsaleOverSoftCap', 'account': 7, 'softCapExcessWei': 21, 'finalize': true},
-        {'type': 'MVMClaimEth', 'eth': 0}
+        {'type': 'MVMClaimWei', 'eth': 0}
       ],
       'crowdsale': {
         'rate1': 18, 'rate2': 16, 'foundationWallet': 4, 'foundersWallet': 0,
@@ -640,7 +640,7 @@ contract('LifCrowdsale Property-based test', function() {
       'commands': [
         { 'type': 'fundCrowdsaleOverSoftCap', 'account': 2, 'softCapExcessWei': 8, 'finalize': true },
         { 'type': 'MVMWaitForMonth', 'month': 11 },
-        { 'type': 'MVMClaimEth', 'eth': 4 }
+        { 'type': 'MVMClaimWei', 'eth': 4 }
       ],
       'crowdsale': {
         'rate1': 5, 'rate2': 1, 'foundationWallet': 5, 'foundersWallet': 2,

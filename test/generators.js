@@ -131,8 +131,8 @@ module.exports = {
     from: accountGen
   }),
 
-  MVMClaimEthCommandGen: jsc.record({
-    type: jsc.constant('MVMClaimEth'),
+  MVMClaimWeiCommandGen: jsc.record({
+    type: jsc.constant('MVMClaimWei'),
     eth: jsc.nat
   }),
 
