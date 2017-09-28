@@ -103,7 +103,7 @@ contract LifMarketValidationMechanism is Ownable {
      @dev Receives the initial funding from the Crowdsale. Calculates the
      initial buy price as initialWei / totalSupply
     */
-  function fund() payable onlyOwner {
+  function fund() public payable onlyOwner {
     assert(!funded);
 
     originalTotalSupply = lifToken.totalSupply();
@@ -120,7 +120,7 @@ contract LifMarketValidationMechanism is Ownable {
      wei can be distributed back to the foundation every month. It starts with
      very low amounts ending with higher chunks at the end of the MVM lifetime
     */
-  function calculateDistributionPeriods() {
+  function calculateDistributionPeriods() public {
     assert(totalPeriods == 24 || totalPeriods == 48);
     assert(periods.length == 0);
 
@@ -161,7 +161,7 @@ contract LifMarketValidationMechanism is Ownable {
 
      @return the current period as a number from 0 to totalPeriods
     */
-  function getCurrentPeriodIndex() constant public returns(uint256) {
+  function getCurrentPeriodIndex() public constant returns(uint256) {
     assert(block.timestamp >= startTimestamp);
     return block.timestamp.sub(startTimestamp).
       sub(totalPausedSeconds).
@@ -203,7 +203,7 @@ contract LifMarketValidationMechanism is Ownable {
 
      @return the maximum wei claimable by the foundation as of now
     */
-  function getMaxClaimableWeiAmount() constant public returns (uint256) {
+  function getMaxClaimableWeiAmount() public constant returns (uint256) {
     if (isFinished()) {
       return this.balance;
     } else {
@@ -227,7 +227,7 @@ contract LifMarketValidationMechanism is Ownable {
      @dev allows to send tokens to the MVM in exchange of Eth at the price
      determined by getBuyPrice. The tokens are burned
     */
-  function sendTokens(uint256 tokens) whenNotPaused {
+  function sendTokens(uint256 tokens) public whenNotPaused {
     require(tokens > 0);
 
     uint256 price = getBuyPrice();
@@ -258,7 +258,7 @@ contract LifMarketValidationMechanism is Ownable {
      Maximum amount that can be claimed is determined by
      getMaxClaimableWeiAmount
     */
-  function claimEth(uint256 weiAmount) whenNotPaused {
+  function claimEth(uint256 weiAmount) public whenNotPaused {
     require(msg.sender == foundationAddr);
 
     uint256 claimable = getMaxClaimableWeiAmount();
@@ -275,7 +275,7 @@ contract LifMarketValidationMechanism is Ownable {
      claimed from the MVM while paused. MVM total lifetime is extended by the
      period it stays paused
     */
-  function pause() onlyOwner whenNotPaused {
+  function pause() public onlyOwner whenNotPaused {
     paused = true;
     pausedTimestamp = block.timestamp;
 
@@ -285,7 +285,7 @@ contract LifMarketValidationMechanism is Ownable {
   /**
      @dev Unpauses the MVM. See `pause` for more details about pausing
     */
-  function unpause() onlyOwner whenPaused {
+  function unpause() public onlyOwner whenPaused {
     uint256 pausedSeconds = block.timestamp.sub(pausedTimestamp);
     totalPausedSeconds = totalPausedSeconds.add(pausedSeconds);
     paused = false;

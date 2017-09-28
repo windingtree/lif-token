@@ -177,7 +177,7 @@ contract LifCrowdsale is Ownable, Pausable {
 
      @param _weiPerUSD wei per USD rate valid during the TGE
    */
-  function setWeiPerUSDinTGE(uint256 _weiPerUSD) onlyOwner {
+  function setWeiPerUSDinTGE(uint256 _weiPerUSD) public onlyOwner {
     require(_weiPerUSD > 0);
     assert(block.timestamp < startTimestamp.sub(setWeiLockSeconds));
 
@@ -213,7 +213,7 @@ contract LifCrowdsale is Ownable, Pausable {
 
      @param beneficiary Address to which Lif should be sent
    */
-  function buyTokens(address beneficiary) payable {
+  function buyTokens(address beneficiary) public payable {
     require(beneficiary != address(0));
     require(validPurchase());
     assert(weiPerUSDinTGE > 0);
@@ -248,7 +248,7 @@ contract LifCrowdsale is Ownable, Pausable {
    */
   function addPrivatePresaleTokens(
     address beneficiary, uint256 weiSent, uint256 rate
-  ) onlyOwner {
+  ) public onlyOwner {
     require(block.timestamp < startTimestamp);
     require(beneficiary != address(0));
     require(weiSent > 0);

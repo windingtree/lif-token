@@ -24,15 +24,15 @@ contract LifToken is MintableToken, Pausable {
   event TransferData(address indexed from, address indexed to, uint value, bytes data);
   event ApprovalData(address indexed from, address indexed spender, uint value, bytes data);
 
-  function transfer(address _to, uint256 _value) whenNotPaused returns (bool) {
+  function transfer(address _to, uint256 _value) public whenNotPaused returns (bool) {
     return super.transfer(_to, _value);
   }
 
-  function approve(address _spender, uint256 _value) whenNotPaused returns (bool) {
+  function approve(address _spender, uint256 _value) public whenNotPaused returns (bool) {
     return super.approve(_spender, _value);
   }
 
-  function transferFrom(address _from, address _to, uint256 _value) whenNotPaused returns (bool) {
+  function transferFrom(address _from, address _to, uint256 _value) public whenNotPaused returns (bool) {
     return super.transferFrom(_from, _to, _value);
   }
 
@@ -47,7 +47,7 @@ contract LifToken is MintableToken, Pausable {
 
      @return true if the call function was executed successfully
    */
-  function approveData(address spender, uint256 value, bytes data) whenNotPaused returns (bool) {
+  function approveData(address spender, uint256 value, bytes data) public whenNotPaused returns (bool) {
 
     require(spender != address(this));
 
@@ -73,7 +73,7 @@ contract LifToken is MintableToken, Pausable {
 
      @return true if the call function was executed successfully
    */
-  function transferData(address to, uint256 value, bytes data) whenNotPaused returns (bool) {
+  function transferData(address to, uint256 value, bytes data) public whenNotPaused returns (bool) {
 
     require(to != address(this));
 
@@ -104,7 +104,7 @@ contract LifToken is MintableToken, Pausable {
 
      @return true if the call function was executed successfully
    */
-  function transferDataFrom(address from, address to, uint256 value, bytes data) whenNotPaused returns (bool) {
+  function transferDataFrom(address from, address to, uint256 value, bytes data) public whenNotPaused returns (bool) {
 
     require(to != address(this));
 

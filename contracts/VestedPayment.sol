@@ -93,7 +93,7 @@ contract VestedPayment is Ownable {
 
      @param amount how many tokens to be claimed
    */
-  function claimTokens(uint256 amount) onlyOwner {
+  function claimTokens(uint256 amount) public onlyOwner {
     assert(getAvailableTokens() >= amount);
 
     claimed = claimed.add(amount);
