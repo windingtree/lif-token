@@ -139,6 +139,6 @@ contract LifToken is MintableToken, Pausable {
     Burn(burner, _value);
   }
 
-  event Burn(address indexed burner, uint indexed value);
+  event Burn(address indexed burner, uint value);
 
 }
