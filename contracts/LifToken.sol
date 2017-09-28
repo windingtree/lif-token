@@ -55,6 +55,7 @@ contract LifToken is MintableToken, Pausable {
 
     if (spender.call(data)) {
       ApprovalData(tx.origin, spender, value, data);
+      Approval(tx.origin, spender, value);
       return true;
     } else {
       return false;
@@ -85,6 +86,7 @@ contract LifToken is MintableToken, Pausable {
 
     if (to.call(data)) {
       TransferData(tx.origin, to, value, data);
+      Transfer(tx.origin, to, value);
       return true;
     } else {
       return false;
@@ -118,6 +120,7 @@ contract LifToken is MintableToken, Pausable {
 
     if (to.call(data)) {
       TransferData(tx.origin, to, value, data);
+      Transfer(tx.origin, to, value);
       return true;
     } else {
       return false;
@@ -137,6 +140,10 @@ contract LifToken is MintableToken, Pausable {
     balances[burner] = balances[burner].sub(_value);
     totalSupply = totalSupply.sub(_value);
     Burn(burner, _value);
+
+    // a Transfer event to 0x0 can be useful for observers to keep track of
+    // all the Lif by just looking at those events
+    Transfer(burner, address(0), _value);
   }
 
   event Burn(address indexed burner, uint value);
