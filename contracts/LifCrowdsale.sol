@@ -213,9 +213,8 @@ contract LifCrowdsale is Ownable, Pausable {
 
      @param beneficiary Address to which Lif should be sent
    */
-  function buyTokens(address beneficiary) public payable {
+  function buyTokens(address beneficiary) public payable validPurchase {
     require(beneficiary != address(0));
-    require(validPurchase());
     assert(weiPerUSDinTGE > 0);
 
     uint256 weiAmount = msg.value;
@@ -345,17 +344,19 @@ contract LifCrowdsale is Ownable, Pausable {
 
   /**
      @dev Modifier
-     @return true if the transaction can buy tokens on TGE
+     ok if the transaction can buy tokens on TGE
    */
-  function validPurchase() internal constant returns (bool) {
+  modifier validPurchase() {
     bool withinPeriod = now >= startTimestamp && now <= end2Timestamp;
     bool nonZeroPurchase = msg.value != 0;
-    return (withinPeriod && nonZeroPurchase);
+    assert(withinPeriod && nonZeroPurchase);
+
+    _;
   }
 
   /**
      @dev Modifier
-     throws when block.timestamp is not past end2Timestamp
+     ok when block.timestamp is past end2Timestamp
   */
   modifier hasEnded() {
     assert(block.timestamp > end2Timestamp);
