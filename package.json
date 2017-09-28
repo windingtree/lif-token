@@ -27,7 +27,7 @@
     "ethereumjs-abi": "^0.6.4",
     "jsverify": "^0.8.2",
     "lodash": "^4.17.4",
-    "solc": "^0.4.13",
+    "solc": "0.4.15",
     "truffle-hdwallet-provider": "0.0.3",
     "zeppelin-solidity": "1.2.0"
   },
@@ -37,6 +37,6 @@
     "eslint": "^4.6.1",
     "ethereumjs-testrpc": "4.1.1",
     "solidity-coverage": "^0.2.2",
-    "truffle": "3.4.8"
+    "truffle": "3.4.11"
   }
 }
