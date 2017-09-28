@@ -111,7 +111,7 @@ contract LifCrowdsale is Ownable, Pausable {
   /**
      @dev Event triggered every time a presale purchase is done
   **/
-  event TokenPresalePurchase(address beneficiary, uint256 weiAmount, uint256 rate);
+  event TokenPresalePurchase(address indexed beneficiary, uint256 weiAmount, uint256 rate);
 
   /**
      @dev Event triggered on every purchase during the TGE
