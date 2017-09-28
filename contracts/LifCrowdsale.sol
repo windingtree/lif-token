@@ -276,7 +276,7 @@ contract LifCrowdsale is Ownable, Pausable {
 
     // if the minimiun cap for the MVM is not reached transfer all funds to foundation
     // else if the min cap for the MVM is reached, create it and send the remaining funds
-    if (this.balance <= foundationBalanceCapWei) {
+    if (weiRaised <= foundationBalanceCapWei) {
 
       foundationWallet.transfer(this.balance);
 
