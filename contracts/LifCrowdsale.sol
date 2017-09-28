@@ -355,10 +355,11 @@ contract LifCrowdsale is Ownable, Pausable {
 
   /**
      @dev Modifier
-     @return true if crowdsale event has ended
+     throws when block.timestamp is not past end2Timestamp
   */
-  function hasEnded() public constant returns (bool) {
-    return block.timestamp > end2Timestamp;
+  modifier hasEnded() {
+    assert(block.timestamp > end2Timestamp);
+    _;
   }
 
   /**
@@ -374,9 +375,8 @@ contract LifCrowdsale is Ownable, Pausable {
      @dev Allows a TGE contributor to claim their contributed eth in case the
      TGE has finished without reaching the minCapUSD
    */
-  function claimEth() public {
+  function claimEth() public hasEnded {
     require(isFinalized);
-    require(hasEnded());
     require(!funded());
 
     uint256 toReturn = purchases[msg.sender];
@@ -393,9 +393,8 @@ contract LifCrowdsale is Ownable, Pausable {
      Mechanism in case the soft cap was exceeded. It also unpauses the token to
      enable transfers. It can be called only once, after `end2Timestamp`
    */
-  function finalize() public {
+  function finalize() public hasEnded {
     require(!isFinalized);
-    require(hasEnded());
 
     // foward founds and unpause token only if minCap is reached
     if (funded()) {
