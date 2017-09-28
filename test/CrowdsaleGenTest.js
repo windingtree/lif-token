@@ -72,6 +72,7 @@ contract('LifCrowdsale Property-based test', function() {
       assert.equal(state.MVMPaused, await state.MVM.paused.call());
       state.MVMPausedSeconds.should.be.bignumber.equal(await state.MVM.totalPausedSeconds.call());
       state.MVMClaimedWei.should.be.bignumber.equal(await state.MVM.totalWeiClaimed.call());
+      state.returnedWeiForBurnedTokens.should.be.bignumber.equal(await state.MVM.totalReimbursedWei.call());
       if ((latestTime() >= state.MVMStartTimestamp) && !inCoverage) {
         assert.equal(state.MVMMonth, parseInt(await state.MVM.getCurrentPeriodIndex()));
       }
