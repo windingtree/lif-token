@@ -305,7 +305,7 @@ async function runFinalizeCrowdsaleCommand(command, state) {
           'state timestamp equal to contract?');
 
         state.MVMStartingBalance = MVMInitialBalance;
-        state.MVMEthBalance = MVMInitialBalance;
+        state.MVMWeiBalance = MVMInitialBalance;
         state.MVMInitialBuyPrice = MVMInitialBalance.
           mul(priceFactor).
           dividedBy(help.lif2LifWei(state.totalSupply)).floor();
@@ -653,7 +653,7 @@ let getMVMMaxClaimableWei = function(state) {
 // TODO: implement finished, returns false, but references state to make eslint happy
 let isMVMFinished = (state) => state && false;
 
-async function runMVMClaimEthCommand(command, state) {
+async function runMVMClaimWeiCommand(command, state) {
   if (state.MVM !== undefined) {
     let weiToClaim = web3.toWei(command.eth),
       hasZeroAddress = false;
@@ -664,10 +664,10 @@ async function runMVMClaimEthCommand(command, state) {
 
     try {
       help.debug('Claiming ', weiToClaim.toString(), 'wei (', command.eth.toString(), 'eth)');
-      await state.MVM.claimEth(weiToClaim, {from: state.crowdsaleData.foundationWallet});
+      await state.MVM.claimWei(weiToClaim, {from: state.crowdsaleData.foundationWallet});
 
       state.MVMClaimedWei = state.MVMClaimedWei.plus(weiToClaim);
-      state.MVMEthBalance = state.MVMEthBalance.minus(weiToClaim);
+      state.MVMWeiBalance = state.MVMWeiBalance.minus(weiToClaim);
       state.MVMMaxClaimableWei = getMVMMaxClaimableWei(state);
     } catch(e) {
       assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
@@ -715,7 +715,7 @@ async function runMVMSendTokensCommand(command, state) {
 
       state.totalSupply = state.totalSupply.minus(lifWei);
       state.ethBalances[command.from] = ethBalanceBeforeSend.plus(tokensCost).minus(help.gasPrice.mul(gas));
-      state.MVMEthBalance = state.MVMEthBalance.minus(tokensCost);
+      state.MVMWeiBalance = state.MVMWeiBalance.minus(tokensCost);
       state.burnedTokens = state.burnedTokens.plus(lifWei);
       state.MVMBurnedTokens = state.MVMBurnedTokens.plus(lifWei);
       state.returnedWeiForBurnedTokens = state.returnedWeiForBurnedTokens.plus(tokensCost);
@@ -817,7 +817,7 @@ const commands = {
   approve: {gen: gen.approveCommandGen, run: runApproveCommand},
   transferFrom: {gen: gen.transferFromCommandGen, run: runTransferFromCommand},
   MVMSendTokens: {gen: gen.MVMSendTokensCommandGen, run: runMVMSendTokensCommand},
-  MVMClaimEth: {gen: gen.MVMClaimEthCommandGen, run: runMVMClaimEthCommand},
+  MVMClaimWei: {gen: gen.MVMClaimWeiCommandGen, run: runMVMClaimWeiCommand},
   MVMWaitForMonth: {gen: gen.MVMWaitForMonthCommandGen, run: runMVMWaitForMonthCommand},
   MVMPause: {gen: gen.MVMPauseCommandGen, run: runMVMPauseCommand},
   fundCrowdsaleBelowMinCap: {gen: gen.fundCrowdsaleBelowMinCap, run: runFundCrowdsaleBelowMinCap},
