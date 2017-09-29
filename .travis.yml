@@ -6,10 +6,12 @@ node_js:
   - "7"
 cache:
   yarn: true
+env:
+  -
+  - SOLIDITY_COVERAGE=true
+matrix:
+  fast_finish: true
+  allow_failures:
+    - env: SOLIDITY_COVERAGE=true
 script:
-  - set -e
-  - yarn lint
-  - WT_DEBUG=true yarn test test/LifToken.js test/Crowdsale.js test/MarketValidationMechanism.js test/VestedPayment.js
-  - WT_DEBUG=true GEN_TESTS_QTY=40 yarn test test/CrowdsaleGenTest.js
-after_script:
-  - yarn run coveralls
+  - ./scripts/ci.sh
