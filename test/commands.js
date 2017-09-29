@@ -246,7 +246,7 @@ async function runFinalizeCrowdsaleCommand(command, state) {
 
     help.debug('finishing crowdsale on block', nextTimestamp, ', from address:', gen.getAccount(command.fromAccount), ', funded:', crowdsaleFunded);
 
-    await state.crowdsaleContract.finalize({from: account});
+    let tx = await state.crowdsaleContract.finalize({from: account});
 
     let fundsRaised = state.weiRaised.div(state.weiPerUSDinTGE),
       minimumForMVM = await state.crowdsaleContract.maxFoundationCapUSD.call();
@@ -298,7 +298,12 @@ async function runFinalizeCrowdsaleCommand(command, state) {
         assert.equal(state.crowdsaleData.foundationWallet, await MVM.owner());
 
         state.MVM = MVM;
-        state.MVMStartTimestamp = nextTimestamp + duration.days(30);
+
+        const txTimestamp = web3.eth.getBlock(tx.receipt.blockNumber).timestamp;
+        state.MVMStartTimestamp = txTimestamp + duration.days(30);
+        assert.equal(state.MVMStartTimestamp, parseInt(await state.MVM.startTimestamp.call()),
+          'state timestamp equal to contract?');
+
         state.MVMStartingBalance = MVMInitialBalance;
         state.MVMEthBalance = MVMInitialBalance;
         state.MVMInitialBuyPrice = MVMInitialBalance.
