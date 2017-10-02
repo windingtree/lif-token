@@ -88,17 +88,12 @@ contract('LifToken', function(accounts) {
       let transaction = await token.transferData(message.contract.address, help.lif2LifWei(tokens), data, {from: accounts[1]});
       let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-      assert.deepEqual(['Show', 'TransferData', 'Transfer'], _.map(decodedEvents, (e) => e.name),
-        'triggered a Show event in Message and TransferData/Transfer in the token');
+      assert.deepEqual(['Show', 'Transfer'], _.map(decodedEvents, (e) => e.name),
+        'triggered a Show event in Message and Transfer in the token');
 
       assert.deepEqual(
-        [accounts[1], message.contract.address, help.lif2LifWei(tokens), data],
-        _.map(decodedEvents[1].events, (e) => e.value),
-        'triggered the correct TransferData event'
-      );
-      assert.deepEqual(
         [accounts[1], message.contract.address, help.lif2LifWei(tokens)],
-        _.map(decodedEvents[2].events, (e) => e.value),
+        _.map(decodedEvents[1].events, (e) => e.value),
         'triggered the correct Transfer event'
       );
 
@@ -119,13 +114,7 @@ contract('LifToken', function(accounts) {
     let transaction = await token.transferDataFrom(accounts[1], message.contract.address, help.lif2LifWei(1), data, {from: accounts[2]});
     let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-    assert.deepEqual(['Show', 'TransferData', 'Transfer'], _.map(decodedEvents, (e) => e.name));
-    assert.equal(data, decodedEvents[1].events[3].value);
-    assert.deepEqual(
-      ['0x1e24000000000000000000000000000000000000000000000000000000000000', '666', 'Transfer Done'],
-      _.map(decodedEvents[0].events, (e) => e.value),
-      'it generated the correct Show event in Message: ' + JSON.stringify(decodedEvents[0])
-    );
+    assert.deepEqual(['Show', 'Transfer'], _.map(decodedEvents, (e) => e.name));
 
     assert.equal(help.lif2LifWei(1), await token.balanceOf(message.contract.address));
 
@@ -141,8 +130,7 @@ contract('LifToken', function(accounts) {
     let transaction = await token.approveData(message.contract.address, help.lif2LifWei(1000), data, {from: accounts[1]});
     let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-    assert.equal(3, decodedEvents.length);
-    assert.equal(data, decodedEvents[1].events[3].value);
+    assert.equal(2, decodedEvents.length);
 
     new BigNumber(help.lif2LifWei(1000)).should.be.bignumber.equal(await token.allowance(accounts[1], message.contract.address));
 

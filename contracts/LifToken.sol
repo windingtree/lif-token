@@ -20,10 +20,6 @@ contract LifToken is MintableToken, Pausable {
   // Token decimals
   uint public constant DECIMALS = 18;
 
-  // Extra events based on ERC20 events
-  event TransferData(address indexed from, address indexed to, uint value, bytes data);
-  event ApprovalData(address indexed from, address indexed spender, uint value, bytes data);
-
   function transfer(address _to, uint256 _value) public whenNotPaused returns (bool) {
     return super.transfer(_to, _value);
   }
@@ -54,7 +50,6 @@ contract LifToken is MintableToken, Pausable {
     allowed[tx.origin][spender] = value;
 
     if (spender.call(data)) {
-      ApprovalData(tx.origin, spender, value, data);
       Approval(tx.origin, spender, value);
       return true;
     } else {
@@ -85,7 +80,6 @@ contract LifToken is MintableToken, Pausable {
     }
 
     if (to.call(data)) {
-      TransferData(tx.origin, to, value, data);
       Transfer(tx.origin, to, value);
       return true;
     } else {
@@ -119,7 +113,6 @@ contract LifToken is MintableToken, Pausable {
     }
 
     if (to.call(data)) {
-      TransferData(tx.origin, to, value, data);
       Transfer(tx.origin, to, value);
       return true;
     } else {
