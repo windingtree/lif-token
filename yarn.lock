@@ -1564,9 +1564,9 @@ ethereumjs-block@^1.2.2:
     ethereumjs-util "^4.0.1"
     merkle-patricia-tree "^2.1.2"
 
-ethereumjs-testrpc-sc@4.0.1:
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/ethereumjs-testrpc-sc/-/ethereumjs-testrpc-sc-4.0.1.tgz#072f0d145e4f7212fb2d7bc8f7bcf544389b3577"
+ethereumjs-testrpc-sc@4.0.2:
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/ethereumjs-testrpc-sc/-/ethereumjs-testrpc-sc-4.0.2.tgz#3c0cd373bfe8804159847f4378d64145726a11e8"
   dependencies:
     webpack "^3.0.0"
 
@@ -3769,13 +3769,13 @@ solc@0.4.15, solc@^0.4.2:
     semver "^5.3.0"
     yargs "^4.7.1"
 
-solidity-coverage@^0.2.2:
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/solidity-coverage/-/solidity-coverage-0.2.2.tgz#7bc1843f4f6a617db490ad2f11caff946df7bd13"
+solidity-coverage@^0.2.5:
+  version "0.2.5"
+  resolved "https://registry.yarnpkg.com/solidity-coverage/-/solidity-coverage-0.2.5.tgz#0ec4c09828765885355d5a1e268bea48c6c29611"
   dependencies:
     commander "^2.9.0"
     death "^1.1.0"
-    ethereumjs-testrpc-sc "4.0.1"
+    ethereumjs-testrpc-sc "4.0.2"
     istanbul "^0.4.5"
     keccakjs "^0.2.1"
     mkdirp "^0.5.1"
