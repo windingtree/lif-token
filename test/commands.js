@@ -640,11 +640,16 @@ let getMVMMaxClaimableWei = function(state) {
       minus(state.MVMClaimedWei).
       minus(state.returnedWeiForBurnedTokens);
   } else {
+    const claimableFromReimbursements = state.MVMInitialBuyPrice.
+      mul(state.MVMBurnedTokens).div(priceFactor).
+      minus(state.returnedWeiForBurnedTokens);
+
     const maxClaimable = state.MVMStartingBalance.
       mul(state.claimablePercentage).dividedBy(priceFactor).
       mul(state.initialTokenSupply - state.MVMBurnedTokens).
       dividedBy(state.initialTokenSupply).
-      minus(state.MVMClaimedWei);
+      minus(state.MVMClaimedWei).
+      plus(claimableFromReimbursements);
 
     return maxClaimable.gt(0) ? maxClaimable : new BigNumber(0);
   }
