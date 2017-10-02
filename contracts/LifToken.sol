@@ -40,10 +40,14 @@ contract LifToken is MintableToken, Pausable {
      @dev `approveData` is an addition to ERC20 token methods. It allows to
      approve the transfer of value and execute a call with the sent data.
 
-     @param spender The address which will spend the funds.
+     Beware that changing an allowance with this method brings the risk that someone may use both the old
+     and the new allowance by unfortunate transaction ordering. One possible solution to mitigate this
+     race condition is to first reduce the spender's allowance to 0 and set the desired value afterwards:
+     https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+
+     @param spender The address that will spend the funds.
      @param value The amount of tokens to be spent.
-     @param data ABI-encoded contract call. For example generated using web3's
-     getData method
+     @param data ABI-encoded contract call. For example generated using web3's getData method
 
      @return true if the call function was executed successfully
    */
