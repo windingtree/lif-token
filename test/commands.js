@@ -387,7 +387,7 @@ async function runTransferCommand(command, state) {
     toAddress = gen.getAccount(command.toAccount),
     fromBalance = getBalance(state, command.fromAccount),
     lifWei = help.lif2LifWei(command.lif),
-    hasZeroAddress = isZeroAddress(fromAddress),
+    hasZeroAddress = _.some([fromAddress, toAddress], isZeroAddress),
     shouldThrow = state.tokenPaused || fromBalance.lt(lifWei) ||
       hasZeroAddress;
 
@@ -447,7 +447,7 @@ async function runTransferFromCommand(command, state) {
     toAddress = gen.getAccount(command.toAccount),
     fromBalance = getBalance(state, command.fromAccount),
     lifWei = help.lif2LifWei(command.lif),
-    hasZeroAddress = _.some([senderAddress, fromAddress], isZeroAddress),
+    hasZeroAddress = _.some([senderAddress, fromAddress, toAddress], isZeroAddress),
     allowance = getAllowance(state, command.senderAccount, command.fromAccount);
 
   let shouldThrow = state.tokenPaused ||
