@@ -88,8 +88,14 @@ contract('LifToken', function(accounts) {
       let transaction = await token.transferData(message.contract.address, help.lif2LifWei(tokens), data, {from: accounts[1]});
       let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-      assert.equal(2, decodedEvents.length);
-      assert.equal(data, decodedEvents[1].events[3].value);
+      assert.deepEqual(['Show', 'Transfer'], _.map(decodedEvents, (e) => e.name),
+        'triggered a Show event in Message and Transfer in the token');
+
+      assert.deepEqual(
+        [accounts[1], message.contract.address, help.lif2LifWei(tokens)],
+        _.map(decodedEvents[1].events, (e) => e.value),
+        'triggered the correct Transfer event'
+      );
 
       assert.equal(help.lif2LifWei(tokens), await token.balanceOf(message.contract.address));
 
@@ -108,11 +114,8 @@ contract('LifToken', function(accounts) {
     let transaction = await token.transferDataFrom(accounts[1], message.contract.address, help.lif2LifWei(1), data, {from: accounts[2]});
     let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-    assert.equal(2, decodedEvents.length);
-    assert.equal(data, decodedEvents[1].events[3].value);
-    assert.equal('0x1e24000000000000000000000000000000000000000000000000000000000000', decodedEvents[0].events[0].value);
-    assert.equal(666, decodedEvents[0].events[1].value);
-    assert.equal('Transfer Done', decodedEvents[0].events[2].value);
+    assert.deepEqual(['Show', 'Transfer'], _.map(decodedEvents, (e) => e.name));
+
     assert.equal(help.lif2LifWei(1), await token.balanceOf(message.contract.address));
 
     await help.checkToken(token, accounts, 125, [39,30,20,10,0]);
@@ -128,7 +131,6 @@ contract('LifToken', function(accounts) {
     let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
     assert.equal(2, decodedEvents.length);
-    assert.equal(data, decodedEvents[1].events[3].value);
 
     new BigNumber(help.lif2LifWei(1000)).should.be.bignumber.equal(await token.allowance(accounts[1], message.contract.address));
 
