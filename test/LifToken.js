@@ -103,22 +103,25 @@ contract('LifToken', function(accounts) {
     });
   });
 
-  it('should return correct balances after transferDataFrom and show the event on receiver contract', async function() {
-    let message = await Message.new();
-    help.abiDecoder.addABI(Message._json.abi);
+  _.forEach([0, 1], function(tokens) {
+    it('should return correct balances after transferDataFrom with ' + tokens + ' tokens and show the event on receiver contract', async function() {
+      let message = await Message.new();
+      help.abiDecoder.addABI(Message._json.abi);
 
-    let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
+      let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
 
-    await token.approve(accounts[2], help.lif2LifWei(2), {from: accounts[1]});
+      const lifWei = help.lif2LifWei(tokens);
 
-    let transaction = await token.transferDataFrom(accounts[1], message.contract.address, help.lif2LifWei(1), data, {from: accounts[2]});
-    let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
+      await token.approve(accounts[2], lifWei, {from: accounts[1]});
 
-    assert.deepEqual(['Show', 'Transfer'], _.map(decodedEvents, (e) => e.name));
+      let transaction = await token.transferDataFrom(accounts[1], message.contract.address, lifWei, data, {from: accounts[2]});
+      let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-    assert.equal(help.lif2LifWei(1), await token.balanceOf(message.contract.address));
+      assert.deepEqual(['Show', 'Transfer'], _.map(decodedEvents, (e) => e.name));
+      assert.equal(lifWei, await token.balanceOf(message.contract.address));
 
-    await help.checkToken(token, accounts, 125, [39,30,20,10,0]);
+      await help.checkToken(token, accounts, 125, [40 - tokens,30,20,10,0]);
+    });
   });
 
   it('should return correct balances after approve and show the event on receiver contract', async function() {
