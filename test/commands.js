@@ -328,14 +328,14 @@ async function runFinalizeCrowdsaleCommand(command, state) {
 
 async function runAddPrivatePresalePaymentCommand(command, state) {
 
-  let { publicPresaleStartTimestamp } = state.crowdsaleData,
+  let { startTimestamp } = state.crowdsaleData,
     nextTimestamp = latestTime(),
     weiToSend = web3.toWei(command.eth, 'ether'),
     account = gen.getAccount(command.fromAccount),
     beneficiary = gen.getAccount(command.beneficiaryAccount),
     hasZeroAddress = _.some([account, beneficiary], isZeroAddress);
 
-  let shouldThrow = (nextTimestamp >= publicPresaleStartTimestamp) ||
+  let shouldThrow = (nextTimestamp >= startTimestamp) ||
     (state.crowdsalePaused) ||
     (account != gen.getAccount(state.owner)) ||
     (state.crowdsaleFinalized) ||

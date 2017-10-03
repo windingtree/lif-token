@@ -585,6 +585,19 @@ contract('LifCrowdsale Property-based test', function() {
     });
   });
 
+  it('handles fund over soft cap and add private presale payment', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      'commands': [
+        { 'type': 'fundCrowdsaleOverSoftCap', 'account': 9, 'softCapExcessWei': 1, 'finalize': false },
+        { 'type': 'addPrivatePresalePayment', 'beneficiaryAccount': 4, 'fromAccount': 10, 'eth': 1, 'rate': 147 }
+      ],
+      'crowdsale': {
+        'rate1': 18, 'rate2': 8, 'foundationWallet': 8, 'foundersWallet': 10,
+        'setWeiLockSeconds': 3394, 'owner': 10
+      }
+    });
+  });
+
   it('runs funds and finalizes a crowdsale and then transfer with zero lif fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       'commands': [
