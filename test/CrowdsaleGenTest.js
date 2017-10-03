@@ -259,7 +259,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'fundCrowdsaleBelowSoftCap','account':10,'finalize':true}
       ],
       crowdsale: {
-        publicPresaleRate: 12, rate1: 10, rate2: 27, privatePresaleRate: 44,
+        rate1: 10, rate2: 27,
         foundationWallet: 0, foundersWallet: 2, setWeiLockSeconds: 392, owner: 5
       }
     });
@@ -272,7 +272,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'MVMSendTokens','tokens':3,'from':10}
       ],
       crowdsale: {
-        rate1: 9, rate2: 1, privatePresaleRate: 3, foundationWallet: 0,
+        rate1: 9, rate2: 1, foundationWallet: 0,
         foundersWallet: 2, setWeiLockSeconds: 600, owner: 8
       }
     });
