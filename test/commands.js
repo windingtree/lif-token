@@ -247,6 +247,8 @@ async function runFinalizeCrowdsaleCommand(command, state) {
     help.debug('finishing crowdsale on block', nextTimestamp, ', from address:', gen.getAccount(command.fromAccount), ', funded:', crowdsaleFunded);
 
     let tx = await state.crowdsaleContract.finalize({from: account});
+    help.debug('gas used in finalize:', tx.receipt.gasUsed);
+    assert(tx.receipt.gasUsed < 6700000, 'gas used in finalize should be less than gas limit in mainnet');
 
     let fundsRaised = state.weiRaised.div(state.weiPerUSDinTGE),
       minimumForMVM = await state.crowdsaleContract.maxFoundationCapUSD.call();
