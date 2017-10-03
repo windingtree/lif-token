@@ -57,9 +57,10 @@ contract('LifCrowdsale Property-based test', function() {
       assert.equal(state.crowdsaleFunded, await crowdsale.funded());
     }
 
-    state.totalSupply.
-      should.be.bignumber.equal(await state.token.totalSupply.call());
+    help.debug('check total supply');
+    state.totalSupply.should.be.bignumber.equal(await state.token.totalSupply.call());
 
+    help.debug('check burned tokens');
     if (state.crowdsaleFinalized) {
       state.burnedTokens.plus(await state.token.totalSupply()).
         should.be.bignumber.equal(state.initialTokenSupply);
@@ -67,6 +68,7 @@ contract('LifCrowdsale Property-based test', function() {
       state.burnedTokens.should.be.bignumber.equal(0);
     }
 
+    help.debug('check MVM');
     if (state.MVM !== undefined) {
       state.MVMBurnedTokens.should.be.bignumber.equal(await state.MVM.totalBurnedTokens.call());
       assert.equal(state.MVMPaused, await state.MVM.paused.call());
