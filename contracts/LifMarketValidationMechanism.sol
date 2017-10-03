@@ -213,11 +213,15 @@ contract LifMarketValidationMechanism is Ownable {
     if (isFinished()) {
       return this.balance;
     } else {
+      uint256 claimableFromReimbursed = initialBuyPrice.
+        mul(totalBurnedTokens).div(PRICE_FACTOR).
+        sub(totalReimbursedWei);
       uint256 currentCirculation = lifToken.totalSupply();
       uint256 accumulatedDistributionPercentage = getAccumulatedDistributionPercentage();
       uint256 maxClaimable = initialWei.
         mul(accumulatedDistributionPercentage).div(PRICE_FACTOR).
-        mul(currentCirculation).div(originalTotalSupply);
+        mul(currentCirculation).div(originalTotalSupply).
+        add(claimableFromReimbursed);
 
       if (maxClaimable > totalWeiClaimed) {
         return maxClaimable.sub(totalWeiClaimed);
