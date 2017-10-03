@@ -108,13 +108,11 @@ contract LifToken is MintableToken, Pausable {
 
     require(to != address(this));
 
-    // If transfer have value process it
-    if (value > 0) {
-      uint256 allowance = allowed[from][tx.origin];
-      balances[from] = balances[from].sub(value);
-      balances[to] = balances[to].add(value);
-      allowed[from][tx.origin] = allowance.sub(value);
-    }
+    uint256 allowance = allowed[from][tx.origin];
+
+    balances[from] = balances[from].sub(value);
+    balances[to] = balances[to].add(value);
+    allowed[from][tx.origin] = allowance.sub(value);
 
     if (to.call(data)) {
       Transfer(tx.origin, to, value);
