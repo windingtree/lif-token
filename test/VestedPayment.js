@@ -34,23 +34,77 @@ contract('VestedPayment', function(accounts) {
     done();
   });
 
+  const oneMonth = duration.days(30);
+
   it('create the VestedPayment', async function() {
     const startTimestamp = latestTime() + duration.days(10);
     var vestedPayment = await VestedPayment.new(
-      startTimestamp, duration.days(30), 10, 4,
-      help.lif2LifWei(60), token.address
+      startTimestamp, oneMonth, 10, 4,
+      7, token.address
     );
     assert.equal(startTimestamp, await vestedPayment.startTimestamp.call());
-    assert.equal(duration.days(30), parseInt(await vestedPayment.secondsPerPeriod.call()));
+    assert.equal(oneMonth, parseInt(await vestedPayment.secondsPerPeriod.call()));
     assert.equal(10, await vestedPayment.totalPeriods.call());
     assert.equal(4, await vestedPayment.cliffDuration.call());
+    assert.equal(7, parseInt(await vestedPayment.tokens.call()));
     assert.equal(token.address, await vestedPayment.token.call());
   });
 
+  it('can be created on the current timestamp', async function() {
+    // we adds 2 seconds from the last block timestamp, because we don't know the exact timestamp
+    // of the block this is going to be executeed on
+    await VestedPayment.new(latestTime() + 2, oneMonth, 10, 4, 7, token.address);
+  });
+
+  it('fails to create when startTimestamp is in the past', async function() {
+    try {
+      await VestedPayment.new(latestTime() - 1, oneMonth, 10, 4, 7, token.address);
+      assert(false, 'create vested payment in the past should have failed');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('fails to create when secondsPerPeriod is 0', async function() {
+    try {
+      await VestedPayment.new(latestTime(), 0, 10, 4, 7, token.address);
+      assert(false, 'create vested payment with 0 as period duration should have failed');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('fails to create when token address is 0x0', async function() {
+    try {
+      await VestedPayment.new(latestTime() + 2, oneMonth, 10, 4, 7, help.zeroAddress);
+      assert(false, 'create vested payment with address 0x0 should have failed');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('fails to create when cliff duration is longer than periods count', async function() {
+    try {
+      await VestedPayment.new(latestTime() + 7, oneMonth, 10, 11, 7, token.address);
+      assert(false, 'create vested payment with too long cliff duration should have failed');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('fails to create when tokens is equal to 0', async function() {
+    try {
+      await VestedPayment.new(latestTime() + 7, oneMonth, 10, 4, 0, token.address);
+      assert(false, 'create vested payment with too long cliff duration should have failed');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
   it('get availableToClaim correctly with cliff periods', async function() {
-    const startTimestamp = latestTime() + duration.days(60);
+    const startTimestamp = latestTime() + 2 * oneMonth;
     var vestedPayment = await VestedPayment.new(
-      startTimestamp, duration.days(30), 12, 4,
+      startTimestamp, oneMonth, 12, 4,
       help.lif2LifWei(60), token.address, {from: accounts[1]}
     );
     var tokensAvailable = new BigNumber(0);
