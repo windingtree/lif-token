@@ -74,6 +74,15 @@ contract('VestedPayment', function(accounts) {
     }
   });
 
+  it('fails to create when total periods is 0', async function() {
+    try {
+      await VestedPayment.new(latestTime() + 2, oneMonth, 0, 4, 7, token.address);
+      assert(false, 'create vested payment with 0 total periods should have failed');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
   it('fails to create when token address is 0x0', async function() {
     try {
       await VestedPayment.new(latestTime() + 2, oneMonth, 10, 4, 7, help.zeroAddress);
