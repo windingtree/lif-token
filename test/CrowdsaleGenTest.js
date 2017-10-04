@@ -13,8 +13,6 @@ var LifCrowdsale = artifacts.require('./LifCrowdsale.sol');
 let gen = require('./generators');
 let commands = require('./commands');
 
-const inCoverage = process.env.SOLIDITY_COVERAGE;
-
 const LOG_EVENTS = true;
 
 let GEN_TESTS_QTY = parseInt(process.env.GEN_TESTS_QTY);
@@ -75,7 +73,7 @@ contract('LifCrowdsale Property-based test', function() {
       state.MVMPausedSeconds.should.be.bignumber.equal(await state.MVM.totalPausedSeconds.call());
       state.MVMClaimedWei.should.be.bignumber.equal(await state.MVM.totalWeiClaimed.call());
       state.returnedWeiForBurnedTokens.should.be.bignumber.equal(await state.MVM.totalReimbursedWei.call());
-      if ((latestTime() >= state.MVMStartTimestamp) && !inCoverage) {
+      if ((latestTime() >= state.MVMStartTimestamp) && !help.inCoverage()) {
         assert.equal(state.MVMMonth, parseInt(await state.MVM.getCurrentPeriodIndex()));
       }
     } else {
