@@ -248,7 +248,11 @@ async function runFinalizeCrowdsaleCommand(command, state) {
 
     let tx = await state.crowdsaleContract.finalize({from: account});
     help.debug('gas used in finalize:', tx.receipt.gasUsed);
-    assert(tx.receipt.gasUsed < 6700000, 'gas used in finalize should be less than gas limit in mainnet');
+
+    if (!help.inCoverage()) { // gas cannot be measured correctly when running coverage
+      assert(tx.receipt.gasUsed < 6700000,
+        'gas used in finalize (' + tx.receipt.gasUsed + ') should be less than gas limit in mainnet');
+    }
 
     let fundsRaised = state.weiRaised.div(state.weiPerUSDinTGE),
       minimumForMVM = await state.crowdsaleContract.maxFoundationCapUSD.call();
@@ -312,6 +316,8 @@ async function runFinalizeCrowdsaleCommand(command, state) {
           mul(priceFactor).
           dividedBy(help.lif2LifWei(state.totalSupply)).floor();
       }
+    } else {
+      state.initialTokenSupply = state.totalSupply;
     }
 
     assert.equal(false, shouldThrow);
@@ -326,14 +332,14 @@ async function runFinalizeCrowdsaleCommand(command, state) {
 
 async function runAddPrivatePresalePaymentCommand(command, state) {
 
-  let { publicPresaleStartTimestamp } = state.crowdsaleData,
+  let { startTimestamp } = state.crowdsaleData,
     nextTimestamp = latestTime(),
     weiToSend = web3.toWei(command.eth, 'ether'),
     account = gen.getAccount(command.fromAccount),
     beneficiary = gen.getAccount(command.beneficiaryAccount),
     hasZeroAddress = _.some([account, beneficiary], isZeroAddress);
 
-  let shouldThrow = (nextTimestamp >= publicPresaleStartTimestamp) ||
+  let shouldThrow = (nextTimestamp >= startTimestamp) ||
     (state.crowdsalePaused) ||
     (account != gen.getAccount(state.owner)) ||
     (state.crowdsaleFinalized) ||
@@ -369,14 +375,15 @@ async function runClaimEthCommand(command, state) {
     state.crowdsaleFunded ||
     (purchases.length == 0) ||
     hasZeroAddress ||
-    state.claimedEth[command.account] > 0;
+    state.claimedEth[command.fromAccount] > 0;
 
   try {
+    help.debug('claiming eth', command.fromAccount, JSON.stringify(purchases));
     await state.crowdsaleContract.claimEth({from: account});
 
     assert.equal(false, shouldThrow, 'claimEth should have thrown but it did not');
 
-    state.claimedEth[command.account] = _.sumBy(purchases, (p) => p.amount);
+    state.claimedEth[command.fromAccount] = _.sumBy(purchases, (p) => p.amount);
   } catch(e) {
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
@@ -509,14 +516,14 @@ async function startCrowdsaleAndBuyTokens(account, eth, weiPerUSD, state) {
 
 async function runFundCrowdsaleBelowMinCap(command, state) {
 
-  let weiPerUSD = 10000,
+  let weiPerUSD = web3.toWei(1 / 300), // USD 300 per eth
     minCapUSD = await state.crowdsaleContract.minCapUSD.call(),
     currentUSDFunding = state.weiRaised.div(weiPerUSD).floor();
 
   if (!state.crowdsaleFinalized && currentUSDFunding.lt(minCapUSD)) {
 
     let minCapUSD = await state.crowdsaleContract.minCapUSD.call(),
-      eth = command.fundingEth;
+      eth = new BigNumber(command.fundingEth);
 
     state = await startCrowdsaleAndBuyTokens(command.account, eth, weiPerUSD, state);
 

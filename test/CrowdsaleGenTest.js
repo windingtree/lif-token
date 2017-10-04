@@ -13,8 +13,6 @@ var LifCrowdsale = artifacts.require('./LifCrowdsale.sol');
 let gen = require('./generators');
 let commands = require('./commands');
 
-const inCoverage = process.env.SOLIDITY_COVERAGE;
-
 const LOG_EVENTS = true;
 
 let GEN_TESTS_QTY = parseInt(process.env.GEN_TESTS_QTY);
@@ -57,9 +55,10 @@ contract('LifCrowdsale Property-based test', function() {
       assert.equal(state.crowdsaleFunded, await crowdsale.funded());
     }
 
-    state.totalSupply.
-      should.be.bignumber.equal(await state.token.totalSupply.call());
+    help.debug('check total supply');
+    state.totalSupply.should.be.bignumber.equal(await state.token.totalSupply.call());
 
+    help.debug('check burned tokens');
     if (state.crowdsaleFinalized) {
       state.burnedTokens.plus(await state.token.totalSupply()).
         should.be.bignumber.equal(state.initialTokenSupply);
@@ -67,13 +66,14 @@ contract('LifCrowdsale Property-based test', function() {
       state.burnedTokens.should.be.bignumber.equal(0);
     }
 
+    help.debug('check MVM');
     if (state.MVM !== undefined) {
       state.MVMBurnedTokens.should.be.bignumber.equal(await state.MVM.totalBurnedTokens.call());
       assert.equal(state.MVMPaused, await state.MVM.paused.call());
       state.MVMPausedSeconds.should.be.bignumber.equal(await state.MVM.totalPausedSeconds.call());
       state.MVMClaimedWei.should.be.bignumber.equal(await state.MVM.totalWeiClaimed.call());
       state.returnedWeiForBurnedTokens.should.be.bignumber.equal(await state.MVM.totalReimbursedWei.call());
-      if ((latestTime() >= state.MVMStartTimestamp) && !inCoverage) {
+      if ((latestTime() >= state.MVMStartTimestamp) && !help.inCoverage()) {
         assert.equal(state.MVMMonth, parseInt(await state.MVM.getCurrentPeriodIndex()));
       }
     } else {
@@ -257,7 +257,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'fundCrowdsaleBelowSoftCap','account':10,'finalize':true}
       ],
       crowdsale: {
-        publicPresaleRate: 12, rate1: 10, rate2: 27, privatePresaleRate: 44,
+        rate1: 10, rate2: 27,
         foundationWallet: 0, foundersWallet: 2, setWeiLockSeconds: 392, owner: 5
       }
     });
@@ -270,7 +270,7 @@ contract('LifCrowdsale Property-based test', function() {
         {'type':'MVMSendTokens','tokens':3,'from':10}
       ],
       crowdsale: {
-        rate1: 9, rate2: 1, privatePresaleRate: 3, foundationWallet: 0,
+        rate1: 9, rate2: 1, foundationWallet: 0,
         foundersWallet: 2, setWeiLockSeconds: 600, owner: 8
       }
     });
@@ -579,6 +579,19 @@ contract('LifCrowdsale Property-based test', function() {
       crowdsale: {
         rate1: 5, rate2: 21, foundationWallet: 0, foundersWallet: 2,
         setWeiLockSeconds: 1967, owner: 9
+      }
+    });
+  });
+
+  it('handles fund over soft cap and add private presale payment', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      'commands': [
+        { 'type': 'fundCrowdsaleOverSoftCap', 'account': 9, 'softCapExcessWei': 1, 'finalize': false },
+        { 'type': 'addPrivatePresalePayment', 'beneficiaryAccount': 4, 'fromAccount': 10, 'eth': 1, 'rate': 147 }
+      ],
+      'crowdsale': {
+        'rate1': 18, 'rate2': 8, 'foundationWallet': 8, 'foundersWallet': 10,
+        'setWeiLockSeconds': 3394, 'owner': 10
       }
     });
   });

@@ -26,6 +26,8 @@ module.exports = {
 
   abiDecoder: abiDecoder,
 
+  inCoverage: () => process.env.SOLIDITY_COVERAGE == 'true',
+
   gasPrice: new BigNumber(gasPrice),
 
   hexEncode: function(str){
