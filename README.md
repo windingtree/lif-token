@@ -18,28 +18,6 @@ Node v7.6 or higher (versions before 7.6 do not support async/await that is used
 npm install
 ```
 
-## Contract Lifecycle
-
-TODO: Rewrite this section
-
-1.- First the contract is deployed on status 2, where the deployer specify the base proposal fee, max supply, proposal blocks wait, exponential increment of votes rewards and minimun votes needed to create a proposal.
-  ```
-  // LífToken constructor
-  LífToken(uint _baseProposalFee, uint _maxSupply, uint _proposalBlocksWait, uint _votesIncrementSent, uint _votesIncrementReceived, uint _minProposalVotes) {...}
-  ```
-2.- Addition of future payments to distribute the tokens on the future to founders and future members.
-  ```
-  addFuturePayment(address owner, uint afterBlock, uint tokens, string name) external onlyOwner() onStatus(2,0) {...}
-  ```
-3.- Creation of the token crowdsale stages
-  ```
-  addCrowdsaleStage(uint startBlock, uint endBlock, uint startPrice, uint changePerBlock, uint changePrice, uint minCap, uint totalTokens, uint presaleDiscount) external onlyOwner() onStatus(2,0) {...}
-  ```
-4.- Addition of the addressese that would be able to spend a certain amount of ethers with discount.
-  ```
-  addDiscount(address target, uint stage, uint amount) external onlyOwner() onStatus(2,0) {...}
-  ```
-
 ## Main Contracts
 
 - [LifToken](blob/master/contracts/LifToken.sol): ERC20 token for the Winding Tree platform, with extra methods
