@@ -537,6 +537,19 @@ contract('LifCrowdsale Property-based test', function() {
     });
   });
 
+  it('should run fund below min cap and finalize + claimEth sequence fine', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      'commands': [
+        {'type': 'fundCrowdsaleBelowMinCap', 'account': 8, 'fundingEth': 15, 'finalize': true},
+        {'type': 'claimEth', 'fromAccount': 8}
+      ],
+      'crowdsale': {
+        'rate1': 23, 'rate2': 40, 'foundationWallet': 1, 'foundersWallet': 2,
+        'setWeiLockSeconds': 1445, 'owner': 2
+      }
+    });
+  });
+
   it('should fund over soft cap + MVM claim wei fine', async function() {
 
     await runGeneratedCrowdsaleAndCommands({
