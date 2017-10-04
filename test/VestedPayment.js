@@ -67,8 +67,17 @@ contract('VestedPayment', function(accounts) {
 
   it('fails to create when secondsPerPeriod is 0', async function() {
     try {
-      await VestedPayment.new(latestTime(), 0, 10, 4, 7, token.address);
+      await VestedPayment.new(latestTime() + 2, 0, 10, 4, 7, token.address);
       assert(false, 'create vested payment with 0 as period duration should have failed');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('fails to create when total periods is 0', async function() {
+    try {
+      await VestedPayment.new(latestTime() + 2, oneMonth, 0, 4, 7, token.address);
+      assert(false, 'create vested payment with 0 total periods should have failed');
     } catch(e) {
       assert(help.isInvalidOpcodeEx(e));
     }
