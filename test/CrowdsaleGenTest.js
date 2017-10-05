@@ -58,11 +58,20 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     // TODO: check claimed eth amount
     //
     // check eth balances
-    _.forEach(state.ethBalances, (balance, accountIndex) => {
-      const account = gen.getAccount(accountIndex),
-        balanceFromWeb3 = web3.eth.getBalance(account);
+    const getBalancePromise = (address) => new Promise(function(accept, reject) {
+      return web3.eth.getBalance(address, function(err, balance) {
+        if (err) return reject(err);
+        accept(balance);
+      });
+    });
 
-      return balance.should.be.bignumber.equal(balanceFromWeb3);
+    const balancesAndPromises = _.map(state.ethBalances,
+      (balance, accountIndex) => [balance, getBalancePromise(gen.getAccount(accountIndex))]);
+
+    _.forEach(balancesAndPromises, async ([balanceInState, balancePromise]) => {
+      const balanceFromWeb3 = await balancePromise;
+
+      return balanceInState.should.be.bignumber.equal(balanceFromWeb3);
     });
 
     help.debug('check total supply');
