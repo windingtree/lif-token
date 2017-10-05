@@ -1,5 +1,7 @@
 var BigNumber = web3.BigNumber;
 
+var _ = require('lodash');
+
 var LifToken = artifacts.require('./LifToken.sol');
 var LifCrowdsale = artifacts.require('./LifCrowdsale.sol');
 var LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
@@ -31,6 +33,13 @@ module.exports = {
   gasPrice: gasPrice,
 
   txGasCost: (tx) => gasPrice.mul(new BigNumber(tx.receipt.gasUsed)),
+
+  getAccountsBalances: (accounts) => {
+    return _.reduce(accounts, (balances, account) => {
+      balances[accounts.indexOf(account)] = web3.eth.getBalance(account);
+      return balances;
+    }, {});
+  },
 
   hexEncode: function(str){
     var hex, i;

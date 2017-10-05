@@ -155,18 +155,13 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
       help.debug('created crowdsale at address ', crowdsale.address);
 
-      const initialEthBalances = _.reduce(accounts, (balances, account) => {
-        balances[accounts.indexOf(account)] = web3.eth.getBalance(account);
-        return balances;
-      }, {});
-
       var state = {
         crowdsaleData: crowdsaleData,
         crowdsaleContract: crowdsale,
         foundationWallet: input.crowdsale.foundationWallet,
         token: token,
         balances: {},
-        ethBalances: initialEthBalances,
+        ethBalances: help.getAccountsBalances(accounts),
         allowances: {},
         purchases: [],
         presalePurchases: [],

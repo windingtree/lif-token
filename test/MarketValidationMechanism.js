@@ -233,7 +233,8 @@ contract('Market validation Mechanism', function(accounts) {
     const tokensInCrowdsale = new BigNumber(tokenTotalSupply).mul(0.8).floor();
     const rate = tokensInCrowdsale / web3.fromWei(startingMMBalance.plus(web3.toWei(100, 'ether')), 'ether');
 
-    const foundationWallet = accounts[0];
+    const foundationWalletIndex = 0,
+      foundationWallet = accounts[foundationWalletIndex];
 
     crowdsale = await help.simulateCrowdsale(rate, [tokensInCrowdsale], accounts, weiPerUSD);
     token = LifToken.at( await crowdsale.token.call());
@@ -257,6 +258,7 @@ contract('Market validation Mechanism', function(accounts) {
       crowdsaleData: {
         foundationWallet: foundationWallet
       },
+      foundationWallet: foundationWalletIndex,
       MVMBurnedTokens: new BigNumber(0), // burned tokens in MM, via sendTokens txs
       burnedTokens: new BigNumber(0), // total burned tokens, in MM or not (for compat with gen-test state)
       returnedWeiForBurnedTokens: new BigNumber(0),
@@ -264,7 +266,7 @@ contract('Market validation Mechanism', function(accounts) {
       MVMWeiBalance: startingMMBalance,
       MVMStartingBalance: startingMMBalance,
       MVMLifBalance: new BigNumber(0),
-      ethBalances: {},
+      ethBalances: help.getAccountsBalances(accounts),
       balances: {},
       totalSupply: new BigNumber(0),
       initialBuyPrice: initialBuyPrice,
