@@ -16,9 +16,9 @@ const DEBUG_MODE = (process.env.WT_DEBUG == 'true') || false;
 let gasPriceFromEnv = parseInt(process.env.GAS_PRICE);
 let gasPrice;
 if (isNaN(gasPriceFromEnv))
-  gasPrice = 21000000000;
+  gasPrice = new BigNumber(21000000000);
 else
-  gasPrice = gasPriceFromEnv;
+  gasPrice = new BigNumber(gasPriceFromEnv);
 
 module.exports = {
 
@@ -28,7 +28,9 @@ module.exports = {
 
   inCoverage: () => process.env.SOLIDITY_COVERAGE == 'true',
 
-  gasPrice: new BigNumber(gasPrice),
+  gasPrice: gasPrice,
+
+  txGasCost: (tx) => gasPrice.mul(new BigNumber(tx.receipt.gasUsed)),
 
   hexEncode: function(str){
     var hex, i;

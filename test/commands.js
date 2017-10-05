@@ -28,6 +28,31 @@ function assertExpectedException(e, shouldThrow, addressZero, state, command) {
   }
 }
 
+function increaseEthBalance(state, accountIndex, ethDelta) {
+  if (accountIndex == 'zero' )
+    return state;
+  else {
+    state.ethBalances[accountIndex] = state.ethBalances[accountIndex].plus(ethDelta);
+    return state;
+  }
+}
+
+function decreaseEthBalance(state, accountIndex, ethDelta) {
+  return increaseEthBalance(state, accountIndex, - ethDelta);
+}
+
+function trackGasFromLastBlock(state, accountIndex) {
+  if (accountIndex == 'zero')
+    return state;
+  else {
+    const block = web3.eth.getBlock('latest');
+    assert.equal(1, block.transactions.length, 'we track gas from last block only when it had 1 tx');
+    const gasCost = help.gasPrice.mul(block.gasUsed);
+
+    return decreaseEthBalance(state, accountIndex, gasCost);
+  }
+}
+
 async function runWaitTimeCommand(command, state) {
   await increaseTimeTestRPC(command.seconds);
   return state;
@@ -61,7 +86,7 @@ function getBalance(state, account) {
 async function runBuyTokensCommand(command, state) {
   let crowdsale = state.crowdsaleData,
     { startTimestamp, end2Timestamp} = crowdsale,
-    weiCost = parseInt(web3.toWei(command.eth, 'ether')),
+    weiCost = web3.toWei(new BigNumber(command.eth), 'ether'),
     nextTimestamp = latestTime(),
     rate = help.getCrowdsaleExpectedRate(crowdsale, nextTimestamp),
     tokens = new BigNumber(command.eth).mul(rate),
@@ -80,7 +105,7 @@ async function runBuyTokensCommand(command, state) {
   try {
     help.debug('buyTokens rate:', rate, 'eth:', command.eth, 'endBlocks:', crowdsale.end1Timestamp, end2Timestamp, 'blockTimestamp:', nextTimestamp);
 
-    await state.crowdsaleContract.buyTokens(beneficiaryAccount, {value: weiCost, from: account});
+    const tx = await state.crowdsaleContract.buyTokens(beneficiaryAccount, {value: weiCost, from: account});
     assert.equal(false, shouldThrow, 'buyTokens should have thrown but it didnt');
 
     state.purchases = _.concat(state.purchases,
@@ -89,7 +114,11 @@ async function runBuyTokensCommand(command, state) {
     state.balances[command.beneficiary] = getBalance(state, command.beneficiary).plus(help.lif2LifWei(tokens));
     state.weiRaised = state.weiRaised.plus(weiCost);
     state.totalSupply = state.totalSupply.plus(help.lif2LifWei(tokens));
+
+    state = decreaseEthBalance(state, command.account, weiCost);
+    state = decreaseEthBalance(state, command.account, help.txGasCost(tx));
   } catch(e) {
+    state = trackGasFromLastBlock(state, command.account);
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
@@ -117,8 +146,7 @@ async function runSendTransactionCommand(command, state) {
   try {
     // help.debug('buyTokens rate:', rate, 'eth:', command.eth, 'endBlocks:', crowdsale.end1Timestamp, end2Timestamp, 'blockTimestamp:', nextTimestamp);
 
-    await state.crowdsaleContract.sendTransaction({value: weiCost, from: account});
-
+    const tx = await state.crowdsaleContract.sendTransaction({value: weiCost, from: account});
     assert.equal(false, shouldThrow, 'sendTransaction should have thrown but it did not');
     if (inTGE) {
       state.purchases = _.concat(state.purchases,
@@ -129,7 +157,9 @@ async function runSendTransactionCommand(command, state) {
       throw(new Error('sendTransaction not in TGE should have thrown'));
     }
     state.totalSupply = state.totalSupply.plus(help.lif2LifWei(tokens));
+    state = decreaseEthBalance(state, command.account, weiCost.plus(help.txGasCost(tx)));
   } catch(e) {
+    state = trackGasFromLastBlock(state, command.account);
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
@@ -147,13 +177,15 @@ async function runBurnTokensCommand(command, state) {
     hasZeroAddress;
 
   try {
-    await state.token.burn(lifWei, {from: account});
+    const tx = await state.token.burn(lifWei, {from: account});
     assert.equal(false, shouldThrow, 'burn should have thrown but it did not');
 
     state.balances[account] = balance.minus(lifWei);
     state.totalSupply = state.totalSupply.minus(lifWei);
 
+    state = decreaseEthBalance(state, command.account, help.txGasCost(tx));
   } catch(e) {
+    state = trackGasFromLastBlock(state, command.account);
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
@@ -174,10 +206,12 @@ async function runSetWeiPerUSDinTGECommand(command, state) {
 
   help.debug('seting wei per usd in tge:', command.wei);
   try {
-    await state.crowdsaleContract.setWeiPerUSDinTGE(command.wei, {from: account});
+    let tx = await state.crowdsaleContract.setWeiPerUSDinTGE(command.wei, {from: account});
     assert.equal(false, shouldThrow, 'setWeiPerUSDinTGE should have thrown but it did not');
     state.weiPerUSDinTGE = command.wei;
+    state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
   } catch(e) {
+    state = trackGasFromLastBlock(state, command.fromAccount);
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
@@ -193,14 +227,17 @@ async function runPauseCrowdsaleCommand(command, state) {
 
   help.debug('pausing crowdsale, previous state:', state.crowdsalePaused, 'new state:', command.pause);
   try {
+    let tx;
     if (command.pause) {
-      await state.crowdsaleContract.pause({from: account});
+      tx = await state.crowdsaleContract.pause({from: account});
     } else {
-      await state.crowdsaleContract.unpause({from: account});
+      tx = await state.crowdsaleContract.unpause({from: account});
     }
     assert.equal(false, shouldThrow);
     state.crowdsalePaused = command.pause;
+    state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
   } catch(e) {
+    state = trackGasFromLastBlock(state, command.fromAccount);
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
@@ -217,14 +254,17 @@ async function runPauseTokenCommand(command, state) {
 
   help.debug('pausing token, previous state:', state.tokenPaused, 'new state:', command.pause);
   try {
+    let tx;
     if (command.pause) {
-      await state.token.pause({from: account});
+      tx = await state.token.pause({from: account});
     } else {
-      await state.token.unpause({from: account});
+      tx = await state.token.unpause({from: account});
     }
     assert.equal(false, shouldThrow);
     state.tokenPaused = command.pause;
+    state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
   } catch(e) {
+    state = trackGasFromLastBlock(state, command.fromAccount);
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
@@ -253,6 +293,8 @@ async function runFinalizeCrowdsaleCommand(command, state) {
       assert(tx.receipt.gasUsed < 6700000,
         'gas used in finalize (' + tx.receipt.gasUsed + ') should be less than gas limit in mainnet');
     }
+
+    state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
 
     let fundsRaised = state.weiRaised.div(state.weiPerUSDinTGE),
       minimumForMVM = await state.crowdsaleContract.maxFoundationCapUSD.call();
@@ -290,7 +332,11 @@ async function runFinalizeCrowdsaleCommand(command, state) {
       // used for some MVM calculations
       state.initialTokenSupply = state.totalSupply;
 
-      if (fundsRaised.gt(minimumForMVM)) {
+      if (fundsRaised.lte(minimumForMVM)) {
+        state = increaseEthBalance(state, state.foundationWallet, state.weiRaised);
+      } else {
+        const foundationWeiAmount = minimumForMVM.mul(state.weiPerUSDinTGE);
+        state = increaseEthBalance(state, state.foundationWallet, foundationWeiAmount);
 
         let MVMInitialBalance = state.weiRaised.minus(state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
         let MVMPeriods = (MVMInitialBalance > (state.crowdsaleData.MVM24PeriodsCapUSD*state.weiPerUSDinTGE)) ? 48 : 24;
@@ -325,6 +371,7 @@ async function runFinalizeCrowdsaleCommand(command, state) {
     state.crowdsaleFunded = crowdsaleFunded;
     state.tokenPaused = false;
   } catch(e) {
+    state = trackGasFromLastBlock(state, command.fromAccount);
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
@@ -350,7 +397,7 @@ async function runAddPrivatePresalePaymentCommand(command, state) {
   try {
     help.debug('Adding presale private tokens for account:', command.beneficiaryAccount, 'eth:', command.eth, 'fromAccount:', command.fromAccount, 'blockTimestamp:', nextTimestamp);
 
-    await state.crowdsaleContract.addPrivatePresaleTokens(beneficiary, weiToSend, command.rate, {from: account});
+    const tx = await state.crowdsaleContract.addPrivatePresaleTokens(beneficiary, weiToSend, command.rate, {from: account});
 
     assert.equal(false, shouldThrow, 'buyTokens should have thrown but it did not');
 
@@ -359,7 +406,9 @@ async function runAddPrivatePresalePaymentCommand(command, state) {
     state.presalePurchases = _.concat(state.presalePurchases,
       {rate: command.rate, wei: weiToSend, beneficiary: command.beneficiary, account: command.fromAccount}
     );
+    state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
   } catch(e) {
+    state = trackGasFromLastBlock(state, command.fromAccount);
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
@@ -379,12 +428,19 @@ async function runClaimEthCommand(command, state) {
 
   try {
     help.debug('claiming eth', command.fromAccount, JSON.stringify(purchases));
-    await state.crowdsaleContract.claimEth({from: account});
+    const tx = await state.crowdsaleContract.claimEth({from: account});
 
     assert.equal(false, shouldThrow, 'claimEth should have thrown but it did not');
 
-    state.claimedEth[command.fromAccount] = _.sumBy(purchases, (p) => p.amount);
+    const claimedEthAmount = _.reduce(
+      _.map(purchases, (p) => p.wei),
+      (accum, wei) => accum.plus(wei)
+    );
+    state.claimedEth[command.account] = claimedEthAmount;
+    state = increaseEthBalance(state, command.fromAccount, claimedEthAmount);
+    state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
   } catch(e) {
+    state = trackGasFromLastBlock(state, command.fromAccount);
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
@@ -401,14 +457,16 @@ async function runTransferCommand(command, state) {
       hasZeroAddress;
 
   try {
-    await state.token.transfer(toAddress, lifWei, {from: fromAddress});
+    const tx = await state.token.transfer(toAddress, lifWei, {from: fromAddress});
 
     assert.equal(false, shouldThrow, 'transfer should have thrown but it did not');
 
     // TODO: take spent gas into account?
     state.balances[command.fromAccount] = fromBalance.minus(lifWei);
     state.balances[command.toAccount] = getBalance(state, command.toAccount).plus(lifWei);
+    state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
   } catch(e) {
+    state = trackGasFromLastBlock(state, command.fromAccount);
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
@@ -437,13 +495,15 @@ async function runApproveCommand(command, state) {
       ((lifWei != 0) && (currentAllowance != 0));
 
   try {
-    await state.token.approve(spenderAddress, lifWei, {from: fromAddress});
+    const tx = await state.token.approve(spenderAddress, lifWei, {from: fromAddress});
 
     assert.equal(false, shouldThrow, 'approve should have thrown but it did not');
 
     // TODO: take spent gas into account?
     setAllowance(state, command.fromAccount, command.spenderAccount, lifWei);
+    state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
   } catch(e) {
+    state = trackGasFromLastBlock(state, command.fromAccount);
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
@@ -465,7 +525,7 @@ async function runTransferFromCommand(command, state) {
     (allowance < lifWei);
 
   try {
-    await state.token.transferFrom(fromAddress, toAddress, lifWei, {from: senderAddress});
+    const tx = await state.token.transferFrom(fromAddress, toAddress, lifWei, {from: senderAddress});
 
     assert.equal(false, shouldThrow, 'transferFrom should have thrown but it did not');
 
@@ -473,7 +533,9 @@ async function runTransferFromCommand(command, state) {
     state.balances[command.fromAccount] = fromBalance.minus(lifWei);
     state.balances[command.toAccount] = getBalance(state, command.toAccount).plus(lifWei);
     setAllowance(state, command.senderAccount, command.fromAccount, allowance.minus(lifWei));
+    state = decreaseEthBalance(state, command.senderAccount, help.txGasCost(tx));
   } catch(e) {
+    state = trackGasFromLastBlock(state, command.senderAccount);
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
   }
   return state;
@@ -678,12 +740,16 @@ async function runMVMClaimWeiCommand(command, state) {
 
     try {
       help.debug('Claiming ', weiToClaim.toString(), 'wei (', command.eth.toString(), 'eth)');
-      await state.MVM.claimWei(weiToClaim, {from: state.crowdsaleData.foundationWallet});
+      const tx = await state.MVM.claimWei(weiToClaim, {from: state.crowdsaleData.foundationWallet});
 
       state.MVMClaimedWei = state.MVMClaimedWei.plus(weiToClaim);
       state.MVMWeiBalance = state.MVMWeiBalance.minus(weiToClaim);
       state.MVMMaxClaimableWei = getMVMMaxClaimableWei(state);
+
+      state = decreaseEthBalance(state, state.foundationWallet, help.txGasCost(tx));
+      state = increaseEthBalance(state, state.foundationWallet, weiToClaim);
     } catch(e) {
+      state = trackGasFromLastBlock(state, state.foundationWallet);
       assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
     }
   }
@@ -708,7 +774,6 @@ async function runMVMSendTokensCommand(command, state) {
       tokensCost = new BigNumber(lifWei).mul(lifBuyPrice),
       fromAddress = gen.getAccount(command.from),
       lifBalanceBeforeSend = getBalance(state, command.from),
-      ethBalanceBeforeSend = state.ethBalances[command.from] || new BigNumber(0),
       hasZeroAddress = isZeroAddress(fromAddress);
 
     let shouldThrow = !state.crowdsaleFinalized ||
@@ -721,14 +786,17 @@ async function runMVMSendTokensCommand(command, state) {
 
     try {
       help.debug('Selling ',command.tokens, ' tokens in exchange of ', web3.fromWei(tokensCost, 'ether'), 'eth at a price of', lifBuyPrice.toString());
-      let tx1 = await state.token.approve(state.MVM.address, lifWei, {from: fromAddress}),
-        tx2 = await state.MVM.sendTokens(lifWei, {from: fromAddress}),
-        gas = tx1.receipt.gasUsed + tx2.receipt.gasUsed;
+      let tx1 = await state.token.approve(state.MVM.address, lifWei, {from: fromAddress});
+
+      // decrease gas from tx1 already, so in case tx2 fails it is already taken into account
+      state = decreaseEthBalance(state, command.from, help.txGasCost(tx1));
+
+      let tx2 = await state.MVM.sendTokens(lifWei, {from: fromAddress}),
+        gas = help.txGasCost(tx2);
 
       help.debug('sold tokens to MVM');
 
       state.totalSupply = state.totalSupply.minus(lifWei);
-      state.ethBalances[command.from] = ethBalanceBeforeSend.plus(tokensCost).minus(help.gasPrice.mul(gas));
       state.MVMWeiBalance = state.MVMWeiBalance.minus(tokensCost);
       state.burnedTokens = state.burnedTokens.plus(lifWei);
       state.MVMBurnedTokens = state.MVMBurnedTokens.plus(lifWei);
@@ -736,7 +804,9 @@ async function runMVMSendTokensCommand(command, state) {
       state.balances[command.from] = getBalance(state, command.from).minus(lifWei);
       state.MVMMaxClaimableWei = getMVMMaxClaimableWei(state);
 
+      state = increaseEthBalance(state, command.from, tokensCost.minus(gas));
     } catch(e) {
+      state = trackGasFromLastBlock(state, command.from);
       assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
     }
   }
@@ -797,17 +867,20 @@ async function runMVMPauseCommand(command, state) {
       shouldThrow = (state.MVMPaused == command.pause) || (command.fromAccount != state.owner);
 
     try {
+      let tx;
       if (command.pause) {
-        await state.MVM.pause({from: fromAccount});
+        tx = await state.MVM.pause({from: fromAccount});
         state.MVMLastPausedAt = latestTime();
       } else {
-        await state.MVM.unpause({from: fromAccount});
+        tx = await state.MVM.unpause({from: fromAccount});
         const pausedSeconds = latestTime() - state.MVMLastPausedAt;
         state.MVMPausedSeconds = state.MVMPausedSeconds.plus(pausedSeconds);
       }
 
       state.MVMPaused = command.pause;
+      state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
     } catch(e) {
+      state = trackGasFromLastBlock(state, command.fromAccount);
       assertExpectedException(e, shouldThrow, false, state, command);
     }
   }

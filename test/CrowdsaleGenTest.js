@@ -23,7 +23,7 @@ let GEN_TESTS_TIMEOUT = parseInt(process.env.GEN_TESTS_TIMEOUT);
 if (isNaN(GEN_TESTS_TIMEOUT))
   GEN_TESTS_TIMEOUT = 240;
 
-contract('LifCrowdsale Property-based test', function() {
+contract('LifCrowdsale Property-based test', function(accounts) {
 
   const zero = new BigNumber(0);
 
@@ -145,15 +145,18 @@ contract('LifCrowdsale Property-based test', function() {
 
       help.debug('created crowdsale at address ', crowdsale.address);
 
-      // issue & transfer tokens for founders payments
-      // let maxFoundersPaymentTokens = crowdsaleData.maxTokens * (crowdsaleData.ownerPercentage / 1000.0) ;
+      const initialEthBalances = _.reduce(accounts, (balances, account) => {
+        balances[accounts.indexOf(account)] = web3.eth.getBalance(account);
+        return balances;
+      }, {});
 
       var state = {
         crowdsaleData: crowdsaleData,
         crowdsaleContract: crowdsale,
+        foundationWallet: input.crowdsale.foundationWallet,
         token: token,
         balances: {},
-        ethBalances: {},
+        ethBalances: initialEthBalances,
         allowances: {},
         purchases: [],
         presalePurchases: [],
