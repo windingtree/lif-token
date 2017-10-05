@@ -21,7 +21,7 @@ if (isNaN(GEN_TESTS_QTY))
 
 let GEN_TESTS_TIMEOUT = parseInt(process.env.GEN_TESTS_TIMEOUT);
 if (isNaN(GEN_TESTS_TIMEOUT))
-  GEN_TESTS_TIMEOUT = 240;
+  GEN_TESTS_TIMEOUT = 300;
 
 contract('LifCrowdsale Property-based test', function(accounts) {
 
