@@ -55,6 +55,16 @@ contract('LifCrowdsale Property-based test', function(accounts) {
       assert.equal(state.crowdsaleFunded, await crowdsale.funded());
     }
 
+    // TODO: check claimed eth amount
+    //
+    // check eth balances
+    _.forEach(state.ethBalances, (balance, accountIndex) => {
+      const account = gen.getAccount(accountIndex),
+        balanceFromWeb3 = web3.eth.getBalance(account);
+
+      return balance.should.be.bignumber.equal(balanceFromWeb3);
+    });
+
     help.debug('check total supply');
     state.totalSupply.should.be.bignumber.equal(await state.token.totalSupply.call());
 
