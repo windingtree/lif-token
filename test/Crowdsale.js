@@ -51,15 +51,71 @@ contract('LifToken Crowdsale', function(accounts) {
   });
 
   it('fails to create a Crowdsale with 0x0 as foundation wallet', async function() {
-    const startTimestamp = latestTime() + duration.days(1),
-      end1Timestamp = startTimestamp + duration.days(1),
-      end2Timestamp = startTimestamp + duration.days(2);
-
     try {
-      await LifCrowdsale.new(
-        startTimestamp, end1Timestamp, end2Timestamp,
-        100, 110, duration.minutes(30), help.zeroAddress, accounts[1]
-      );
+      await createCrowdsale({foundationWallet: help.zeroAddress});
+      assert(false, 'create crowdsale should have thrown');
+    } catch(e) {
+      if (!help.isInvalidOpcodeEx(e)) throw e;
+    }
+  });
+
+  it('fails to create a Crowdsale with 0x0 as founders wallet', async function() {
+    try {
+      await createCrowdsale({foundersWallet: help.zeroAddress});
+      assert(false, 'create crowdsale should have thrown');
+    } catch(e) {
+      if (!help.isInvalidOpcodeEx(e)) throw e;
+    }
+  });
+
+  it('fails to create a Crowdsale with start timestamp in the past', async function() {
+    try {
+      await createCrowdsale({start: latestTime() - 1});
+      assert(false, 'create crowdsale should have thrown');
+    } catch(e) {
+      if (!help.isInvalidOpcodeEx(e)) throw e;
+    }
+  });
+
+  it('fails to create a Crowdsale with end timestamp not after start timestamp', async function() {
+    try {
+      await createCrowdsale({end1: defaults.start});
+      assert(false, 'create crowdsale should have thrown');
+    } catch(e) {
+      if (!help.isInvalidOpcodeEx(e)) throw e;
+    }
+  });
+
+  it('fails to create a Crowdsale with end2 timestamp not after end1 timestamp', async function() {
+    try {
+      await createCrowdsale({end2: defaults.end1});
+      assert(false, 'create crowdsale should have thrown');
+    } catch(e) {
+      if (!help.isInvalidOpcodeEx(e)) throw e;
+    }
+  });
+
+  it('fails to create a Crowdsale with rate1 == 0', async function() {
+    try {
+      await createCrowdsale({rate1: 0});
+      assert(false, 'create crowdsale should have thrown');
+    } catch(e) {
+      if (!help.isInvalidOpcodeEx(e)) throw e;
+    }
+  });
+
+  it('fails to create a Crowdsale with rate2 == 0', async function() {
+    try {
+      await createCrowdsale({rate2: 0});
+      assert(false, 'create crowdsale should have thrown');
+    } catch(e) {
+      if (!help.isInvalidOpcodeEx(e)) throw e;
+    }
+  });
+
+  it('fails to create a Crowdsale with setWeiLockSeconds == 0', async function() {
+    try {
+      await createCrowdsale({setWeiLockSeconds: 0});
       assert(false, 'create crowdsale should have thrown');
     } catch(e) {
       if (!help.isInvalidOpcodeEx(e)) throw e;
