@@ -5,13 +5,13 @@ trap cleanup EXIT
 
 cleanup() {
   # Kill the testrpc instance that we started (if we started one).
-  if [ -n "$testestrpc_pid" ]; then
+  if [ -n "$testrpc_pid" ]; then
     kill -9 $testrpc_pid
   fi
 }
 
 testrpc_running() {
-  nc -z localhost 8555
+  nc -z localhost 8545
 }
 
 if testrpc_running; then
