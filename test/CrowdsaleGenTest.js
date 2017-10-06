@@ -21,9 +21,9 @@ if (isNaN(GEN_TESTS_QTY))
 
 let GEN_TESTS_TIMEOUT = parseInt(process.env.GEN_TESTS_TIMEOUT);
 if (isNaN(GEN_TESTS_TIMEOUT))
-  GEN_TESTS_TIMEOUT = 240;
+  GEN_TESTS_TIMEOUT = 300;
 
-contract('LifCrowdsale Property-based test', function() {
+contract('LifCrowdsale Property-based test', function(accounts) {
 
   const zero = new BigNumber(0);
 
@@ -54,6 +54,25 @@ contract('LifCrowdsale Property-based test', function() {
     if (state.crowdsaleFinalized && state.weiPerUSDinTGE > 0) {
       assert.equal(state.crowdsaleFunded, await crowdsale.funded());
     }
+
+    // TODO: check claimed eth amount
+    //
+    // check eth balances
+    const getBalancePromise = (address) => new Promise(function(accept, reject) {
+      return web3.eth.getBalance(address, function(err, balance) {
+        if (err) return reject(err);
+        accept(balance);
+      });
+    });
+
+    const balancesAndPromises = _.map(state.ethBalances,
+      (balance, accountIndex) => [balance, getBalancePromise(gen.getAccount(accountIndex))]);
+
+    _.forEach(balancesAndPromises, async ([balanceInState, balancePromise]) => {
+      const balanceFromWeb3 = await balancePromise;
+
+      return balanceInState.should.be.bignumber.equal(balanceFromWeb3);
+    });
 
     help.debug('check total supply');
     state.totalSupply.should.be.bignumber.equal(await state.token.totalSupply.call());
@@ -145,15 +164,13 @@ contract('LifCrowdsale Property-based test', function() {
 
       help.debug('created crowdsale at address ', crowdsale.address);
 
-      // issue & transfer tokens for founders payments
-      // let maxFoundersPaymentTokens = crowdsaleData.maxTokens * (crowdsaleData.ownerPercentage / 1000.0) ;
-
       var state = {
         crowdsaleData: crowdsaleData,
         crowdsaleContract: crowdsale,
+        foundationWallet: input.crowdsale.foundationWallet,
         token: token,
         balances: {},
-        ethBalances: {},
+        ethBalances: help.getAccountsBalances(accounts),
         allowances: {},
         purchases: [],
         presalePurchases: [],
