@@ -48,14 +48,10 @@ contract LifToken is MintableToken, Pausable {
      @return true if the call function was executed successfully
    */
   function approveData(address spender, uint256 value, bytes data) public whenNotPaused returns (bool) {
-
     require(spender != address(this));
 
-    allowed[msg.sender][spender] = value;
-
-    Approval(msg.sender, spender, value);
+    super.approve(spender, value);
     assert(spender.call(data));
-
     return true;
   }
 
@@ -71,15 +67,10 @@ contract LifToken is MintableToken, Pausable {
      @return true if the call function was executed successfully
    */
   function transferData(address to, uint256 value, bytes data) public whenNotPaused returns (bool) {
-
     require(to != address(this));
 
-    balances[msg.sender] = balances[msg.sender].sub(value);
-    balances[to] = balances[to].add(value);
-
-    Transfer(msg.sender, to, value);
+    super.transfer(to, value);
     assert(to.call(data));
-
     return true;
   }
 
@@ -96,18 +87,10 @@ contract LifToken is MintableToken, Pausable {
      @return true if the call function was executed successfully
    */
   function transferDataFrom(address from, address to, uint256 value, bytes data) public whenNotPaused returns (bool) {
-
     require(to != address(this));
 
-    uint256 allowance = allowed[from][msg.sender];
-
-    balances[from] = balances[from].sub(value);
-    balances[to] = balances[to].add(value);
-    allowed[from][msg.sender] = allowance.sub(value);
-
-    Transfer(from, to, value);
+    super.transferFrom(from, to, value);
     assert(to.call(data));
-
     return true;
   }
 
