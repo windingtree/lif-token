@@ -105,7 +105,7 @@ contract LifToken is MintableToken, Pausable {
     balances[to] = balances[to].add(value);
     allowed[from][msg.sender] = allowance.sub(value);
 
-    Transfer(msg.sender, to, value);
+    Transfer(from, to, value);
     assert(to.call(data));
 
     return true;
