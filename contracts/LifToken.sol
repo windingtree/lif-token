@@ -51,7 +51,7 @@ contract LifToken is MintableToken, Pausable {
     require(spender != address(this));
 
     super.approve(spender, value);
-    assert(spender.call(data));
+    require(spender.call(data));
     return true;
   }
 
@@ -70,7 +70,7 @@ contract LifToken is MintableToken, Pausable {
     require(to != address(this));
 
     super.transfer(to, value);
-    assert(to.call(data));
+    require(to.call(data));
     return true;
   }
 
@@ -90,7 +90,7 @@ contract LifToken is MintableToken, Pausable {
     require(to != address(this));
 
     super.transferFrom(from, to, value);
-    assert(to.call(data));
+    require(to.call(data));
     return true;
   }
 
