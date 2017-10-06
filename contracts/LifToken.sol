@@ -51,10 +51,10 @@ contract LifToken is MintableToken, Pausable {
 
     require(spender != address(this));
 
-    allowed[tx.origin][spender] = value;
+    allowed[msg.sender][spender] = value;
 
     if (spender.call(data)) {
-      Approval(tx.origin, spender, value);
+      Approval(msg.sender, spender, value);
       return true;
     } else {
       return false;
@@ -77,11 +77,11 @@ contract LifToken is MintableToken, Pausable {
 
     require(to != address(this));
 
-    balances[tx.origin] = balances[tx.origin].sub(value);
+    balances[msg.sender] = balances[msg.sender].sub(value);
     balances[to] = balances[to].add(value);
 
     if (to.call(data)) {
-      Transfer(tx.origin, to, value);
+      Transfer(msg.sender, to, value);
       return true;
     } else {
       return false;
@@ -105,14 +105,14 @@ contract LifToken is MintableToken, Pausable {
 
     require(to != address(this));
 
-    uint256 allowance = allowed[from][tx.origin];
+    uint256 allowance = allowed[from][msg.sender];
 
     balances[from] = balances[from].sub(value);
     balances[to] = balances[to].add(value);
-    allowed[from][tx.origin] = allowance.sub(value);
+    allowed[from][msg.sender] = allowance.sub(value);
 
     if (to.call(data)) {
-      Transfer(tx.origin, to, value);
+      Transfer(msg.sender, to, value);
       return true;
     } else {
       return false;
