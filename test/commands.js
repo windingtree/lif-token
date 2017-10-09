@@ -346,7 +346,7 @@ async function runFinalizeCrowdsaleCommand(command, state) {
 
         let MVM = LifMarketValidationMechanism.at(mmAddress);
 
-        assert.equal(MVMPeriods, parseInt(await MVM.totalPeriods()));
+        assert.equal(MVMPeriods, parseInt(await MVM.totalPeriods()), 'MVM should last for ' + MVMPeriods + ' periods');
         assert.equal(state.crowdsaleData.foundationWallet, await MVM.foundationAddr());
         assert.equal(state.crowdsaleData.foundationWallet, await MVM.owner());
 
@@ -652,9 +652,11 @@ async function runFundCrowdsaleBelowSoftCap(command, state) {
         assert(state.MVM);
         const capFor48Months = await state.crowdsaleContract.MVM24PeriodsCapUSD.call();
         if (currentUSDFunding.gte(capFor48Months)) {
-          assert.equal(48, parseInt(await state.MVM.totalPeriods()));
+          assert.equal(48, parseInt(await state.MVM.totalPeriods()),
+            'MVM should last for 48 months');
         } else {
-          assert.equal(24, parseInt(await state.MVM.totalPeriods()));
+          assert.equal(24, parseInt(await state.MVM.totalPeriods()),
+            'MVM should last for 24 months');
         }
         assert.equal(state.crowdsaleData.foundationWallet, await state.MVM.foundationAddr());
       } else {
@@ -689,7 +691,8 @@ async function runFundCrowdsaleOverSoftCap(command, state) {
 
       // verify that the crowdsale is finalized and funded, but there's no MVM
       assert.equal(true, state.crowdsaleFinalized);
-      assert.equal(true, state.crowdsaleFunded);
+      assert.equal(true, state.crowdsaleFunded,
+        'crowdwsale should be funded after fund over soft cap command');
 
       if ((currentUSDFunding > softCap) || (command.softCapExcessWei > 0)) {
         assert(state.MVM, 'there is MVM b/c funding is over the soft cap');
