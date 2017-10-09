@@ -710,12 +710,16 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     // stateful prob based tests can take a long time to finish when shrinking...
     this.timeout(GEN_TESTS_TIMEOUT * 1000);
 
-    let property = jsc.forall(crowdsaleTestInputGen, async function(crowdsaleAndCommands) {
-      return await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
-    });
+    if (GEN_TESTS_QTY > 0) {
+      let property = jsc.forall(crowdsaleTestInputGen, async function(crowdsaleAndCommands) {
+        return await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
+      });
 
-    console.log('Generative tests to run:', GEN_TESTS_QTY);
-    return jsc.assert(property, {tests: GEN_TESTS_QTY});
+      console.log('Generative tests to run:', GEN_TESTS_QTY);
+      return jsc.assert(property, {tests: GEN_TESTS_QTY});
+    } else {
+      console.log('Skipping property-based test (GEN_TESTS_QTY == 0)');
+    }
   });
 
 });
