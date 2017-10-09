@@ -720,6 +720,21 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     });
   });
 
+  it('sets wei per USD rate and funds and finalizes crowdsale fine', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {'type':'setWeiPerUSDinTGE','wei':9999999143274796,'fromAccount':2},
+        {'type':'waitTime','seconds':duration.days(1)}, // wait until crowdsale start
+        {'type':'buyTokens','beneficiary':3,'account':7,'eth':0.000000100000000035},
+        {'type':'finalizeCrowdsale','fromAccount':2}
+      ],
+      crowdsale: {
+        rate1: 33, rate2: 39, foundationWallet: 6, foundersWallet: 7,
+        setWeiLockSeconds: 3501, owner: 2
+      }
+    });
+  });
+
   it('distributes tokens correctly on any combination of bids', async function() {
     // stateful prob based tests can take a long time to finish when shrinking...
     this.timeout(GEN_TESTS_TIMEOUT * 1000);

@@ -205,11 +205,11 @@ async function runSetWeiPerUSDinTGECommand(command, state) {
     hasZeroAddress ||
     (command.wei == 0);
 
-  help.debug('seting wei per usd in tge:', command.wei);
+  help.debug('setting wei per usd in tge:', command.wei);
   try {
     let tx = await state.crowdsaleContract.setWeiPerUSDinTGE(command.wei, {from: account});
     assert.equal(false, shouldThrow, 'setWeiPerUSDinTGE should have thrown but it did not');
-    state.weiPerUSDinTGE = command.wei;
+    state.weiPerUSDinTGE = new BigNumber(command.wei.toString());
     state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
   } catch(e) {
     state = trackGasFromLastBlock(state, command.fromAccount);
@@ -339,8 +339,8 @@ async function runFinalizeCrowdsaleCommand(command, state) {
         const foundationWeiAmount = minimumForMVM.mul(state.weiPerUSDinTGE);
         state = increaseEthBalance(state, state.foundationWallet, foundationWeiAmount);
 
-        let MVMInitialBalance = state.weiRaised.minus(state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
-        let MVMPeriods = (MVMInitialBalance > (state.crowdsaleData.MVM24PeriodsCapUSD*state.weiPerUSDinTGE)) ? 48 : 24;
+        let MVMInitialBalance = state.weiRaised.minus(state.weiPerUSDinTGE.mul(state.crowdsaleData.minCapUSD));
+        let MVMPeriods = MVMInitialBalance.gt(state.weiPerUSDinTGE.mul(state.crowdsaleData.MVM24PeriodsCapUSD)) ? 48 : 24;
         let mmAddress = await state.crowdsaleContract.MVM();
         help.debug('MVM contract address', mmAddress);
 
