@@ -157,7 +157,8 @@ async function runSendTransactionCommand(command, state) {
       throw(new Error('sendTransaction not in TGE should have thrown'));
     }
     state.totalSupply = state.totalSupply.plus(help.lif2LifWei(tokens));
-    state = decreaseEthBalance(state, command.account, weiCost.plus(help.txGasCost(tx)));
+    state = decreaseEthBalance(state, command.account, weiCost);
+    state = decreaseEthBalance(state, command.account, help.txGasCost(tx));
   } catch(e) {
     state = trackGasFromLastBlock(state, command.account);
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
