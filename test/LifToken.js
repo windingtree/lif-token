@@ -88,12 +88,12 @@ contract('LifToken', function(accounts) {
       let transaction = await token.transferData(message.contract.address, help.lif2LifWei(tokens), data, {from: accounts[1]});
       let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-      assert.deepEqual(['Transfer', 'Show'], _.map(decodedEvents, (e) => e.name),
+      assert.deepEqual(['Show', 'Transfer'], _.map(decodedEvents, (e) => e.name),
         'triggered a Show event in Message and Transfer in the token');
 
       assert.deepEqual(
         [accounts[1], message.contract.address, help.lif2LifWei(tokens)],
-        _.map(decodedEvents[0].events, (e) => e.value),
+        _.map(decodedEvents[1].events, (e) => e.value),
         'triggered the correct Transfer event'
       );
 
@@ -117,7 +117,7 @@ contract('LifToken', function(accounts) {
       let transaction = await token.transferDataFrom(accounts[1], message.contract.address, lifWei, data, {from: accounts[2]});
       let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-      assert.deepEqual(['Transfer', 'Show'], _.map(decodedEvents, (e) => e.name));
+      assert.deepEqual(['Show', 'Transfer'], _.map(decodedEvents, (e) => e.name));
       assert.equal(lifWei, await token.balanceOf(message.contract.address));
 
       await help.checkToken(token, accounts, 125, [40 - tokens,30,20,10,0]);
