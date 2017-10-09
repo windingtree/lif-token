@@ -48,18 +48,12 @@ contract LifToken is MintableToken, Pausable {
      @return true if the call function was executed successfully
    */
   function approveData(address spender, uint256 value, bytes data) public whenNotPaused returns (bool) {
-
     require(spender != address(this));
 
-    allowed[tx.origin][spender] = value;
+    require(spender.call(data));
 
-    if (spender.call(data)) {
-      Approval(tx.origin, spender, value);
-      return true;
-    } else {
-      return false;
-    }
-
+    super.approve(spender, value);
+    return true;
   }
 
   /**
@@ -74,22 +68,12 @@ contract LifToken is MintableToken, Pausable {
      @return true if the call function was executed successfully
    */
   function transferData(address to, uint256 value, bytes data) public whenNotPaused returns (bool) {
-
     require(to != address(this));
 
-    // If transfer have value process it
-    if (value > 0) {
-      balances[tx.origin] = balances[tx.origin].sub(value);
-      balances[to] = balances[to].add(value);
-    }
+    require(to.call(data));
 
-    if (to.call(data)) {
-      Transfer(tx.origin, to, value);
-      return true;
-    } else {
-      return false;
-    }
-
+    super.transfer(to, value);
+    return true;
   }
 
   /**
@@ -105,22 +89,12 @@ contract LifToken is MintableToken, Pausable {
      @return true if the call function was executed successfully
    */
   function transferDataFrom(address from, address to, uint256 value, bytes data) public whenNotPaused returns (bool) {
-
     require(to != address(this));
 
-    uint256 allowance = allowed[from][tx.origin];
+    require(to.call(data));
 
-    balances[from] = balances[from].sub(value);
-    balances[to] = balances[to].add(value);
-    allowed[from][tx.origin] = allowance.sub(value);
-
-    if (to.call(data)) {
-      Transfer(tx.origin, to, value);
-      return true;
-    } else {
-      return false;
-    }
-
+    super.transferFrom(from, to, value);
+    return true;
   }
 
   /**

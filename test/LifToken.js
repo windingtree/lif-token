@@ -151,47 +151,53 @@ contract('LifToken', function(accounts) {
     }
   });
 
-  it('should fail inside approveData and not trigger ApproveData event', async function() {
+  it('should fail inside approveData', async function() {
     let message = await Message.new();
     help.abiDecoder.addABI(Message._json.abi);
 
     let data = message.contract.fail.getData();
 
-    let transaction = await token.approveData(
-      message.contract.address, help.lif2LifWei(10), data,
-      {from: accounts[1]}
-    );
+    try {
+      await token.approveData(
+        message.contract.address, help.lif2LifWei(10), data,
+        {from: accounts[1]}
+      );
+      assert(false, 'approveData should have raised');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
 
-    let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
-    assert.equal(0, decodedEvents.length);
-
-    new BigNumber(help.lif2LifWei(10)).should.be.bignumber
+    // approval should not have gone through so allowance is still 0
+    new BigNumber(0).should.be.bignumber
       .equal(await token.allowance(accounts[1], message.contract.address));
 
     await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
   });
 
-  it('should fail inside transferData and not trigger TransferData event', async function() {
+  it('should fail inside transferData', async function() {
     let message = await Message.new();
     help.abiDecoder.addABI(Message._json.abi);
 
     let data = message.contract.fail.getData();
 
-    let transaction = await token.transferData(
-      message.contract.address, help.lif2LifWei(10), data,
-      {from: accounts[1]}
-    );
+    try {
+      await token.transferData(
+        message.contract.address, help.lif2LifWei(10), data,
+        {from: accounts[1]}
+      );
+      assert(false, 'transferData should have failed');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
 
-    let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
-    assert.equal(0, decodedEvents.length);
-
-    new BigNumber(help.lif2LifWei(10)).should.be.bignumber
+    // transfer should not have gone through, so balance is still 0
+    new BigNumber(0).should.be.bignumber
       .equal(await token.balanceOf(message.contract.address));
 
-    await help.checkToken(token, accounts, 125, [30,30,20,10,0]);
+    await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
   });
 
-  it('should fail inside transferDataFrom and not trigger TransferData event', async function() {
+  it('should fail inside transferDataFrom', async function() {
     let message = await Message.new();
     help.abiDecoder.addABI(Message._json.abi);
 
@@ -199,18 +205,23 @@ contract('LifToken', function(accounts) {
 
     await token.approve(accounts[1], help.lif2LifWei(10), {from: accounts[2]});
 
-    let transaction = await token.transferDataFrom(
-      accounts[2], message.contract.address, help.lif2LifWei(10), data,
-      {from: accounts[1]}
-    );
+    try {
+      await token.transferDataFrom(
+        accounts[2], message.contract.address, help.lif2LifWei(10), data,
+        {from: accounts[1]}
+      );
+      assert(false, 'transferDataFrom should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
 
-    let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
-    assert.equal(0, decodedEvents.length);
-
+    // transferDataFrom should have failed so balance is still 0 but allowance is 10
     new BigNumber(help.lif2LifWei(10)).should.be.bignumber
+      .equal(await token.allowance(accounts[2], accounts[1]));
+    new BigNumber(0).should.be.bignumber
       .equal(await token.balanceOf(message.contract.address));
 
-    await help.checkToken(token, accounts, 125, [40,20,20,10,0]);
+    await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
   });
 
   it('should fail transferData when using LifToken contract address as receiver', async function() {
