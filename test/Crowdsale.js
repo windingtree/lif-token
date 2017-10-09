@@ -3,7 +3,7 @@ var LifCrowdsale = artifacts.require('./LifCrowdsale.sol');
 let help = require('./helpers');
 
 var latestTime = require('./helpers/latestTime');
-var {duration} = require('./helpers/increaseTime');
+var {duration,increaseTimeTestRPCTo} = require('./helpers/increaseTime');
 
 const defaultStart = latestTime() + duration.days(1);
 const defaults = {
@@ -120,5 +120,31 @@ contract('LifToken Crowdsale', function(accounts) {
     } catch(e) {
       if (!help.isInvalidOpcodeEx(e)) throw e;
     }
+  });
+
+  it('returns the current rate at different points in time', async function() {
+    const crowdsale = await createCrowdsale({});
+
+    assert.equal(0, parseInt(await crowdsale.getRate()));
+
+    await increaseTimeTestRPCTo(defaults.start);
+
+    assert.equal(defaults.rate1, parseInt(await crowdsale.getRate()));
+
+    await increaseTimeTestRPCTo(defaults.end1 - 2);
+    assert.equal(defaults.rate1, parseInt(await crowdsale.getRate()),
+      'rate should still be rate1 close but before end1 timestamp');
+
+    await increaseTimeTestRPCTo(defaults.end1 + 1);
+    assert.equal(defaults.rate2, parseInt(await crowdsale.getRate()),
+      'rate should be rate 2 between end1 and end2');
+
+    await increaseTimeTestRPCTo(defaults.end2 - 2);
+    assert.equal(defaults.rate2, parseInt(await crowdsale.getRate()),
+      'rate should be rate 2 close but before end2 timestamp');
+
+    await increaseTimeTestRPCTo(defaults.end2 + 1);
+    assert.equal(0, parseInt(await crowdsale.getRate()),
+      'rate should be 0 after end2 timestamp');
   });
 });
