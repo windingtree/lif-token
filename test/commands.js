@@ -649,7 +649,12 @@ async function runFundCrowdsaleBelowSoftCap(command, state) {
 
       if (currentUSDFunding.gte(softCap)) {
         assert(state.MVM);
-        assert.equal(24, parseInt(await state.MVM.totalPeriods()));
+        const capFor48Months = await state.crowdsaleContract.MVM24PeriodsCapUSD.call();
+        if (currentUSDFunding.gte(capFor48Months)) {
+          assert.equal(48, parseInt(await state.MVM.totalPeriods()));
+        } else {
+          assert.equal(24, parseInt(await state.MVM.totalPeriods()));
+        }
         assert.equal(state.crowdsaleData.foundationWallet, await state.MVM.foundationAddr());
       } else {
         // verify that there's no MVM
