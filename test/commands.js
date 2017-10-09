@@ -127,7 +127,7 @@ async function runBuyTokensCommand(command, state) {
 async function runSendTransactionCommand(command, state) {
   let crowdsale = state.crowdsaleData,
     { startTimestamp, end2Timestamp } = crowdsale,
-    weiCost = parseInt(web3.toWei(command.eth, 'ether')),
+    weiCost = web3.toWei(new BigNumber(command.eth), 'ether'),
     nextTimestamp = latestTime(),
     rate = help.getCrowdsaleExpectedRate(crowdsale, nextTimestamp),
     tokens = new BigNumber(command.eth).mul(rate),
