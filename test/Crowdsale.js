@@ -1,4 +1,5 @@
-var LifCrowdsale = artifacts.require('./LifCrowdsale.sol');
+var LifCrowdsale = artifacts.require('./LifCrowdsale.sol'),
+  LifToken = artifacts.require('./LifToken.sol');
 
 let help = require('./helpers');
 
@@ -165,6 +166,8 @@ contract('LifToken Crowdsale', function(accounts) {
       'rate should be 0 after end2 timestamp');
   });
 
+  /// buyTokens
+
   it('handles a buyTokens tx fine', async function() {
     const crowdsale = await createCrowdsale({});
     await crowdsale.setWeiPerUSDinTGE(10000);
@@ -181,6 +184,62 @@ contract('LifToken Crowdsale', function(accounts) {
     try {
       await crowdsale.buyTokens(help.zeroAddress, {value: 1000, from: accounts[5]});
       assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  /// addPrivatePresaleTokens
+  it('handles an addPrivatePresaleTokens tx fine', async function() {
+    const crowdsale = await createCrowdsale({}),
+      rate = defaults.rate1 + 10,
+      token = LifToken.at(await crowdsale.token());
+
+    await crowdsale.setWeiPerUSDinTGE(10000);
+    await crowdsale.addPrivatePresaleTokens(accounts[3], 1000, rate,
+      {from: accounts[0]});
+
+    assert.equal(1000 * rate, parseInt(await token.balanceOf(accounts[3])),
+      'should mint the tokens to beneficiary on addPrivatePresaleTokens');
+  });
+
+  it('fails on a addPrivatePresaleTokens tx with address(0) as benef.', async function() {
+    const crowdsale = await createCrowdsale({}),
+      rate = defaults.rate1 + 10;
+
+    await crowdsale.setWeiPerUSDinTGE(10000);
+    try {
+      await crowdsale.addPrivatePresaleTokens(help.zeroAddress, 1000, rate,
+        {from: accounts[0]});
+      assert(false);
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('fails on a addPrivatePresaleTokens tx with low rate', async function() {
+    const crowdsale = await createCrowdsale({}),
+      rate = defaults.rate1 - 10;
+
+    await crowdsale.setWeiPerUSDinTGE(10000);
+    try {
+      await crowdsale.addPrivatePresaleTokens(accounts[3], 1000, rate,
+        {from: accounts[0]});
+      assert(false);
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('fails on a addPrivatePresaleTokens tx with weiSent == 0', async function() {
+    const crowdsale = await createCrowdsale({}),
+      rate = defaults.rate1 + 10;
+
+    await crowdsale.setWeiPerUSDinTGE(10000);
+    try {
+      await crowdsale.addPrivatePresaleTokens(accounts[3], 0, rate,
+        {from: accounts[0]});
+      assert(false);
     } catch(e) {
       assert(help.isInvalidOpcodeEx(e));
     }
