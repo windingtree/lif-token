@@ -127,7 +127,7 @@ async function runBuyTokensCommand(command, state) {
 async function runSendTransactionCommand(command, state) {
   let crowdsale = state.crowdsaleData,
     { startTimestamp, end2Timestamp } = crowdsale,
-    weiCost = parseInt(web3.toWei(command.eth, 'ether')),
+    weiCost = web3.toWei(new BigNumber(command.eth), 'ether'),
     nextTimestamp = latestTime(),
     rate = help.getCrowdsaleExpectedRate(crowdsale, nextTimestamp),
     tokens = new BigNumber(command.eth).mul(rate),
@@ -157,7 +157,8 @@ async function runSendTransactionCommand(command, state) {
       throw(new Error('sendTransaction not in TGE should have thrown'));
     }
     state.totalSupply = state.totalSupply.plus(help.lif2LifWei(tokens));
-    state = decreaseEthBalance(state, command.account, weiCost.plus(help.txGasCost(tx)));
+    state = decreaseEthBalance(state, command.account, weiCost);
+    state = decreaseEthBalance(state, command.account, help.txGasCost(tx));
   } catch(e) {
     state = trackGasFromLastBlock(state, command.account);
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
@@ -649,7 +650,12 @@ async function runFundCrowdsaleBelowSoftCap(command, state) {
 
       if (currentUSDFunding.gte(softCap)) {
         assert(state.MVM);
-        assert.equal(24, parseInt(await state.MVM.totalPeriods()));
+        const capFor48Months = await state.crowdsaleContract.MVM24PeriodsCapUSD.call();
+        if (currentUSDFunding.gte(capFor48Months)) {
+          assert.equal(48, parseInt(await state.MVM.totalPeriods()));
+        } else {
+          assert.equal(24, parseInt(await state.MVM.totalPeriods()));
+        }
         assert.equal(state.crowdsaleData.foundationWallet, await state.MVM.foundationAddr());
       } else {
         // verify that there's no MVM
