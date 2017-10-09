@@ -5,11 +5,9 @@ let help = require('./helpers');
 var latestTime = require('./helpers/latestTime');
 var {duration,increaseTimeTestRPCTo} = require('./helpers/increaseTime');
 
-const defaultStart = latestTime() + duration.days(1);
+const defaultTimeDelta = duration.days(1); // time delta used in time calculations (for start, end1 & end2)
+
 const defaults = {
-  start: defaultStart,
-  end1: defaultStart + duration.days(1),
-  end2: defaultStart + duration.days(2),
   rate1: 100,
   rate2: 110,
   setWeiLockSeconds: duration.minutes(30),
@@ -20,9 +18,9 @@ const defaults = {
 contract('LifToken Crowdsale', function(accounts) {
 
   async function createCrowdsale(params) {
-    const startTimestamp = params.start === undefined ? defaults.start : params.start,
-      end1Timestamp = params.end1 === undefined ? defaults.end1 : params.end1,
-      end2Timestamp = params.end2 === undefined ? defaults.end2 : params.end2,
+    const startTimestamp = params.start === undefined ? (latestTime() + defaultTimeDelta) : params.start,
+      end1Timestamp = params.end1 === undefined ? (startTimestamp + defaultTimeDelta) : params.end1,
+      end2Timestamp = params.end2 === undefined ? (end1Timestamp + defaultTimeDelta) : params.end2,
       rate1 = params.rate1 === undefined ? defaults.rate1 : params.rate1,
       rate2 = params.rate2 === undefined ? defaults.rate2 : params.rate2,
       setWeiLockSeconds = params.setWeiLockSeconds === undefined ? defaults.setWeiLockSeconds : params.setWeiLockSeconds,
@@ -39,11 +37,19 @@ contract('LifToken Crowdsale', function(accounts) {
   }
 
   it('can create a Crowdsale', async function() {
-    const crowdsale = await createCrowdsale({});
+    const start = latestTime() + defaultTimeDelta,
+      end1 = start + defaultTimeDelta,
+      end2 = end1 + defaultTimeDelta;
 
-    assert.equal(defaults.start, parseInt(await crowdsale.startTimestamp.call()));
-    assert.equal(defaults.end1, parseInt(await crowdsale.end1Timestamp.call()));
-    assert.equal(defaults.end2, parseInt(await crowdsale.end2Timestamp.call()));
+    const crowdsale = await createCrowdsale({
+      start: start,
+      end1: end1,
+      end2: end2
+    });
+
+    assert.equal(start, parseInt(await crowdsale.startTimestamp.call()));
+    assert.equal(end1, parseInt(await crowdsale.end1Timestamp.call()));
+    assert.equal(end2, parseInt(await crowdsale.end2Timestamp.call()));
     assert.equal(defaults.rate1, parseInt(await crowdsale.rate1.call()));
     assert.equal(defaults.rate2, parseInt(await crowdsale.rate2.call()));
     assert.equal(accounts[defaults.foundationWalletIndex], parseInt(await crowdsale.foundationWallet.call()));
@@ -79,7 +85,8 @@ contract('LifToken Crowdsale', function(accounts) {
 
   it('fails to create a Crowdsale with end timestamp not after start timestamp', async function() {
     try {
-      await createCrowdsale({end1: defaults.start});
+      const start = latestTime() + defaultTimeDelta;
+      await createCrowdsale({start: start, end1: start});
       assert(false, 'create crowdsale should have thrown');
     } catch(e) {
       if (!help.isInvalidOpcodeEx(e)) throw e;
@@ -87,8 +94,11 @@ contract('LifToken Crowdsale', function(accounts) {
   });
 
   it('fails to create a Crowdsale with end2 timestamp not after end1 timestamp', async function() {
+    const start = latestTime() + defaultTimeDelta,
+      end1 = start + defaultTimeDelta;
+
     try {
-      await createCrowdsale({end2: defaults.end1});
+      await createCrowdsale({start: start, end1: end1, end2: end1});
       assert(false, 'create crowdsale should have thrown');
     } catch(e) {
       if (!help.isInvalidOpcodeEx(e)) throw e;
@@ -123,28 +133,56 @@ contract('LifToken Crowdsale', function(accounts) {
   });
 
   it('returns the current rate at different points in time', async function() {
-    const crowdsale = await createCrowdsale({});
+    const start = latestTime() + defaultTimeDelta,
+      end1 = start + defaultTimeDelta,
+      end2 = end1 + defaultTimeDelta,
+      crowdsale = await createCrowdsale({
+        start: start,
+        end1: end1,
+        end2: end2
+      });
 
     assert.equal(0, parseInt(await crowdsale.getRate()));
 
-    await increaseTimeTestRPCTo(defaults.start);
+    await increaseTimeTestRPCTo(start);
 
     assert.equal(defaults.rate1, parseInt(await crowdsale.getRate()));
 
-    await increaseTimeTestRPCTo(defaults.end1 - 2);
+    await increaseTimeTestRPCTo(end1 - 2);
     assert.equal(defaults.rate1, parseInt(await crowdsale.getRate()),
       'rate should still be rate1 close but before end1 timestamp');
 
-    await increaseTimeTestRPCTo(defaults.end1 + 1);
+    await increaseTimeTestRPCTo(end1 + 1);
     assert.equal(defaults.rate2, parseInt(await crowdsale.getRate()),
       'rate should be rate 2 between end1 and end2');
 
-    await increaseTimeTestRPCTo(defaults.end2 - 2);
+    await increaseTimeTestRPCTo(end2 - 2);
     assert.equal(defaults.rate2, parseInt(await crowdsale.getRate()),
       'rate should be rate 2 close but before end2 timestamp');
 
-    await increaseTimeTestRPCTo(defaults.end2 + 1);
+    await increaseTimeTestRPCTo(end2 + 1);
     assert.equal(0, parseInt(await crowdsale.getRate()),
       'rate should be 0 after end2 timestamp');
+  });
+
+  it('handles a buyTokens tx fine', async function() {
+    const crowdsale = await createCrowdsale({});
+    await crowdsale.setWeiPerUSDinTGE(10000);
+    await increaseTimeTestRPCTo(latestTime() + defaultTimeDelta + 2);
+    await crowdsale.buyTokens(accounts[6], {value: 1000, from: accounts[5]});
+
+    assert.equal(1000, await crowdsale.purchases(accounts[6]));
+  });
+
+  it('fails on buyTokens from address(0)', async function() {
+    const crowdsale = await createCrowdsale({});
+    await crowdsale.setWeiPerUSDinTGE(10000);
+    await increaseTimeTestRPCTo(latestTime() + defaultTimeDelta + 2);
+    try {
+      await crowdsale.buyTokens(help.zeroAddress, {value: 1000, from: accounts[5]});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
   });
 });
