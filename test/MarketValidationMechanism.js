@@ -11,9 +11,94 @@ require('chai')
 var LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
 var LifToken = artifacts.require('./LifToken.sol');
 
+var latestTime = require('./helpers/latestTime');
 var {increaseTimeTestRPC, increaseTimeTestRPCTo, duration} = require('./helpers/increaseTime');
 
 contract('Market validation Mechanism', function(accounts) {
+
+  it('can be created', async function() {
+    const token = await LifToken.new({from: accounts[0]}),
+      start = latestTime() + 5;
+    const mvm = await LifMarketValidationMechanism.new(token.address, start,
+      100, 24, accounts[1], {from: accounts[0]});
+
+    assert.equal(token.address, await mvm.lifToken.call());
+    assert.equal(start, await mvm.startTimestamp.call());
+    assert.equal(100, await mvm.secondsPerPeriod.call());
+    assert.equal(24, await mvm.totalPeriods.call());
+    assert.equal(accounts[1], await mvm.foundationAddr.call());
+  });
+
+  it('fails to create with 0x0 as token address', async function() {
+    try {
+      await LifMarketValidationMechanism.new(help.zeroAddress, latestTime() + 5,
+        100, 24, accounts[1], {from: accounts[0]});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('fails to create with start timestamp not in future', async function() {
+    const token = await LifToken.new({from: accounts[0]});
+
+    try {
+      await LifMarketValidationMechanism.new(token.address, latestTime(),
+        100, 24, accounts[1], {from: accounts[0]});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('fails to create with seconds per period == 0', async function() {
+    const token = await LifToken.new({from: accounts[0]});
+
+    try {
+      await LifMarketValidationMechanism.new(token.address, latestTime() + 5,
+        0, 24, accounts[1], {from: accounts[0]});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('fails to create with total periods not 24 or 48', async function() {
+    const token = await LifToken.new({from: accounts[0]});
+
+    await LifMarketValidationMechanism.new(token.address, latestTime() + 5,
+      100, 24, accounts[1], {from: accounts[0]});
+    await LifMarketValidationMechanism.new(token.address, latestTime() + 5,
+      100, 48, accounts[1], {from: accounts[0]});
+
+    let tryCreateAndFail = async function(periods) {
+      try {
+        await LifMarketValidationMechanism.new(token.address, latestTime() + 5,
+          100, periods, accounts[1], {from: accounts[0]});
+        assert(false, 'should have thrown');
+      } catch(e) {
+        help.debug('failed ok');
+        assert(help.isInvalidOpcodeEx(e));
+      }
+    };
+    await tryCreateAndFail(27);
+    await tryCreateAndFail(0);
+    await tryCreateAndFail(1);
+    await tryCreateAndFail(23);
+    await tryCreateAndFail(72);
+  });
+
+  it('fails to create with 0x0 as foundation wallet', async function() {
+    const token = await LifToken.new({from: accounts[0]});
+
+    try {
+      await LifMarketValidationMechanism.new(token.address, latestTime() + 5,
+        100, 24, help.addressZero, {from: accounts[0]});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
 
   it('Create 24 months MM', async function() {
     const mmInitialBalance = 20000000;
