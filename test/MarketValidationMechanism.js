@@ -215,6 +215,36 @@ contract('Market validation Mechanism', function(accounts) {
       'total supply has decrease to 50 because of burned tokens');
   });
 
+  it('validates that only the foundation can claim wei', async function() {
+    const token = await LifToken.new({from: accounts[0]}),
+      start = latestTime() + 5,
+      foundationWallet = accounts[1],
+      otherAccount = accounts[4],
+      mvm = await LifMarketValidationMechanism.new(token.address, start,
+        100, 24, foundationWallet, {from: accounts[0]});
+
+    // mint some tokens, fund fails otherwise b/c it divides weiSent with tokenSupply
+    await token.mint(accounts[5], 100, {from: accounts[0]});
+    await mvm.fund({value: 100, from: accounts[0]});
+    await mvm.calculateDistributionPeriods();
+
+    await increaseTimeTestRPCTo(start + 2000);
+
+    // works
+    await mvm.claimWei(1, {from: foundationWallet});
+
+    try {
+      // fails
+      await mvm.claimWei(1, {from: otherAccount});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+
+    // works
+    await mvm.claimWei(1, {from: foundationWallet});
+  });
+
   it('Create 24 months MM', async function() {
     const mmInitialBalance = 20000000;
     const totalTokenSupply = 100;
