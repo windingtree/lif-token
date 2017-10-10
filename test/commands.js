@@ -869,8 +869,10 @@ async function runMVMWaitForMonthCommand(command, state) {
 
 async function runMVMPauseCommand(command, state) {
   if (state.MVM !== undefined) {
-    let fromAccount = gen.getAccount(command.fromAccount),
-      shouldThrow = (state.MVMPaused == command.pause) || (command.fromAccount != state.owner);
+    let fromAccount = gen.getAccount(command.fromAccount);
+
+    const shouldThrow = (state.MVMPaused == command.pause) ||
+      (command.fromAccount != state.foundationWallet);
 
     try {
       let tx;
