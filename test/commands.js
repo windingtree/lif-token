@@ -205,11 +205,11 @@ async function runSetWeiPerUSDinTGECommand(command, state) {
     hasZeroAddress ||
     (command.wei == 0);
 
-  help.debug('seting wei per usd in tge:', command.wei);
+  help.debug('setting wei per usd in tge:', command.wei);
   try {
     let tx = await state.crowdsaleContract.setWeiPerUSDinTGE(command.wei, {from: account});
     assert.equal(false, shouldThrow, 'setWeiPerUSDinTGE should have thrown but it did not');
-    state.weiPerUSDinTGE = command.wei;
+    state.weiPerUSDinTGE = new BigNumber(command.wei.toString());
     state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
   } catch(e) {
     state = trackGasFromLastBlock(state, command.fromAccount);
@@ -339,14 +339,14 @@ async function runFinalizeCrowdsaleCommand(command, state) {
         const foundationWeiAmount = minimumForMVM.mul(state.weiPerUSDinTGE);
         state = increaseEthBalance(state, state.foundationWallet, foundationWeiAmount);
 
-        let MVMInitialBalance = state.weiRaised.minus(state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
-        let MVMPeriods = (MVMInitialBalance > (state.crowdsaleData.MVM24PeriodsCapUSD*state.weiPerUSDinTGE)) ? 48 : 24;
+        let MVMInitialBalance = state.weiRaised.minus(state.weiPerUSDinTGE.mul(state.crowdsaleData.minCapUSD));
+        let MVMPeriods = MVMInitialBalance.gt(state.weiPerUSDinTGE.mul(state.crowdsaleData.MVM24PeriodsCapUSD)) ? 48 : 24;
         let mmAddress = await state.crowdsaleContract.MVM();
         help.debug('MVM contract address', mmAddress);
 
         let MVM = LifMarketValidationMechanism.at(mmAddress);
 
-        assert.equal(MVMPeriods, parseInt(await MVM.totalPeriods()));
+        assert.equal(MVMPeriods, parseInt(await MVM.totalPeriods()), 'MVM should last for ' + MVMPeriods + ' periods');
         assert.equal(state.crowdsaleData.foundationWallet, await MVM.foundationAddr());
         assert.equal(state.crowdsaleData.foundationWallet, await MVM.owner());
 
@@ -652,9 +652,11 @@ async function runFundCrowdsaleBelowSoftCap(command, state) {
         assert(state.MVM);
         const capFor48Months = await state.crowdsaleContract.MVM24PeriodsCapUSD.call();
         if (currentUSDFunding.gte(capFor48Months)) {
-          assert.equal(48, parseInt(await state.MVM.totalPeriods()));
+          assert.equal(48, parseInt(await state.MVM.totalPeriods()),
+            'MVM should last for 48 months');
         } else {
-          assert.equal(24, parseInt(await state.MVM.totalPeriods()));
+          assert.equal(24, parseInt(await state.MVM.totalPeriods()),
+            'MVM should last for 24 months');
         }
         assert.equal(state.crowdsaleData.foundationWallet, await state.MVM.foundationAddr());
       } else {
@@ -689,7 +691,8 @@ async function runFundCrowdsaleOverSoftCap(command, state) {
 
       // verify that the crowdsale is finalized and funded, but there's no MVM
       assert.equal(true, state.crowdsaleFinalized);
-      assert.equal(true, state.crowdsaleFunded);
+      assert.equal(true, state.crowdsaleFunded,
+        'crowdwsale should be funded after fund over soft cap command');
 
       if ((currentUSDFunding > softCap) || (command.softCapExcessWei > 0)) {
         assert(state.MVM, 'there is MVM b/c funding is over the soft cap');
