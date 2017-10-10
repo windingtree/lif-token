@@ -152,6 +152,40 @@ contract('Market validation Mechanism', function(accounts) {
     assert.equal(0, await mvm.getCurrentPeriodIndex.call());
   });
 
+  it('can call getAccumulatedDistributionPercentage only before it has finished', async function() {
+    const token = await LifToken.new({from: accounts[0]}),
+      start = latestTime() + 10,
+      mvm = await LifMarketValidationMechanism.new(token.address, start,
+        100, 24, accounts[1], {from: accounts[0]});
+
+    await mvm.calculateDistributionPeriods();
+
+    try {
+      await mvm.getAccumulatedDistributionPercentage.call();
+      assert(false, 'should have thrown because we are before MVM start timestamp');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+
+    await increaseTimeTestRPCTo(start);
+    assert.equal(0, parseInt(await mvm.getAccumulatedDistributionPercentage.call()));
+
+    await increaseTimeTestRPCTo(start + 100);
+    // 18 comes from distributionDeltas in next test, also 99 in next assertion
+    assert.equal(18, parseInt(await mvm.getAccumulatedDistributionPercentage.call()));
+
+    await increaseTimeTestRPCTo(start + 200);
+    assert.equal(18 + 99, parseInt(await mvm.getAccumulatedDistributionPercentage.call()));
+
+    await increaseTimeTestRPCTo(start + 100 * 24);
+    try {
+      await mvm.getAccumulatedDistributionPercentage.call();
+      assert(false, 'should have thrown because we are past the MVM lifetime');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
   it('Create 24 months MM', async function() {
     const mmInitialBalance = 20000000;
     const totalTokenSupply = 100;
