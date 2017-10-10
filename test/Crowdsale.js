@@ -189,6 +189,17 @@ contract('LifToken Crowdsale', function(accounts) {
     }
   });
 
+  it('fails on buyTokens with rate==0 (before startTimestamp)', async function() {
+    const crowdsale = await createCrowdsale({});
+    await crowdsale.setWeiPerUSDinTGE(10000);
+    try {
+      await crowdsale.buyTokens(accounts[5], {value: 1000, from: accounts[5]});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
   /// addPrivatePresaleTokens
   it('handles an addPrivatePresaleTokens tx fine', async function() {
     const crowdsale = await createCrowdsale({}),
