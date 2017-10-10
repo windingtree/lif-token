@@ -1,5 +1,6 @@
 pragma solidity ^0.4.15;
 
+import "./SmartToken.sol";
 import "zeppelin-solidity/contracts/token/MintableToken.sol";
 import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
 
@@ -10,7 +11,7 @@ import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
    to transfer value and data to execute a call on transfer.
    Uses OpenZeppelin MintableToken and Pausable.
  */
-contract LifToken is MintableToken, Pausable {
+contract LifToken is SmartToken, MintableToken, Pausable {
   // Token Name
   string public constant NAME = "Líf";
 
@@ -32,69 +33,16 @@ contract LifToken is MintableToken, Pausable {
     return super.transferFrom(_from, _to, _value);
   }
 
-  /**
-     @dev `approveData` is an addition to ERC20 token methods. It allows to
-     approve the transfer of value and execute a call with the sent data.
-
-     Beware that changing an allowance with this method brings the risk that someone may use both the old
-     and the new allowance by unfortunate transaction ordering. One possible solution to mitigate this
-     race condition is to first reduce the spender's allowance to 0 and set the desired value afterwards:
-     https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-
-     @param spender The address that will spend the funds.
-     @param value The amount of tokens to be spent.
-     @param data ABI-encoded contract call. For example generated using web3's getData method
-
-     @return true if the call function was executed successfully
-   */
   function approveData(address spender, uint256 value, bytes data) public whenNotPaused returns (bool) {
-    require(spender != address(this));
-
-    require(spender.call(data));
-
-    super.approve(spender, value);
-    return true;
+    return super.approveData(spender, value, data);
   }
 
-  /**
-     @dev Addition to ERC20 token methods. Transfer tokens to a specified
-     address and execute a call with the sent data on the same transaction
-
-     @param to address The address which you want to transfer to
-     @param value uint256 the amout of tokens to be transfered
-     @param data ABI-encoded contract call. For example generated using web3's
-     getData method
-
-     @return true if the call function was executed successfully
-   */
   function transferData(address to, uint256 value, bytes data) public whenNotPaused returns (bool) {
-    require(to != address(this));
-
-    require(to.call(data));
-
-    super.transfer(to, value);
-    return true;
+    return super.transferData(to, value, data);
   }
 
-  /**
-     @dev Addition to ERC20 token methods. Transfer tokens from one address to
-     another and make a contract call on the same transaction
-
-     @param from The address which you want to send tokens from
-     @param to The address which you want to transfer to
-     @param value The amout of tokens to be transferred
-     @param data ABI-encoded contract call. For example generated using web3's
-     getData method
-
-     @return true if the call function was executed successfully
-   */
   function transferDataFrom(address from, address to, uint256 value, bytes data) public whenNotPaused returns (bool) {
-    require(to != address(this));
-
-    require(to.call(data));
-
-    super.transferFrom(from, to, value);
-    return true;
+    return super.transferDataFrom(from, to, value, data);
   }
 
   /**
