@@ -462,7 +462,6 @@ async function runTransferCommand(command, state) {
 
     assert.equal(false, shouldThrow, 'transfer should have thrown but it did not');
 
-    // TODO: take spent gas into account?
     state.balances[command.fromAccount] = fromBalance.minus(lifWei);
     state.balances[command.toAccount] = getBalance(state, command.toAccount).plus(lifWei);
     state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
@@ -500,7 +499,6 @@ async function runApproveCommand(command, state) {
 
     assert.equal(false, shouldThrow, 'approve should have thrown but it did not');
 
-    // TODO: take spent gas into account?
     setAllowance(state, command.fromAccount, command.spenderAccount, lifWei);
     state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
   } catch(e) {
@@ -530,7 +528,6 @@ async function runTransferFromCommand(command, state) {
 
     assert.equal(false, shouldThrow, 'transferFrom should have thrown but it did not');
 
-    // TODO: take spent gas into account?
     state.balances[command.fromAccount] = fromBalance.minus(lifWei);
     state.balances[command.toAccount] = getBalance(state, command.toAccount).plus(lifWei);
     setAllowance(state, command.senderAccount, command.fromAccount, allowance.minus(lifWei));
@@ -735,8 +732,8 @@ let getMVMMaxClaimableWei = function(state) {
   }
 };
 
-// TODO: implement finished, returns false, but references state to make eslint happy
-let isMVMFinished = (state) => state && false;
+let isMVMFinished = (state) => state.MVM !== undefined &&
+  state.MVMMonth >= state.MVMPeriods;
 
 async function runMVMClaimWeiCommand(command, state) {
   if (state.MVM !== undefined) {
