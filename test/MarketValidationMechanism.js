@@ -15,17 +15,12 @@ var {increaseTimeTestRPC, increaseTimeTestRPCTo, duration} = require('./helpers/
 
 contract('Market validation Mechanism', function(accounts) {
 
-  var mm;
-  var token;
-  var crowdsale;
-
   it('Create 24 months MM', async function() {
     const mmInitialBalance = 20000000;
     const totalTokenSupply = 100;
     const rate = totalTokenSupply / web3.fromWei(mmInitialBalance+10000000, 'ether');
-    crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
-    token = LifToken.at( await crowdsale.token.call());
-    mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
+    const crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
+    const mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
 
     assert.equal(mmInitialBalance, parseInt(await web3.eth.getBalance(mm.address)));
     assert.equal(mmInitialBalance, parseInt(await mm.initialWei.call()));
@@ -55,9 +50,8 @@ contract('Market validation Mechanism', function(accounts) {
     const mmInitialBalance = 50000000;
     const totalTokenSupply = 100;
     const rate = totalTokenSupply / web3.fromWei(mmInitialBalance+10000000, 'ether');
-    crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
-    token = LifToken.at( await crowdsale.token.call());
-    mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
+    const crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
+    const mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
 
     assert.equal(mmInitialBalance, parseInt(await web3.eth.getBalance(mm.address)));
     assert.equal(mmInitialBalance, parseInt(await mm.initialWei.call()));
@@ -91,9 +85,8 @@ contract('Market validation Mechanism', function(accounts) {
     const mmInitialBalance = 20000000;
     const totalTokenSupply = 100;
     const rate = totalTokenSupply / web3.fromWei(mmInitialBalance+10000000, 'ether');
-    crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
-    token = LifToken.at( await crowdsale.token.call());
-    mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
+    const crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
+    const mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
 
     assert.equal(24, parseInt(await mm.totalPeriods.call()));
 
@@ -115,9 +108,8 @@ contract('Market validation Mechanism', function(accounts) {
     const mmInitialBalance = 20000000;
     const totalTokenSupply = 100;
     const rate = totalTokenSupply / web3.fromWei(mmInitialBalance+10000000, 'ether');
-    crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
-    token = LifToken.at( await crowdsale.token.call());
-    mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
+    const crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
+    const mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
 
     assert.equal(24, parseInt(await mm.totalPeriods.call()));
 
@@ -202,11 +194,11 @@ contract('Market validation Mechanism', function(accounts) {
 
     assert.equal(data.MVMMonth, await mm.getCurrentPeriodIndex());
     data.MVMWeiBalance.should.be.bignumber.equal(web3.eth.getBalance(mm.address));
-    data.MVMLifBalance.should.be.bignumber.equal(await token.balanceOf(mm.address));
+    data.MVMLifBalance.should.be.bignumber.equal(await data.token.balanceOf(mm.address));
 
     new BigNumber(web3.toWei(tokenTotalSupply, 'ether')).
       minus(data.MVMBurnedTokens).
-      should.be.bignumber.equal(await token.totalSupply.call());
+      should.be.bignumber.equal(await data.token.totalSupply.call());
     data.MVMBurnedTokens.should.be.bignumber.equal(await mm.totalBurnedTokens.call());
 
     if (data.MVMMonth < data.MVMPeriods) {
@@ -217,7 +209,7 @@ contract('Market validation Mechanism', function(accounts) {
     assert.equal(data.MVMMonth >= data.MVMPeriods, await mm.isFinished());
 
     data.ethBalances[customerAddressIndex].should.be.bignumber.equal(web3.eth.getBalance(customer));
-    data.balances[customerAddressIndex].should.be.bignumber.equal(await token.balanceOf(customer));
+    data.balances[customerAddressIndex].should.be.bignumber.equal(await data.token.balanceOf(customer));
 
     data.MVMMaxClaimableWei.should.be.bignumber.equal(await mm.getMaxClaimableWeiAmount());
 
@@ -236,9 +228,9 @@ contract('Market validation Mechanism', function(accounts) {
     const foundationWalletIndex = 0,
       foundationWallet = accounts[foundationWalletIndex];
 
-    crowdsale = await help.simulateCrowdsale(rate, [tokensInCrowdsale], accounts, weiPerUSD);
-    token = LifToken.at( await crowdsale.token.call());
-    mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
+    const crowdsale = await help.simulateCrowdsale(rate, [tokensInCrowdsale], accounts, weiPerUSD);
+    const token = LifToken.at( await crowdsale.token.call());
+    const mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
     let customer = accounts[customerAddressIndex];
     const initialBuyPrice = startingMMBalance.mul(priceFactor).dividedBy(help.lif2LifWei(tokenTotalSupply)).floor();
 
