@@ -116,6 +116,42 @@ contract('Market validation Mechanism', function(accounts) {
     }
   });
 
+  it('allows calling calculateDistributionPeriods exactly once', async function() {
+    const token = await LifToken.new({from: accounts[0]}),
+      mvm = await LifMarketValidationMechanism.new(token.address, latestTime() + 5,
+        100, 24, accounts[1], {from: accounts[0]});
+
+    await mvm.calculateDistributionPeriods(); // it just works
+
+    try {
+      await mvm.calculateDistributionPeriods(); // now it fails
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('can call getCurrentPeriodIndex only after it has started', async function() {
+    const token = await LifToken.new({from: accounts[0]}),
+      start = latestTime() + 10,
+      mvm = await LifMarketValidationMechanism.new(token.address, start,
+        100, 24, accounts[1], {from: accounts[0]});
+
+    await mvm.calculateDistributionPeriods();
+
+    // it first fails because we are before start
+    try {
+      await mvm.getCurrentPeriodIndex.call();
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+
+    await increaseTimeTestRPCTo(start);
+
+    assert.equal(0, await mvm.getCurrentPeriodIndex.call());
+  });
+
   it('Create 24 months MM', async function() {
     const mmInitialBalance = 20000000;
     const totalTokenSupply = 100;
