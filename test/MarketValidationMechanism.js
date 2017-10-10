@@ -77,7 +77,6 @@ contract('Market validation Mechanism', function(accounts) {
           100, periods, accounts[1], {from: accounts[0]});
         assert(false, 'should have thrown');
       } catch(e) {
-        help.debug('failed ok');
         assert(help.isInvalidOpcodeEx(e));
       }
     };
