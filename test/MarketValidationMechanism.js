@@ -186,6 +186,35 @@ contract('Market validation Mechanism', function(accounts) {
     }
   });
 
+  it('can send tokens, but throws when tokens == 0', async function() {
+    const token = await LifToken.new({from: accounts[0]}),
+      start = latestTime() + 5,
+      mvm = await LifMarketValidationMechanism.new(token.address, start,
+        100, 24, accounts[1], {from: accounts[0]});
+
+    // mint some tokens, fund fails otherwise b/c it divides weiSent with tokenSupply
+    await token.mint(accounts[5], 100, {from: accounts[0]});
+    await mvm.fund({value: 100, from: accounts[0]}); // it just works
+    await mvm.calculateDistributionPeriods();
+
+    await increaseTimeTestRPCTo(start);
+
+    await token.approve(mvm.address, 100, {from: accounts[5]});
+
+    try {
+      await mvm.sendTokens(0, {from: accounts[5]});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+
+    assert.equal(100, parseInt(await token.totalSupply.call()));
+    await mvm.sendTokens(50, {from: accounts[5]});
+
+    assert.equal(50, parseInt(await token.totalSupply.call()),
+      'total supply has decrease to 50 because of burned tokens');
+  });
+
   it('Create 24 months MM', async function() {
     const mmInitialBalance = 20000000;
     const totalTokenSupply = 100;
