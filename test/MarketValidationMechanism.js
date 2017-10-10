@@ -100,6 +100,23 @@ contract('Market validation Mechanism', function(accounts) {
     }
   });
 
+  it('allows calling fund exactly once', async function() {
+    const token = await LifToken.new({from: accounts[0]}),
+      mvm = await LifMarketValidationMechanism.new(token.address, latestTime() + 5,
+        100, 24, accounts[1], {from: accounts[0]});
+
+    // mint some tokens, fund fails otherwise b/c it divides weiSent with tokenSupply
+    await token.mint(accounts[5], 100, {from: accounts[0]});
+    await mvm.fund({from: accounts[0]}); // it just works, even with value == 0
+
+    try {
+      await mvm.fund({from: accounts[0]}); // now it fails
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
   it('Create 24 months MM', async function() {
     const mmInitialBalance = 20000000;
     const totalTokenSupply = 100;
