@@ -5,8 +5,8 @@ import "zeppelin-solidity/contracts/token/StandardToken.sol";
 /**
    @title SmartToken, an extension of ERC20 token standard
 
-   Implementation the SmartToken, following the ERC20 standard but with extra
-   methods to transfer value and data to execute a calls in transfers and
+   Implementation the SmartToken, following the ERC20 standard with extra
+   methods to transfer value and data and execute calls in transfers and
    approvals.
    Uses OpenZeppelin StandardToken.
  */
