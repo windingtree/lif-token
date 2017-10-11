@@ -1,9 +1,10 @@
-# Líf
+# Líf Token
 
 Líf is the token of the Winding Tree platform.
 
-Líf is based on the ERC20 token protocol, with the option to also send information between token holders
-via the added methods transferData and transferDataFrom.
+Líf is a SmartToken, based in the ERC20 standard with extra methods to send value and data on transfers and approvals, allowing the execution of calls in those methdos too.
+
+This repository also has all the contracts related with the Token Generation Event (TGE), an strategy that combines a crowdsale, a market validation mechanism and vested payments.
 
 [![Build Status](https://travis-ci.org/windingtree/LifToken.svg?branch=master)](https://travis-ci.org/windingtree/LifToken)
 [![Coverage Status](https://coveralls.io/repos/github/windingtree/LifToken/badge.svg?branch=master)](https://coveralls.io/github/windingtree/LifToken?branch=master)
@@ -18,10 +19,11 @@ Node v7.6 or higher (versions before 7.6 do not support async/await that is used
 npm install
 ```
 
-## Main Contracts
+## Contracts
 
-- [LifToken](blob/master/contracts/LifToken.sol): ERC20 token for the Winding Tree platform, with extra methods
-   to transfer value and data and execute a call on transfer. Uses OpenZeppelin MintableToken and Pausable contracts.
+- [SmartToken](blob/master/contracts/SmartToken.sol): Token based in the ERC20 standard with extra methods to transfer value and data and execute a call on transfer. Uses OpenZeppelin StandardToken.
+- [LifToken](blob/master/contracts/LifToken.sol): Smart token for the Winding Tree platform.
+ Uses SmartToken and OpenZeppelin MintableToken and Pausable contracts.
 - [LifCrowdsale](blob/master/contracts/LifCrowdsale.sol): Implementation of the Lif Token Generation Event (TGE)
   Crowdsale: A 2 week fixed price, uncapped token sale, with a discounted rate for contributions during the private
   presale and a Market Validation Mechanism that will receive the funds over the USD 10M soft cap.
@@ -33,27 +35,6 @@ npm install
 -[VestedPayment.sol](blob/master/contracts/LifMarketValidationMechanism.sol): Handles two time-locked payments: The 5% extra tokens
  that the foundation receives for long-term funding (starts after the MVM finishes, with same duration as the MVM: 2 or 4 years)
  and the 12.8% extra tokens that the founders receive (1y cliff, 4y total). Both are created during the Crowdsale finalization.
-
-## New Token Methods
-
-Líf token is ERC20 compatible but it also has two more methods to allow the transfer of data and execution of calls between users/contracts.
-
-### transferData
-
-Transfer tokens from one address to another and execute a call with the sent data on the same transaction.
-```
-transferData(address to, uint value, bytes data, bool doCall) => void
-```
-
-Returns true if the call execution was successful
-
-### transferDataFrom
-
-Transfer an allowed amount of tokens from one address to another and execute a call with the sent data on the same transaction.
-```
-transferDataFrom(address from, address to, uint value, bytes data, bool doCall) => void
-```
-Returns true if the call execution was successful
 
 ## Test
 
@@ -67,7 +48,7 @@ There are also two environment variables (`GEN_TESTS_QTY` and `GEN_TESTS_TIMEOUT
 GEN_TESTS_QTY=50 GEN_TESTS_TIMEOUT=300 npm test
 ```
 
-will make the property-based tests in `test/CrowdsaleGenTest.js` to run 50 examples in a maximum of 5 minutes
+Will make the property-based tests in `test/CrowdsaleGenTest.js` to run 50 examples in a maximum of 5 minutes
 
 
 ## License
