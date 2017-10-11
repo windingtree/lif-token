@@ -32,7 +32,7 @@ npm install
   part of the funds to the foundation in a monthly basis with a distribution skewed towards the end (most of the funds are
   released by the end of the MVM lifetime). Token holders can send their tokens to the MVM in exchange of eth at a rate
   that complements the distribution curve (the rate is higher at the beginning of the MVM and goes towards 0 by the end of it).
-- [VestedPayment.sol](blob/master/contracts/LifMarketValidationMechanism.sol): Handles two time-locked payments: The 5% extra tokens
+- [VestedPayment.sol](blob/master/contracts/VestedPayment.sol): Handles two time-locked payments: The 5% extra tokens
   that the foundation receives for long-term funding (starts after the MVM finishes, with same duration as the MVM: 2 or 4 years)
   and the 12.8% extra tokens that the founders receive (1y cliff, 4y total). Both are created during the Crowdsale finalization.
 
