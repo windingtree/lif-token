@@ -11,21 +11,246 @@ require('chai')
 var LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
 var LifToken = artifacts.require('./LifToken.sol');
 
+var latestTime = require('./helpers/latestTime');
 var {increaseTimeTestRPC, increaseTimeTestRPCTo, duration} = require('./helpers/increaseTime');
 
 contract('Market validation Mechanism', function(accounts) {
 
-  var mm;
-  var token;
-  var crowdsale;
+  it('can be created', async function() {
+    const token = await LifToken.new({from: accounts[0]}),
+      start = latestTime() + 5;
+    const mvm = await LifMarketValidationMechanism.new(token.address, start,
+      100, 24, accounts[1], {from: accounts[0]});
+
+    assert.equal(token.address, await mvm.lifToken.call());
+    assert.equal(start, await mvm.startTimestamp.call());
+    assert.equal(100, await mvm.secondsPerPeriod.call());
+    assert.equal(24, await mvm.totalPeriods.call());
+    assert.equal(accounts[1], await mvm.foundationAddr.call());
+  });
+
+  it('fails to create with 0x0 as token address', async function() {
+    try {
+      await LifMarketValidationMechanism.new(help.zeroAddress, latestTime() + 5,
+        100, 24, accounts[1], {from: accounts[0]});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('fails to create with start timestamp not in future', async function() {
+    const token = await LifToken.new({from: accounts[0]});
+
+    try {
+      await LifMarketValidationMechanism.new(token.address, latestTime(),
+        100, 24, accounts[1], {from: accounts[0]});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('fails to create with seconds per period == 0', async function() {
+    const token = await LifToken.new({from: accounts[0]});
+
+    try {
+      await LifMarketValidationMechanism.new(token.address, latestTime() + 5,
+        0, 24, accounts[1], {from: accounts[0]});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('fails to create with total periods not 24 or 48', async function() {
+    const token = await LifToken.new({from: accounts[0]});
+
+    await LifMarketValidationMechanism.new(token.address, latestTime() + 5,
+      100, 24, accounts[1], {from: accounts[0]});
+    await LifMarketValidationMechanism.new(token.address, latestTime() + 5,
+      100, 48, accounts[1], {from: accounts[0]});
+
+    let tryCreateAndFail = async function(periods) {
+      try {
+        await LifMarketValidationMechanism.new(token.address, latestTime() + 5,
+          100, periods, accounts[1], {from: accounts[0]});
+        assert(false, 'should have thrown');
+      } catch(e) {
+        assert(help.isInvalidOpcodeEx(e));
+      }
+    };
+    await tryCreateAndFail(27);
+    await tryCreateAndFail(0);
+    await tryCreateAndFail(1);
+    await tryCreateAndFail(23);
+    await tryCreateAndFail(72);
+  });
+
+  it('fails to create with 0x0 as foundation wallet', async function() {
+    const token = await LifToken.new({from: accounts[0]});
+
+    try {
+      await LifMarketValidationMechanism.new(token.address, latestTime() + 5,
+        100, 24, help.addressZero, {from: accounts[0]});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('allows calling fund exactly once', async function() {
+    const token = await LifToken.new({from: accounts[0]}),
+      mvm = await LifMarketValidationMechanism.new(token.address, latestTime() + 5,
+        100, 24, accounts[1], {from: accounts[0]});
+
+    // mint some tokens, fund fails otherwise b/c it divides weiSent with tokenSupply
+    await token.mint(accounts[5], 100, {from: accounts[0]});
+    await mvm.fund({from: accounts[0]}); // it just works, even with value == 0
+
+    try {
+      await mvm.fund({from: accounts[0]}); // now it fails
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('allows calling calculateDistributionPeriods exactly once', async function() {
+    const token = await LifToken.new({from: accounts[0]}),
+      mvm = await LifMarketValidationMechanism.new(token.address, latestTime() + 5,
+        100, 24, accounts[1], {from: accounts[0]});
+
+    await mvm.calculateDistributionPeriods(); // it just works
+
+    try {
+      await mvm.calculateDistributionPeriods(); // now it fails
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('can call getCurrentPeriodIndex only after it has started', async function() {
+    const token = await LifToken.new({from: accounts[0]}),
+      start = latestTime() + 10,
+      mvm = await LifMarketValidationMechanism.new(token.address, start,
+        100, 24, accounts[1], {from: accounts[0]});
+
+    await mvm.calculateDistributionPeriods();
+
+    // it first fails because we are before start
+    try {
+      await mvm.getCurrentPeriodIndex.call();
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+
+    await increaseTimeTestRPCTo(start);
+
+    assert.equal(0, await mvm.getCurrentPeriodIndex.call());
+  });
+
+  it('can call getAccumulatedDistributionPercentage only before it has finished', async function() {
+    const token = await LifToken.new({from: accounts[0]}),
+      start = latestTime() + 10,
+      mvm = await LifMarketValidationMechanism.new(token.address, start,
+        100, 24, accounts[1], {from: accounts[0]});
+
+    await mvm.calculateDistributionPeriods();
+
+    try {
+      await mvm.getAccumulatedDistributionPercentage.call();
+      assert(false, 'should have thrown because we are before MVM start timestamp');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+
+    await increaseTimeTestRPCTo(start);
+    assert.equal(0, parseInt(await mvm.getAccumulatedDistributionPercentage.call()));
+
+    await increaseTimeTestRPCTo(start + 100);
+    // 18 comes from distributionDeltas in next test, also 99 in next assertion
+    assert.equal(18, parseInt(await mvm.getAccumulatedDistributionPercentage.call()));
+
+    await increaseTimeTestRPCTo(start + 200);
+    assert.equal(18 + 99, parseInt(await mvm.getAccumulatedDistributionPercentage.call()));
+
+    await increaseTimeTestRPCTo(start + 100 * 24);
+    try {
+      await mvm.getAccumulatedDistributionPercentage.call();
+      assert(false, 'should have thrown because we are past the MVM lifetime');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('can send tokens, but throws when tokens == 0', async function() {
+    const token = await LifToken.new({from: accounts[0]}),
+      start = latestTime() + 5,
+      mvm = await LifMarketValidationMechanism.new(token.address, start,
+        100, 24, accounts[1], {from: accounts[0]});
+
+    // mint some tokens, fund fails otherwise b/c it divides weiSent with tokenSupply
+    await token.mint(accounts[5], 100, {from: accounts[0]});
+    await mvm.fund({value: 100, from: accounts[0]}); // it just works
+    await mvm.calculateDistributionPeriods();
+
+    await increaseTimeTestRPCTo(start);
+
+    await token.approve(mvm.address, 100, {from: accounts[5]});
+
+    try {
+      await mvm.sendTokens(0, {from: accounts[5]});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+
+    assert.equal(100, parseInt(await token.totalSupply.call()));
+    await mvm.sendTokens(50, {from: accounts[5]});
+
+    assert.equal(50, parseInt(await token.totalSupply.call()),
+      'total supply has decrease to 50 because of burned tokens');
+  });
+
+  it('validates that only the foundation can claim wei', async function() {
+    const token = await LifToken.new({from: accounts[0]}),
+      start = latestTime() + 5,
+      foundationWallet = accounts[1],
+      otherAccount = accounts[4],
+      mvm = await LifMarketValidationMechanism.new(token.address, start,
+        100, 24, foundationWallet, {from: accounts[0]});
+
+    // mint some tokens, fund fails otherwise b/c it divides weiSent with tokenSupply
+    await token.mint(accounts[5], 100, {from: accounts[0]});
+    await mvm.fund({value: 100, from: accounts[0]});
+    await mvm.calculateDistributionPeriods();
+
+    await increaseTimeTestRPCTo(start + 2000);
+
+    // works
+    await mvm.claimWei(1, {from: foundationWallet});
+
+    try {
+      // fails
+      await mvm.claimWei(1, {from: otherAccount});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+
+    // works
+    await mvm.claimWei(1, {from: foundationWallet});
+  });
 
   it('Create 24 months MM', async function() {
     const mmInitialBalance = 20000000;
     const totalTokenSupply = 100;
     const rate = totalTokenSupply / web3.fromWei(mmInitialBalance+10000000, 'ether');
-    crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
-    token = LifToken.at( await crowdsale.token.call());
-    mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
+    const crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
+    const mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
 
     assert.equal(mmInitialBalance, parseInt(await web3.eth.getBalance(mm.address)));
     assert.equal(mmInitialBalance, parseInt(await mm.initialWei.call()));
@@ -55,9 +280,8 @@ contract('Market validation Mechanism', function(accounts) {
     const mmInitialBalance = 50000000;
     const totalTokenSupply = 100;
     const rate = totalTokenSupply / web3.fromWei(mmInitialBalance+10000000, 'ether');
-    crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
-    token = LifToken.at( await crowdsale.token.call());
-    mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
+    const crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
+    const mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
 
     assert.equal(mmInitialBalance, parseInt(await web3.eth.getBalance(mm.address)));
     assert.equal(mmInitialBalance, parseInt(await mm.initialWei.call()));
@@ -91,9 +315,8 @@ contract('Market validation Mechanism', function(accounts) {
     const mmInitialBalance = 20000000;
     const totalTokenSupply = 100;
     const rate = totalTokenSupply / web3.fromWei(mmInitialBalance+10000000, 'ether');
-    crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
-    token = LifToken.at( await crowdsale.token.call());
-    mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
+    const crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
+    const mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
 
     assert.equal(24, parseInt(await mm.totalPeriods.call()));
 
@@ -115,9 +338,8 @@ contract('Market validation Mechanism', function(accounts) {
     const mmInitialBalance = 20000000;
     const totalTokenSupply = 100;
     const rate = totalTokenSupply / web3.fromWei(mmInitialBalance+10000000, 'ether');
-    crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
-    token = LifToken.at( await crowdsale.token.call());
-    mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
+    const crowdsale = await help.simulateCrowdsale(rate, [totalTokenSupply], accounts, 1);
+    const mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
 
     assert.equal(24, parseInt(await mm.totalPeriods.call()));
 
@@ -202,11 +424,11 @@ contract('Market validation Mechanism', function(accounts) {
 
     assert.equal(data.MVMMonth, await mm.getCurrentPeriodIndex());
     data.MVMWeiBalance.should.be.bignumber.equal(web3.eth.getBalance(mm.address));
-    data.MVMLifBalance.should.be.bignumber.equal(await token.balanceOf(mm.address));
+    data.MVMLifBalance.should.be.bignumber.equal(await data.token.balanceOf(mm.address));
 
     new BigNumber(web3.toWei(tokenTotalSupply, 'ether')).
       minus(data.MVMBurnedTokens).
-      should.be.bignumber.equal(await token.totalSupply.call());
+      should.be.bignumber.equal(await data.token.totalSupply.call());
     data.MVMBurnedTokens.should.be.bignumber.equal(await mm.totalBurnedTokens.call());
 
     if (data.MVMMonth < data.MVMPeriods) {
@@ -217,7 +439,7 @@ contract('Market validation Mechanism', function(accounts) {
     assert.equal(data.MVMMonth >= data.MVMPeriods, await mm.isFinished());
 
     data.ethBalances[customerAddressIndex].should.be.bignumber.equal(web3.eth.getBalance(customer));
-    data.balances[customerAddressIndex].should.be.bignumber.equal(await token.balanceOf(customer));
+    data.balances[customerAddressIndex].should.be.bignumber.equal(await data.token.balanceOf(customer));
 
     data.MVMMaxClaimableWei.should.be.bignumber.equal(await mm.getMaxClaimableWeiAmount());
 
@@ -236,9 +458,9 @@ contract('Market validation Mechanism', function(accounts) {
     const foundationWalletIndex = 0,
       foundationWallet = accounts[foundationWalletIndex];
 
-    crowdsale = await help.simulateCrowdsale(rate, [tokensInCrowdsale], accounts, weiPerUSD);
-    token = LifToken.at( await crowdsale.token.call());
-    mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
+    const crowdsale = await help.simulateCrowdsale(rate, [tokensInCrowdsale], accounts, weiPerUSD);
+    const token = LifToken.at( await crowdsale.token.call());
+    const mm = LifMarketValidationMechanism.at( await crowdsale.MVM.call());
     let customer = accounts[customerAddressIndex];
     const initialBuyPrice = startingMMBalance.mul(priceFactor).dividedBy(help.lif2LifWei(tokenTotalSupply)).floor();
 

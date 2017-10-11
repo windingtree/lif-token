@@ -3,6 +3,12 @@ var LifCrowdsale = artifacts.require('./LifCrowdsale.sol'),
 
 let help = require('./helpers');
 
+var BigNumber = web3.BigNumber;
+
+require('chai')
+  .use(require('chai-bignumber')(BigNumber))
+  .should();
+
 var latestTime = require('./helpers/latestTime');
 var {duration,increaseTimeTestRPCTo} = require('./helpers/increaseTime');
 
@@ -189,6 +195,17 @@ contract('LifToken Crowdsale', function(accounts) {
     }
   });
 
+  it('fails on buyTokens with rate==0 (before startTimestamp)', async function() {
+    const crowdsale = await createCrowdsale({});
+    await crowdsale.setWeiPerUSDinTGE(10000);
+    try {
+      await crowdsale.buyTokens(accounts[5], {value: 1000, from: accounts[5]});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
   /// addPrivatePresaleTokens
   it('handles an addPrivatePresaleTokens tx fine', async function() {
     const crowdsale = await createCrowdsale({}),
@@ -244,4 +261,143 @@ contract('LifToken Crowdsale', function(accounts) {
       assert(help.isInvalidOpcodeEx(e));
     }
   });
+
+  /// claimEth
+  it('claimEth succeeds after an underfunded finalized crowdsale', async function() {
+    const start = latestTime() + defaultTimeDelta,
+      end1 = start + defaultTimeDelta,
+      end2 = end1 + defaultTimeDelta,
+      beneficiary = accounts[6],
+      crowdsale = await createCrowdsale({
+        start: start,
+        end1: end1,
+        end2: end2
+      }),
+      weiPerUsd = 10000,
+      weiAmount = 5000000 * weiPerUsd - 1; // exactly USD 1 less than the funding limit
+
+    await crowdsale.setWeiPerUSDinTGE(weiPerUsd);
+    await increaseTimeTestRPCTo(start + 2);
+    await crowdsale.buyTokens(beneficiary, {value: weiAmount, from: accounts[5]});
+
+    await increaseTimeTestRPCTo(end2 + 2);
+    await crowdsale.finalize();
+
+    const balanceBeforeClaim = web3.eth.getBalance(beneficiary);
+
+    const tx = await crowdsale.claimEth({from: beneficiary});
+
+    balanceBeforeClaim.plus(weiAmount).minus(help.txGasCost(tx)).
+      should.be.bignumber.equal(web3.eth.getBalance(beneficiary));
+  });
+
+  it('claimEth fails after a funded finalized crowdsale', async function() {
+    const start = latestTime() + defaultTimeDelta,
+      end1 = start + defaultTimeDelta,
+      end2 = end1 + defaultTimeDelta,
+      crowdsale = await createCrowdsale({
+        start: start,
+        end1: end1,
+        end2: end2
+      }),
+      weiPerUsd = 10000,
+      weiAmount = 5000000 * weiPerUsd;
+    await crowdsale.setWeiPerUSDinTGE(weiPerUsd);
+    await increaseTimeTestRPCTo(start + 2);
+    await crowdsale.buyTokens(accounts[6], {value: weiAmount, from: accounts[5]});
+
+    await increaseTimeTestRPCTo(end2 + 2);
+    await crowdsale.finalize();
+
+    try {
+      await crowdsale.claimEth({from: accounts[6]});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('claimEth fails after an underfunded non-finalized (but ended) crowdsale ', async function() {
+    const start = latestTime() + defaultTimeDelta,
+      end1 = start + defaultTimeDelta,
+      end2 = end1 + defaultTimeDelta,
+      beneficiary = accounts[6],
+      crowdsale = await createCrowdsale({
+        start: start,
+        end1: end1,
+        end2: end2
+      }),
+      weiPerUsd = 10000,
+      weiAmount = 5000000 * weiPerUsd - 1;
+    await crowdsale.setWeiPerUSDinTGE(weiPerUsd);
+    await increaseTimeTestRPCTo(start + 2);
+    await crowdsale.buyTokens(beneficiary, {value: weiAmount, from: accounts[5]});
+
+    await increaseTimeTestRPCTo(end2 + 2);
+
+    try {
+      await crowdsale.claimEth({from: beneficiary});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  it('claimEth fails after an underfunded finalized crowdsale for an address with no purchases', async function() {
+    const start = latestTime() + defaultTimeDelta,
+      end1 = start + defaultTimeDelta,
+      end2 = end1 + defaultTimeDelta,
+      beneficiary = accounts[6],
+      crowdsale = await createCrowdsale({
+        start: start,
+        end1: end1,
+        end2: end2
+      }),
+      weiPerUsd = 10000,
+      weiAmount = 5000000 * weiPerUsd - 1; // exactly USD 1 less than the funding limit
+
+    await crowdsale.setWeiPerUSDinTGE(weiPerUsd);
+    await increaseTimeTestRPCTo(start + 2);
+    await crowdsale.buyTokens(beneficiary, {value: weiAmount, from: accounts[5]});
+
+    await increaseTimeTestRPCTo(end2 + 2);
+    await crowdsale.finalize();
+
+    try {
+      await crowdsale.claimEth({from: accounts[8]});
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
+  /// finalize
+  it('finalize fails when called for the second time', async function() {
+    const start = latestTime() + defaultTimeDelta,
+      end1 = start + defaultTimeDelta,
+      end2 = end1 + defaultTimeDelta,
+      beneficiary = accounts[6],
+      crowdsale = await createCrowdsale({
+        start: start,
+        end1: end1,
+        end2: end2
+      }),
+      weiPerUsd = 10000,
+      weiAmount = 5000000 * weiPerUsd - 1; // exactly USD 1 less than the funding limit
+
+    await crowdsale.setWeiPerUSDinTGE(weiPerUsd);
+    await increaseTimeTestRPCTo(start + 2);
+    await crowdsale.buyTokens(beneficiary, {value: weiAmount, from: accounts[5]});
+
+    await increaseTimeTestRPCTo(end2 + 2);
+    await crowdsale.finalize();
+
+    try {
+      await crowdsale.finalize();
+      assert(false, 'should have thrown');
+    } catch(e) {
+      assert(help.isInvalidOpcodeEx(e));
+    }
+  });
+
 });
