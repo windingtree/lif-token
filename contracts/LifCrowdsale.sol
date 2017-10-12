@@ -213,7 +213,7 @@ contract LifCrowdsale is Ownable, Pausable {
 
      @param beneficiary Address to which Lif should be sent
    */
-  function buyTokens(address beneficiary) public payable validPurchase {
+  function buyTokens(address beneficiary) public payable whenNotPaused validPurchase {
     require(beneficiary != address(0));
     assert(weiPerUSDinTGE > 0);
 
@@ -376,7 +376,7 @@ contract LifCrowdsale is Ownable, Pausable {
      @dev Allows a TGE contributor to claim their contributed eth in case the
      TGE has finished without reaching the minCapUSD
    */
-  function claimEth() public hasEnded {
+  function claimEth() public whenNotPaused hasEnded {
     require(isFinalized);
     require(!funded());
 
@@ -394,7 +394,7 @@ contract LifCrowdsale is Ownable, Pausable {
      Mechanism in case the soft cap was exceeded. It also unpauses the token to
      enable transfers. It can be called only once, after `end2Timestamp`
    */
-  function finalize() public hasEnded {
+  function finalize() public whenNotPaused hasEnded {
     require(!isFinalized);
 
     // foward founds and unpause token only if minCap is reached

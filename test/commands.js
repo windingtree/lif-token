@@ -423,6 +423,7 @@ async function runClaimEthCommand(command, state) {
 
   let shouldThrow = !state.crowdsaleFinalized ||
     state.crowdsaleFunded ||
+    state.crowdsalePaused ||
     (purchases.length == 0) ||
     hasZeroAddress ||
     state.claimedEth[command.fromAccount] > 0;
