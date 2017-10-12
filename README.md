@@ -53,4 +53,4 @@ Will make the property-based tests in `test/CrowdsaleGenTest.js` to run 50 examp
 
 ## License
 
-Líf Token is open source and distributed under the Apache License v2.0
+Líf Token is open source and distributed under the GPL v3 license.
