@@ -32,9 +32,10 @@ contract SmartToken is StandardToken {
   function approveData(address _spender, uint256 _value, bytes _data) returns (bool) {
     require(_spender != address(this));
 
+    super.approve(_spender, _value);
+
     require(_spender.call(_data));
 
-    super.approve(_spender, _value);
     return true;
   }
 
