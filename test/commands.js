@@ -646,7 +646,7 @@ async function runFundCrowdsaleBelowSoftCap(command, state) {
       // it might be that the funding was already over the soft cap, so let's check
       let softCap = await state.crowdsaleContract.maxFoundationCapUSD.call();
 
-      if (currentUSDFunding.gte(softCap)) {
+      if (currentUSDFunding.gt(softCap)) {
         assert(state.MVM);
         const capFor48Months = await state.crowdsaleContract.MVM24PeriodsCapUSD.call();
         if (currentUSDFunding.gte(capFor48Months)) {
@@ -679,6 +679,8 @@ async function runFundCrowdsaleOverSoftCap(command, state) {
 
     state = await startCrowdsaleAndBuyTokens(command.account, eth, weiPerUSD, state);
 
+    currentUSDFunding = state.weiRaised.div(weiPerUSD);
+
     if (command.finalize) {
       // wait for crowdsale end2Timestamp
       if (latestTime() < state.crowdsaleData.end2Timestamp) {
@@ -692,7 +694,7 @@ async function runFundCrowdsaleOverSoftCap(command, state) {
       assert.equal(true, state.crowdsaleFunded,
         'crowdwsale should be funded after fund over soft cap command');
 
-      if ((currentUSDFunding > softCap) || (command.softCapExcessWei > 0)) {
+      if (currentUSDFunding.gt(softCap)) {
         assert(state.MVM, 'there is MVM b/c funding is over the soft cap');
         assert.equal(24, parseInt(await state.MVM.totalPeriods()));
         assert.equal(state.crowdsaleData.foundationWallet, await state.MVM.foundationAddr());
