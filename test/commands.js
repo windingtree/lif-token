@@ -629,7 +629,7 @@ async function runFundCrowdsaleBelowSoftCap(command, state) {
 
     // take current funding again, because previous command might have skipped
     // buying tokens if eth was lte 0
-    currentUSDFunding = state.weiRaised.div(weiPerUSD).floor();
+    currentUSDFunding = state.weiRaised.div(weiPerUSD);
 
     if (command.finalize) {
       // wait for crowdsale end2Timestamp
