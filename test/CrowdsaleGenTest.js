@@ -749,6 +749,18 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     });
   });
 
+  it('runs fine when funding over soft cap with no excess wei and finalize', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      commands: [
+        {'type':'fundCrowdsaleOverSoftCap','account':6,'softCapExcessWei':0,'finalize':true}
+      ],
+      crowdsale: {
+        rate1: 10, rate2: 23, foundationWallet: 4, foundersWallet: 10,
+        setWeiLockSeconds: 3405, owner: 5
+      }
+    });
+  });
+
   it('distributes tokens correctly on any combination of bids', async function() {
     // stateful prob based tests can take a long time to finish when shrinking...
     this.timeout(GEN_TESTS_TIMEOUT * 1000);

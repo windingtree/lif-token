@@ -1,5 +1,6 @@
 var LifCrowdsale = artifacts.require('./LifCrowdsale.sol'),
-  LifToken = artifacts.require('./LifToken.sol');
+  LifToken = artifacts.require('./LifToken.sol'),
+  LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
 
 let help = require('./helpers');
 
@@ -400,4 +401,56 @@ contract('LifToken Crowdsale', function(accounts) {
     }
   });
 
+  /// finalize
+  it('finalize creates the MVM', async function() {
+    const start = latestTime() + defaultTimeDelta,
+      end1 = start + defaultTimeDelta,
+      end2 = end1 + defaultTimeDelta,
+      beneficiary = accounts[6],
+      crowdsale = await createCrowdsale({
+        start: start,
+        end1: end1,
+        end2: end2
+      }),
+      weiPerUsd = 10000,
+      weiAmount = 10000001 * weiPerUsd; // exactly USD 1 more than the minimum for the MVM
+
+    await crowdsale.setWeiPerUSDinTGE(weiPerUsd);
+    await increaseTimeTestRPCTo(start + 2);
+    await crowdsale.buyTokens(beneficiary, {value: weiAmount, from: accounts[5]});
+
+    await increaseTimeTestRPCTo(end2 + 2);
+    await crowdsale.finalize();
+
+    const MVMAddress = await crowdsale.MVM.call();
+    assert(MVMAddress !== help.zeroAddress);
+
+    const MVM = LifMarketValidationMechanism.at(MVMAddress),
+      MVMInitialWei = await MVM.initialWei();
+    MVMInitialWei.should.be.bignumber.equal(1 * weiPerUsd);
+  });
+
+  it('finalize not over soft cap does not create the MVM', async function() {
+    const start = latestTime() + defaultTimeDelta,
+      end1 = start + defaultTimeDelta,
+      end2 = end1 + defaultTimeDelta,
+      beneficiary = accounts[6],
+      crowdsale = await createCrowdsale({
+        start: start,
+        end1: end1,
+        end2: end2
+      }),
+      weiPerUsd = 10000,
+      weiAmount = 10000000 * weiPerUsd; // exactly the soft cap
+
+    await crowdsale.setWeiPerUSDinTGE(weiPerUsd);
+    await increaseTimeTestRPCTo(start + 2);
+    await crowdsale.buyTokens(beneficiary, {value: weiAmount, from: accounts[5]});
+
+    await increaseTimeTestRPCTo(end2 + 2);
+    await crowdsale.finalize();
+
+    const MVMAddress = await crowdsale.MVM.call();
+    assert(MVMAddress === help.zeroAddress, 'no MVM should have been created: ' + MVMAddress);
+  });
 });
