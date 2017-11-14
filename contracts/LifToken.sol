@@ -2,6 +2,7 @@ pragma solidity ^0.4.15;
 
 import "./SmartToken.sol";
 import "zeppelin-solidity/contracts/token/MintableToken.sol";
+import "zeppelin-solidity/contracts/token/BurnableToken.sol";
 import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
 
 /**
@@ -11,7 +12,7 @@ import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
    to transfer value and data to execute a call on transfer.
    Uses OpenZeppelin MintableToken and Pausable.
  */
-contract LifToken is SmartToken, MintableToken, Pausable {
+contract LifToken is SmartToken, BurnableToken, MintableToken, Pausable {
   // Token Name
   string public constant NAME = "Líf";
 
@@ -51,18 +52,11 @@ contract LifToken is SmartToken, MintableToken, Pausable {
      @param _value The amount of tokens to be burned.
    */
   function burn(uint256 _value) public whenNotPaused {
-    require(_value > 0);
-
-    address burner = msg.sender;
-    balances[burner] = balances[burner].sub(_value);
-    totalSupply = totalSupply.sub(_value);
-    Burn(burner, _value);
+    super.burn(_value);
 
     // a Transfer event to 0x0 can be useful for observers to keep track of
     // all the Lif by just looking at those events
-    Transfer(burner, address(0), _value);
+    Transfer(msg.sender, address(0), _value);
   }
-
-  event Burn(address indexed burner, uint value);
 
 }
