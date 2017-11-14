@@ -3,7 +3,7 @@ pragma solidity ^0.4.15;
 import "./SmartToken.sol";
 import "zeppelin-solidity/contracts/token/MintableToken.sol";
 import "zeppelin-solidity/contracts/token/BurnableToken.sol";
-import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
+import "zeppelin-solidity/contracts/token/PausableToken.sol";
 
 /**
    @title Líf, the Winding Tree token
@@ -12,7 +12,7 @@ import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
    to transfer value and data to execute a call on transfer.
    Uses OpenZeppelin MintableToken and Pausable.
  */
-contract LifToken is SmartToken, BurnableToken, MintableToken, Pausable {
+contract LifToken is SmartToken, BurnableToken, MintableToken, PausableToken {
   // Token Name
   string public constant NAME = "Líf";
 
@@ -21,18 +21,6 @@ contract LifToken is SmartToken, BurnableToken, MintableToken, Pausable {
 
   // Token decimals
   uint public constant DECIMALS = 18;
-
-  function transfer(address _to, uint256 _value) public whenNotPaused returns (bool) {
-    return super.transfer(_to, _value);
-  }
-
-  function approve(address _spender, uint256 _value) public whenNotPaused returns (bool) {
-    return super.approve(_spender, _value);
-  }
-
-  function transferFrom(address _from, address _to, uint256 _value) public whenNotPaused returns (bool) {
-    return super.transferFrom(_from, _to, _value);
-  }
 
   function approveData(address spender, uint256 value, bytes data) public whenNotPaused returns (bool) {
     return super.approveData(spender, value, data);
