@@ -46,7 +46,6 @@ function trackGasFromLastBlock(state, accountIndex) {
     return state;
   else {
     const block = web3.eth.getBlock('latest');
-    assert.equal(1, block.transactions.length, 'we track gas from last block only when it had 1 tx');
     const gasCost = help.gasPrice.mul(block.gasUsed);
 
     return decreaseEthBalance(state, accountIndex, gasCost);
@@ -800,8 +799,8 @@ async function runMVMSendTokensCommand(command, state) {
       // decrease gas from tx1 already, so in case tx2 fails it is already taken into account
       state = decreaseEthBalance(state, command.from, help.txGasCost(tx1));
 
-      let tx2 = await state.MVM.sendTokens(lifWei, {from: fromAddress}),
-        gas = help.txGasCost(tx2);
+      let tx2 = await state.MVM.sendTokens(lifWei, {from: fromAddress});
+      state = decreaseEthBalance(state, command.from, help.txGasCost(tx2));
 
       help.debug('sold tokens to MVM');
 
@@ -813,7 +812,7 @@ async function runMVMSendTokensCommand(command, state) {
       state.balances[command.from] = getBalance(state, command.from).minus(lifWei);
       state.MVMMaxClaimableWei = getMVMMaxClaimableWei(state);
 
-      state = increaseEthBalance(state, command.from, tokensCost.minus(gas));
+      state = increaseEthBalance(state, command.from, tokensCost);
     } catch(e) {
       state = trackGasFromLastBlock(state, command.from);
       assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);

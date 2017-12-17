@@ -18,7 +18,7 @@ const DEBUG_MODE = (process.env.WT_DEBUG == 'true') || false;
 let gasPriceFromEnv = parseInt(process.env.GAS_PRICE);
 let gasPrice;
 if (isNaN(gasPriceFromEnv))
-  gasPrice = new BigNumber(21000000000);
+  gasPrice = new BigNumber(20000000000);
 else
   gasPrice = new BigNumber(gasPriceFromEnv);
 
@@ -70,7 +70,8 @@ module.exports = {
   },
 
   isInvalidOpcodeEx: function(e) {
-    return e.message.search('invalid opcode') >= 0;
+    return ((e.message.search('invalid opcode') >= 0)
+      || (e.message.search('revert') >= 0));
   },
 
   waitBlocks: function(toWait, accounts){

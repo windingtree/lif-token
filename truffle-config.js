@@ -15,16 +15,30 @@ module.exports = {
     development: {
       host: 'localhost',
       port: 8545,
-      network_id: '*',
-      gas: 0x5B8D80, // 6000000 gas
-      gasPrice: 21000000000 // 21 Gwei
+      network_id: '*', // eslint-disable-line camelcase
     },
     coverage: {
-      host: "localhost",
-      network_id: "*",
+      host: 'localhost',
+      network_id: '*', // eslint-disable-line camelcase
       port: 8555,
       gas: 0xfffffffffff,
-      gasPrice: 0x01
+      gasPrice: 0x01,
+    },
+    testrpc: {
+      host: 'localhost',
+      port: 8545,
+      network_id: '*', // eslint-disable-line camelcase
+    },
+    ganache: {
+      host: 'localhost',
+      port: 7545,
+      network_id: '*', // eslint-disable-line camelcase
+    },
+  },
+  solc: {
+    optimizer: {
+      enabled: true,
+      runs: 200
     }
   },
   mocha: {

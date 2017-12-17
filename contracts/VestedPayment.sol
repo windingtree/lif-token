@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.18;
 
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
@@ -72,7 +72,7 @@ contract VestedPayment is Ownable {
   /**
      @dev Get how many tokens are available to be claimed
    */
-  function getAvailableTokens() public constant returns (uint256) {
+  function getAvailableTokens() public view returns (uint256) {
     uint256 period = block.timestamp.sub(startTimestamp)
       .div(secondsPerPeriod);
 
