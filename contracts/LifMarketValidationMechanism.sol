@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.18;
 
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
@@ -169,7 +169,7 @@ contract LifMarketValidationMechanism is Ownable {
 
      @return the current period as a number from 0 to totalPeriods
     */
-  function getCurrentPeriodIndex() public constant returns(uint256) {
+  function getCurrentPeriodIndex() public view returns(uint256) {
     assert(block.timestamp >= startTimestamp);
     return block.timestamp.sub(startTimestamp).
       sub(totalPausedSeconds).
@@ -183,7 +183,7 @@ contract LifMarketValidationMechanism is Ownable {
      @return the accumulated distribution percentage, used to calculate things
      like the maximum amount that can be claimed by the foundation
     */
-  function getAccumulatedDistributionPercentage() public constant returns(uint256 percentage) {
+  function getAccumulatedDistributionPercentage() public view returns(uint256 percentage) {
     uint256 period = getCurrentPeriodIndex();
 
     assert(period < totalPeriods);
@@ -197,7 +197,7 @@ contract LifMarketValidationMechanism is Ownable {
 
      @return the current buy price (in eth/lif, multiplied by PRICE_FACTOR)
     */
-  function getBuyPrice() public constant returns (uint256 price) {
+  function getBuyPrice() public view returns (uint256 price) {
     uint256 accumulatedDistributionPercentage = getAccumulatedDistributionPercentage();
 
     return initialBuyPrice.
@@ -211,7 +211,7 @@ contract LifMarketValidationMechanism is Ownable {
 
      @return the maximum wei claimable by the foundation as of now
     */
-  function getMaxClaimableWeiAmount() public constant returns (uint256) {
+  function getMaxClaimableWeiAmount() public view returns (uint256) {
     if (isFinished()) {
       return this.balance;
     } else {
@@ -260,7 +260,7 @@ contract LifMarketValidationMechanism is Ownable {
 
      @return true if the MVM end-of-life has been reached
     */
-  function isFinished() public constant returns (bool finished) {
+  function isFinished() public view returns (bool finished) {
     return getCurrentPeriodIndex() >= totalPeriods;
   }
 

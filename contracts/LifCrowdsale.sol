@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.18;
 
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
@@ -189,7 +189,7 @@ contract LifCrowdsale is Ownable, Pausable {
 
      @return the current Lif per Eth rate or 0 when not in TGE
    */
-  function getRate() public constant returns (uint256) {
+  function getRate() public view returns (uint256) {
     if (block.timestamp < startTimestamp)
       return 0;
     else if (block.timestamp <= end1Timestamp)
@@ -350,7 +350,6 @@ contract LifCrowdsale is Ownable, Pausable {
     bool withinPeriod = now >= startTimestamp && now <= end2Timestamp;
     bool nonZeroPurchase = msg.value != 0;
     assert(withinPeriod && nonZeroPurchase);
-
     _;
   }
 
@@ -367,7 +366,7 @@ contract LifCrowdsale is Ownable, Pausable {
      @dev Modifier
      @return true if minCapUSD has been reached by contributions during the TGE
   */
-  function funded() public constant returns (bool) {
+  function funded() public view returns (bool) {
     assert(weiPerUSDinTGE > 0);
     return weiRaised >= minCapUSD.mul(weiPerUSDinTGE);
   }

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.18;
 
 import "zeppelin-solidity/contracts/token/StandardToken.sol";
 
@@ -29,7 +29,7 @@ contract SmartToken is StandardToken {
 
      @return true if the call function was executed successfully
    */
-  function approveData(address _spender, uint256 _value, bytes _data) returns (bool) {
+  function approveData(address _spender, uint256 _value, bytes _data) public returns (bool) {
     require(_spender != address(this));
 
     super.approve(_spender, _value);
