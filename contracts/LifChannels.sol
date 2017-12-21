@@ -5,7 +5,7 @@ import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "zeppelin-solidity/contracts/ECRecovery.sol";
 
 /**
-   @title LifChannels, Statw channels for ERC20 Lif Token
+   @title LifChannels, State channels for ERC20 Lif Token
 
    Contract that provides holders of a ERC20 compatible token the creation of
    channels between two users, once a channel is open the users can exchange
