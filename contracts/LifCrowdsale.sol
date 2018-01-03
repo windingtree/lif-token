@@ -417,9 +417,8 @@ contract LifCrowdsale is Ownable, Pausable {
 
       forwardFunds();
 
-      // finish the minting of the token and unpause it
+      // finish the minting of the token
       token.finishMinting();
-      token.unpause();
 
       // transfer the ownership of the token to the foundation
       token.transferOwnership(owner);
