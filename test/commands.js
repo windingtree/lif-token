@@ -260,7 +260,7 @@ async function runPauseTokenCommand(command, state) {
     } else {
       tx = await state.token.unpause({from: account});
     }
-    assert.equal(false, shouldThrow);
+    assert.equal(false, shouldThrow, 'tokenPause throw when it shouldnt');
     state.tokenPaused = command.pause;
     state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
   } catch(e) {
@@ -361,15 +361,15 @@ async function runFinalizeCrowdsaleCommand(command, state) {
         state.MVMInitialBuyPrice = MVMInitialBalance.
           mul(priceFactor).
           dividedBy(help.lif2LifWei(state.totalSupply)).floor();
+
       }
     } else {
       state.initialTokenSupply = state.totalSupply;
     }
-
     assert.equal(false, shouldThrow);
     state.crowdsaleFinalized = true;
     state.crowdsaleFunded = crowdsaleFunded;
-    state.tokenPaused = false;
+
   } catch(e) {
     state = trackGasFromLastBlock(state, command.fromAccount);
     assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
@@ -439,6 +439,40 @@ async function runClaimEthCommand(command, state) {
     );
     state.claimedEth[command.account] = claimedEthAmount;
     state = increaseEthBalance(state, command.fromAccount, claimedEthAmount);
+    state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
+  } catch(e) {
+    state = trackGasFromLastBlock(state, command.fromAccount);
+    assertExpectedException(e, shouldThrow, hasZeroAddress, state, command);
+  }
+  return state;
+}
+
+async function runReturnPurchaseCommand(command, state) {
+
+  let account = gen.getAccount(command.fromAccount),
+    contributor = gen.getAccount(command.contributor),
+    purchases = _.filter(state.purchases, (p) => p.account == command.contributor),
+    hasZeroAddress = (isZeroAddress(contributor) || isZeroAddress(account)),
+    nextTimestamp = latestTime();
+
+
+  let shouldThrow = state.crowdsaleFinalized ||
+    (purchases.length == 0) ||
+    hasZeroAddress ||
+    (account != gen.getAccount(state.owner)) ||
+    (nextTimestamp <= state.crowdsaleData.end2Timestamp);
+
+  try {
+    help.debug('returning purhcase', command.contributor, JSON.stringify(purchases));
+    const tx = await state.crowdsaleContract.returnPurchase(contributor, {from: account});
+
+    assert.equal(false, shouldThrow, 'returnPurchase should have thrown but it did not');
+
+    const returnedAmount = _.reduce(
+      _.map(purchases, (p) => p.wei),
+      (accum, wei) => accum.plus(wei)
+    );
+    state = increaseEthBalance(state, command.contributor, returnedAmount);
     state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
   } catch(e) {
     state = trackGasFromLastBlock(state, command.fromAccount);
@@ -910,6 +944,7 @@ const commands = {
   finalizeCrowdsale: {gen: gen.finalizeCrowdsaleCommandGen, run: runFinalizeCrowdsaleCommand},
   addPrivatePresalePayment: {gen: gen.addPrivatePresalePaymentCommandGen, run: runAddPrivatePresalePaymentCommand},
   claimEth: {gen: gen.claimEthCommandGen, run: runClaimEthCommand},
+  returnPurchase: {gen: gen.returnPurchaseCommandGen, run: runReturnPurchaseCommand},
   transfer: {gen: gen.transferCommandGen, run: runTransferCommand},
   approve: {gen: gen.approveCommandGen, run: runApproveCommand},
   transferFrom: {gen: gen.transferFromCommandGen, run: runTransferFromCommand},
