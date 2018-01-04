@@ -398,9 +398,9 @@ contract LifCrowdsale is Ownable, Pausable {
     uint256 toReturn = purchases[contributor];
     assert(toReturn > 0);
 
-    purchases[msg.sender] = 0;
+    purchases[contributor] = 0;
 
-    msg.sender.transfer(toReturn);
+    contributor.transfer(toReturn);
   }
 
   /**
