@@ -388,6 +388,22 @@ contract LifCrowdsale is Ownable, Pausable {
   }
 
   /**
+     @dev Allows the owner to return an purchase to a contributor
+   */
+  function returnPurchase(address contributor)
+    public hasEnded onlyOwner
+  {
+    require(!isFinalized);
+
+    uint256 toReturn = purchases[contributor];
+    assert(toReturn > 0);
+
+    purchases[contributor] = 0;
+
+    contributor.transfer(toReturn);
+  }
+
+  /**
      @dev Finalizes the crowdsale, taking care of transfer of funds to the
      Winding Tree Foundation and creation and funding of the Market Validation
      Mechanism in case the soft cap was exceeded. It also unpauses the token to
@@ -401,9 +417,8 @@ contract LifCrowdsale is Ownable, Pausable {
 
       forwardFunds();
 
-      // finish the minting of the token and unpause it
+      // finish the minting of the token
       token.finishMinting();
-      token.unpause();
 
       // transfer the ownership of the token to the foundation
       token.transferOwnership(owner);

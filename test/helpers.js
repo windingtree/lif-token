@@ -96,6 +96,8 @@ module.exports = {
     }
     await increaseTimeTestRPCTo(endTime+1);
     await crowdsale.finalize();
+    let token = LifToken.at(await crowdsale.token());
+    await token.unpause();
     return crowdsale;
   },
 

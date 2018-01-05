@@ -237,8 +237,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        { type: 'waitTime','seconds':duration.days(1)},
-        { type:'sendTransaction','account':3,'beneficiary':0,'eth':9}
+        { 'type': 'waitTime','seconds':duration.days(1)},
+        { 'type':'sendTransaction','account':3,'beneficiary':0,'eth':9}
       ],
       crowdsale: {
         rate1: 18, rate2: 33,
@@ -248,9 +248,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        { type: 'waitTime','seconds':duration.days(2.6)},
-        { type:'pauseCrowdsale','pause':true,'fromAccount':8},
-        { type:'sendTransaction','account':0,'beneficiary':9,'eth':39}
+        { 'type': 'waitTime','seconds':duration.days(2.6)},
+        { 'type':'pauseCrowdsale','pause':true,'fromAccount':8},
+        { 'type':'sendTransaction','account':0,'beneficiary':9,'eth':39}
       ],
       crowdsale: {
         rate1: 39, rate2: 13,
@@ -260,7 +260,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleBelowSoftCap','account':7,'finalize':false}
+        { 'type':'fundCrowdsaleBelowSoftCap','account':7,'finalize':false}
       ],
       crowdsale: {
         rate1: 33, rate2: 12,
@@ -272,8 +272,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('does not fail when running a fund over soft cap and then one below soft cap commands', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleOverSoftCap','account':7,'softCapExcessWei':7,'finalize':false},
-        {'type':'fundCrowdsaleBelowSoftCap','account':10,'finalize':true}
+        { 'type':'fundCrowdsaleOverSoftCap','account':7,'softCapExcessWei':7,'finalize':false},
+        { 'type':'fundCrowdsaleBelowSoftCap','account':10,'finalize':true}
       ],
       crowdsale: {
         rate1: 10, rate2: 27,
@@ -285,8 +285,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('does not fail when funding below soft cap and then sending tokens to the MVM', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleBelowSoftCap','account':10,'finalize':true},
-        {'type':'MVMSendTokens','tokens':3,'from':10}
+        { 'type':'fundCrowdsaleBelowSoftCap','account':10,'finalize':true},
+        { 'type':'pauseToken','pause':false,'fromAccount':8},
+        { 'type':'MVMSendTokens','tokens':3,'from':10}
       ],
       crowdsale: {
         rate1: 9, rate2: 1, foundationWallet: 0,
@@ -298,12 +299,12 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('calculates correct rate on the boundaries between end1Timestamp and end2Timestamp', async function() {
     let crowdsaleAndCommands = {
       commands: [
-        { type: 'checkRate' },
-        { type: 'waitTime','seconds':duration.minutes(1430)},
-        { type: 'setWeiPerUSDinTGE', wei: 3000000000000000, fromAccount: 3 },
-        { type: 'checkRate' },
-        { type: 'waitTime','seconds':duration.days(2.9)},
-        { type: 'buyTokens', beneficiary: 3, account: 2, eth: 12 }
+        { 'type': 'checkRate' },
+        { 'type': 'waitTime','seconds':duration.minutes(1430)},
+        { 'type': 'setWeiPerUSDinTGE', wei: 3000000000000000, fromAccount: 3 },
+        { 'type': 'checkRate' },
+        { 'type': 'waitTime','seconds':duration.days(2.9)},
+        { 'type': 'buyTokens', beneficiary: 3, account: 2, eth: 12 }
       ],
       crowdsale: {
         rate1: 16,
@@ -321,14 +322,14 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('Execute a normal TGE', async function() {
     let crowdsaleAndCommands = {
       commands: [
-        { type: 'checkRate' },
-        { type: 'setWeiPerUSDinTGE', wei: 1500000000000000, fromAccount: 3 },
-        { type: 'waitTime','seconds':duration.days(1)},
-        { type: 'buyTokens', beneficiary: 3, account: 4, eth: 40000 },
-        { type: 'waitTime','seconds':duration.days(1)},
-        { type: 'buyTokens', beneficiary: 3, account: 4, eth: 23000 },
-        { type: 'waitTime','seconds':duration.days(1)},
-        { type: 'finalizeCrowdsale', fromAccount: 5 }
+        { 'type': 'checkRate' },
+        { 'type': 'setWeiPerUSDinTGE', wei: 1500000000000000, fromAccount: 3 },
+        { 'type': 'waitTime','seconds':duration.days(1)},
+        { 'type': 'buyTokens', beneficiary: 3, account: 4, eth: 40000 },
+        { 'type': 'waitTime','seconds':duration.days(1)},
+        { 'type': 'buyTokens', beneficiary: 3, account: 4, eth: 23000 },
+        { 'type': 'waitTime','seconds':duration.days(1)},
+        { 'type': 'finalizeCrowdsale', fromAccount: 5 }
       ],
       crowdsale: {
         rate1: 10,
@@ -346,16 +347,16 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('should handle the exception correctly when trying to pause the token during and after the crowdsale', async function() {
     let crowdsaleAndCommands = {
       commands: [
-        { type: 'checkRate' },
-        { type: 'waitTime','seconds':duration.days(1)},
-        { type: 'waitTime','seconds':duration.days(0.8)},
-        { type: 'pauseToken', 'pause':true, 'fromAccount':1 },
-        { type: 'setWeiPerUSDinTGE', wei: 1500000000000000, fromAccount: 3 },
-        { type: 'waitTime','seconds':duration.days(1.1)},
-        { type: 'buyTokens', beneficiary: 3, account: 4, eth: 60000 },
-        { type: 'waitTime','seconds':duration.days(2)},
-        { type: 'finalizeCrowdsale', fromAccount: 5 },
-        { type: 'pauseToken', 'pause':true, 'fromAccount':1 }
+        { 'type': 'checkRate' },
+        { 'type': 'waitTime','seconds':duration.days(1)},
+        { 'type': 'waitTime','seconds':duration.days(0.8)},
+        { 'type': 'pauseToken', 'pause':true, 'fromAccount':3 },
+        { 'type': 'setWeiPerUSDinTGE', wei: 1500000000000000, fromAccount: 3 },
+        { 'type': 'waitTime','seconds':duration.days(1.1)},
+        { 'type': 'buyTokens', beneficiary: 3, account: 4, eth: 60000 },
+        { 'type': 'waitTime','seconds':duration.days(2)},
+        { 'type': 'finalizeCrowdsale', fromAccount: 5 },
+        { 'type': 'pauseToken', 'pause':false, 'fromAccount':3 }
       ],
       crowdsale: {
         rate1: 10,
@@ -375,9 +376,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        { type:'setWeiPerUSDinTGE','wei':0,'fromAccount':10},
-        { type:'setWeiPerUSDinTGE','wei':0,'fromAccount':6},
-        { type:'setWeiPerUSDinTGE','wei':3,'fromAccount':6}
+        { 'type':'setWeiPerUSDinTGE','wei':0,'fromAccount':10},
+        { 'type':'setWeiPerUSDinTGE','wei':0,'fromAccount':6},
+        { 'type':'setWeiPerUSDinTGE','wei':3,'fromAccount':6}
       ],
       crowdsale: {
         rate1: 10, rate2: 31,
@@ -390,7 +391,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
   it('should handle the thrown exc. when trying to approve on the paused token', async function() {
     await runGeneratedCrowdsaleAndCommands({
-      commands: [{ type:'approve','lif':0,'fromAccount':3,'spenderAccount':5}],
+      commands: [{ 'type':'approve','lif':0,'fromAccount':3,'spenderAccount':5}],
       crowdsale: {
         rate1: 24, rate2: 15,
         foundationWallet: 2,
@@ -403,7 +404,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('should run the fund and finalize crowdsale command fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':true}
+        { 'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':true}
       ],
       crowdsale: {
         rate1: 20, rate2: 46,
@@ -415,7 +416,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('should run the fund crowdsale below cap without finalize command fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':false}
+        { 'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':false}
       ],
       crowdsale: {
         rate1: 20, rate2: 46,
@@ -428,8 +429,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('should run the fund crowdsale below cap, finalize and try to approve form zero address', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':true},
-        {'type':'approve','lif':0,'fromAccount':'zero','spenderAccount':'zero'}
+        { 'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':true},
+        { 'type':'pauseToken','pause':false,'fromAccount':0},
+        { 'type':'approve','lif':0,'fromAccount':'zero','spenderAccount':'zero'}
       ],
       crowdsale: {
         rate1: 20, rate2: 46,
@@ -442,9 +444,10 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     await runGeneratedCrowdsaleAndCommands({
       commands:
       [
-        {'type':'fundCrowdsaleOverSoftCap','account':10,'softCapExcessWei':25,'finalize':true},
-        {'type':'approve','lif':23,'fromAccount':10,'spenderAccount':'zero'},
-        {'type':'transferFrom','lif':23,'fromAccount':'zero','toAccount':5,'senderAccount':10}
+        { 'type':'fundCrowdsaleOverSoftCap','account':10,'softCapExcessWei':25,'finalize':true},
+        { 'type':'pauseToken','pause':false,'fromAccount':0},
+        { 'type':'approve','lif':23,'fromAccount':10,'spenderAccount':'zero'},
+        { 'type':'transferFrom','lif':23,'fromAccount':'zero','toAccount':5,'senderAccount':10}
       ],
       crowdsale: {
         rate1: 23, rate2: 16, foundationWallet: 0,
@@ -456,8 +459,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('should be able to transfer tokens in unpaused token after crowdsale funded over cap', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleOverSoftCap','account':10,'softCapExcessWei':4,'finalize':true},
-        {'type':'transfer','lif':0,'fromAccount':4,'toAccount':2}
+        { 'type':'fundCrowdsaleOverSoftCap','account':10,'softCapExcessWei':4,'finalize':true},
+        { 'type':'pauseToken','pause':false,'fromAccount':5},
+        { 'type':'transfer','lif':0,'fromAccount':4,'toAccount':2}
       ],
       crowdsale: {
         rate1: 14, rate2: 20,
@@ -471,8 +475,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('should handle fund, finalize and burn with 0 tokens', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':true},
-        {'type':'burnTokens','account':4,'tokens':0}
+        { 'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':true},
+        { 'type':'pauseToken','pause':false,'fromAccount':1},
+        { 'type':'burnTokens','account':4,'tokens':0}
       ],
       crowdsale: {
         rate1: 11, rate2: 13, foundationWallet: 3, foundersWallet: 2,
@@ -484,7 +489,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('should run the fund over soft cap and finalize crowdsale command fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleOverSoftCap','account':3,'softCapExcessWei':10,'finalize':true}
+        { 'type':'fundCrowdsaleOverSoftCap','account':3,'softCapExcessWei':10,'finalize':true}
       ],
       crowdsale: {
         rate1: 20, rate2: 46,
@@ -497,8 +502,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('should run fund and finalize crowdsale below cap, the burn tokens fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleBelowSoftCap','account':8,'finalize':true},
-        {'type':'burnTokens','account':5,'tokens':44}
+        { 'type':'fundCrowdsaleBelowSoftCap','account':8,'finalize':true},
+        { 'type':'pauseToken','pause':false,'fromAccount':10},
+        { 'type':'burnTokens','account':5,'tokens':44}
       ],
       crowdsale: {
         rate1: 1, rate2: 6, foundationWallet: 5, foundersWallet: 2, setWeiLockSeconds: 2176, owner: 10
@@ -509,8 +515,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('should run the fund and finalize below and over soft cap sequence fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':false},
-        {'type':'fundCrowdsaleOverSoftCap','account':10,'softCapExcessWei':15,'finalize':false}
+        { 'type':'fundCrowdsaleBelowSoftCap','account':3,'finalize':false},
+        { 'type':'fundCrowdsaleOverSoftCap','account':10,'softCapExcessWei':15,'finalize':false}
       ],
       crowdsale: {
         rate1: 26, rate2: 28, foundationWallet: 9, foundersWallet: 2,
@@ -522,8 +528,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('should fund and finalize over cap and then send tokens to MVM fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleOverSoftCap','account':0,'softCapExcessWei':32,'finalize':true},
-        {'type':'MVMSendTokens','tokens':4,'from':4}
+        { 'type':'fundCrowdsaleOverSoftCap','account':0,'softCapExcessWei':32,'finalize':true},
+        { 'type':'pauseToken','pause':false,'fromAccount':9},
+        { 'type':'MVMSendTokens','tokens':4,'from':4}
       ],
       crowdsale: {
         rate1: 2, rate2: 32, foundationWallet: 7, foundersWallet: 2, setWeiLockSeconds: 2098, owner: 9
@@ -534,7 +541,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('runs the fund over soft cap and finalize with 0 excess command fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleOverSoftCap','account':0,'softCapExcessWei':0,'finalize': true}
+        { 'type':'fundCrowdsaleOverSoftCap','account':0,'softCapExcessWei':0,'finalize': true}
       ],
       crowdsale: {
         rate1: 3, rate2: 3, foundationWallet: 2, foundersWallet: 3,
@@ -546,8 +553,37 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('should run fund over soft cap and finalize + claimEth sequence fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       'commands': [
-        {'type': 'fundCrowdsaleOverSoftCap', 'account': 8, 'softCapExcessWei': 15, 'finalize': true},
-        {'type': 'claimEth', 'eth': 33, 'fromAccount': 8}
+        { 'type': 'fundCrowdsaleOverSoftCap', 'account': 8, 'softCapExcessWei': 15, 'finalize': true},
+        { 'type':'pauseToken','pause':false,'fromAccount':2},
+        { 'type': 'claimEth', 'eth': 33, 'fromAccount': 8}
+      ],
+      'crowdsale': {
+        'rate1': 23, 'rate2': 40, 'foundationWallet': 1, 'foundersWallet': 2,
+        'setWeiLockSeconds': 1445, 'owner': 2
+      }
+    });
+  });
+
+  it('should run fund over soft cap and finalize + returnPurchase sequence fine and send tokens', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      'commands': [
+        { 'type': 'fundCrowdsaleOverSoftCap', 'account': 8, 'softCapExcessWei': 15, 'finalize': true},
+        { 'type': 'returnPurchase', 'eth': 1, 'fromAccount': 0, 'contributor': 8},
+        { 'type':'pauseToken','pause':false,'fromAccount':2},
+        { 'type':'transfer','lif':10,'fromAccount':8,'toAccount':2}
+      ],
+      'crowdsale': {
+        'rate1': 23, 'rate2': 40, 'foundationWallet': 1, 'foundersWallet': 2,
+        'setWeiLockSeconds': 1445, 'owner': 2
+      }
+    });
+  });
+
+  it('should run fund over soft cap and finalize + returnPurchase sequence fine', async function() {
+    await runGeneratedCrowdsaleAndCommands({
+      'commands': [
+        { 'type': 'fundCrowdsaleOverSoftCap', 'account': 8, 'softCapExcessWei': 15, 'finalize': true},
+        { 'type': 'returnPurchase', 'eth': 33, 'fromAccount': 0, 'contributor': 8},
       ],
       'crowdsale': {
         'rate1': 23, 'rate2': 40, 'foundationWallet': 1, 'foundersWallet': 2,
@@ -559,8 +595,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('should run fund below min cap and finalize + claimEth sequence fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       'commands': [
-        {'type': 'fundCrowdsaleBelowMinCap', 'account': 8, 'fundingEth': 15, 'finalize': true},
-        {'type': 'claimEth', 'fromAccount': 8}
+        { 'type': 'fundCrowdsaleBelowMinCap', 'account': 8, 'fundingEth': 15, 'finalize': true},
+        { 'type': 'claimEth', 'fromAccount': 8}
       ],
       'crowdsale': {
         'rate1': 23, 'rate2': 40, 'foundationWallet': 1, 'foundersWallet': 2,
@@ -573,8 +609,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
 
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleOverSoftCap','account':7,'softCapExcessWei':13,'finalize':true},
-        {'type':'MVMClaimWei','eth':12}
+        { 'type':'fundCrowdsaleOverSoftCap','account':7,'softCapExcessWei':13,'finalize':true},
+        { 'type':'pauseToken','pause':false,'fromAccount':10},
+        { 'type':'MVMClaimWei','eth':12}
       ],
       crowdsale: {
         rate1: 3, rate2: 11, foundationWallet: 5, foundersWallet: 2,
@@ -589,12 +626,13 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     // and unpausing should also work fine
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleOverSoftCap','account':7,'softCapExcessWei':13,'finalize':true},
-        {'type':'MVMPause','pause':true, 'fromAccount':5},
-        {'type':'MVMClaimWei','eth':12},
-        {'type':'MVMWaitForMonth','month':4},
-        {'type':'MVMPause','pause':false, 'fromAccount':5},
-        {'type':'MVMWaitForMonth','month':6}, // to check that waitForMonth works fine with pausedSeconds > 0
+        { 'type':'fundCrowdsaleOverSoftCap','account':7,'softCapExcessWei':13,'finalize':true},
+        { 'type':'pauseToken','pause':false,'fromAccount':10},
+        { 'type':'MVMPause','pause':true, 'fromAccount':5},
+        { 'type':'MVMClaimWei','eth':12},
+        { 'type':'MVMWaitForMonth','month':4},
+        { 'type':'MVMPause','pause':false, 'fromAccount':5},
+        { 'type':'MVMWaitForMonth','month':6}, // to check that waitForMonth works fine with pausedSeconds > 0
       ],
       crowdsale: {
         rate1: 3, rate2: 11, foundationWallet: 5, foundersWallet: 2,
@@ -606,7 +644,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('runs an addPrivatePresalePayment command fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'addPrivatePresalePayment','beneficiaryAccount':1,'fromAccount':9,'eth':24,'rate':50}
+        { 'type':'addPrivatePresalePayment','beneficiaryAccount':1,'fromAccount':9,'eth':24,'rate':50}
       ],
       crowdsale: {
         rate1: 5, rate2: 21, foundationWallet: 0, foundersWallet: 2,
@@ -632,6 +670,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     await runGeneratedCrowdsaleAndCommands({
       'commands': [
         { 'type': 'fundCrowdsaleBelowSoftCap', 'account': 2, 'finalize': true },
+        { 'type':'pauseToken','pause':false,'fromAccount':7},
         { 'type': 'transfer', 'lif': 0, 'fromAccount': 'zero', 'toAccount': 7 }
       ],
       'crowdsale': {
@@ -645,6 +684,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     await runGeneratedCrowdsaleAndCommands({
       'commands': [
         { 'type': 'fundCrowdsaleBelowSoftCap', 'account': 9, 'fundingEth': 0, 'finalize': true },
+        { 'type':'pauseToken','pause':false,'fromAccount':6},
         { 'type': 'burnTokens', 'account': 9, 'tokens': 18 }
       ],
       'crowdsale': {
@@ -657,6 +697,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     await runGeneratedCrowdsaleAndCommands({
       'commands': [
         { 'type': 'fundCrowdsaleOverSoftCap', 'account': 7, 'softCapExcessWei': 21, 'finalize': true },
+        { 'type': 'pauseToken', 'pause':false,'fromAccount':9},
         { 'type': 'MVMWaitForMonth', month: 5},
         { 'type': 'MVMSendTokens', 'tokens': 0.00000014, 'from': 7 }
       ],
@@ -670,8 +711,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('runs a fund over soft cap and MVM claim eth commands fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       'commands': [
-        {'type': 'fundCrowdsaleOverSoftCap', 'account': 7, 'softCapExcessWei': 21, 'finalize': true},
-        {'type': 'MVMClaimWei', 'eth': 0}
+        { 'type': 'fundCrowdsaleOverSoftCap', 'account': 7, 'softCapExcessWei': 21, 'finalize': true},
+        { 'type': 'MVMClaimWei', 'eth': 0}
       ],
       'crowdsale': {
         'rate1': 18, 'rate2': 16, 'foundationWallet': 4, 'foundersWallet': 0,
@@ -680,10 +721,11 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     });
   });
 
-  it('can fund over soft cap, wait a few months and then claim eth on the mvm', async function() {
+  it('can fund over soft cap, wait a few months and then claim eth on the MVM', async function() {
     await runGeneratedCrowdsaleAndCommands({
       'commands': [
         { 'type': 'fundCrowdsaleOverSoftCap', 'account': 2, 'softCapExcessWei': 8, 'finalize': true },
+        { 'type':'pauseToken','pause':false,'fromAccount':7},
         { 'type': 'MVMWaitForMonth', 'month': 11 },
         { 'type': 'MVMClaimWei', 'eth': 4 }
       ],
@@ -698,6 +740,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     await runGeneratedCrowdsaleAndCommands({
       'commands': [
         { 'type': 'fundCrowdsaleBelowSoftCap', 'account': 3, 'finalize': true },
+        { 'type':'pauseToken','pause':false,'fromAccount':1},
         { 'type': 'transfer', 'lif': 0, 'fromAccount': 10, 'toAccount': 'zero' },
         { 'type': 'transferFrom', 'lif': 0, 'senderAccount': 5, 'fromAccount': 10, 'toAccount': 'zero' }
       ],
@@ -711,9 +754,9 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('runs fund below cap, send tx and fund below cap with finalize test fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleBelowSoftCap','account':10,'fundingEth':27,'finalize':false},
-        {'type':'sendTransaction','account':5,'beneficiary':5,'eth':3},
-        {'type':'fundCrowdsaleBelowSoftCap','account':8,'finalize':true}
+        { 'type':'fundCrowdsaleBelowSoftCap','account':10,'fundingEth':27,'finalize':false},
+        { 'type':'sendTransaction','account':5,'beneficiary':5,'eth':3},
+        { 'type':'fundCrowdsaleBelowSoftCap','account':8,'finalize':true}
       ],
       crowdsale: {
         rate1: 37, rate2: 4, foundationWallet: 5, foundersWallet: 6,
@@ -725,10 +768,10 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('sets wei per USD rate and funds and finalizes crowdsale fine', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'setWeiPerUSDinTGE','wei':9999999143274796,'fromAccount':2},
-        {'type':'waitTime','seconds':duration.days(1)}, // wait until crowdsale start
-        {'type':'buyTokens','beneficiary':3,'account':7,'eth':0.000000100000000035},
-        {'type':'finalizeCrowdsale','fromAccount':2}
+        { 'type':'setWeiPerUSDinTGE','wei':9999999143274796,'fromAccount':2},
+        { 'type':'waitTime','seconds':duration.days(1)}, // wait until crowdsale start
+        { 'type':'buyTokens','beneficiary':3,'account':7,'eth':0.000000100000000035},
+        { 'type':'finalizeCrowdsale','fromAccount':2}
       ],
       crowdsale: {
         rate1: 33, rate2: 39, foundationWallet: 6, foundersWallet: 7,
@@ -741,8 +784,8 @@ contract('LifCrowdsale Property-based test', function(accounts) {
     // pause actually fails because it's from the crowdsale owner instead of the foundation wallet address
     await runGeneratedCrowdsaleAndCommands({
       'commands': [
-        {'type':'fundCrowdsaleOverSoftCap','account':2,'softCapExcessWei':2,'finalize':true},
-        {'type':'MVMPause','pause':true,'fromAccount':8}
+        { 'type':'fundCrowdsaleOverSoftCap','account':2,'softCapExcessWei':2,'finalize':true},
+        { 'type':'MVMPause','pause':true,'fromAccount':8}
       ],
       'crowdsale': {
         'rate1': 24, 'rate2': 15, 'foundationWallet': 9, 'foundersWallet': 8,
@@ -754,7 +797,7 @@ contract('LifCrowdsale Property-based test', function(accounts) {
   it('runs fine when funding over soft cap with no excess wei and finalize', async function() {
     await runGeneratedCrowdsaleAndCommands({
       commands: [
-        {'type':'fundCrowdsaleOverSoftCap','account':6,'softCapExcessWei':0,'finalize':true}
+        { 'type':'fundCrowdsaleOverSoftCap','account':6,'softCapExcessWei':0,'finalize':true}
       ],
       crowdsale: {
         rate1: 10, rate2: 23, foundationWallet: 4, foundersWallet: 10,

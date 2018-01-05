@@ -103,6 +103,13 @@ module.exports = {
     fromAccount: accountGen
   }),
 
+  returnPurchaseCommandGen: jsc.record({
+    type: jsc.constant('returnPurchase'),
+    eth: jsc.nat,
+    fromAccount: accountGen,
+    contributor: accountGen
+  }),
+
   transferCommandGen: jsc.record({
     type: jsc.constant('transfer'),
     lif: jsc.nat,
@@ -168,4 +175,3 @@ module.exports = {
   }),
 
 };
-
