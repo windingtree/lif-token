@@ -9,34 +9,37 @@ var LifTokenTest = artifacts.require('./LifTokenTest.sol');
 
 const LOG_EVENTS = true;
 
-contract('LifTokenTest', function(accounts) {
-
+contract('LifTokenTest', function (accounts) {
   var token;
   var eventsWatcher;
 
-  beforeEach(async function() {
+  beforeEach(async function () {
     token = await LifTokenTest.new();
     eventsWatcher = token.allEvents();
-    eventsWatcher.watch(function(error, log){
-      if (LOG_EVENTS)
-        console.log('Event:', log.event, ':',log.args);
+    eventsWatcher.watch(function (error, log) {
+      if (LOG_EVENTS) {
+        if (error) {
+          console.log('Error in event:', error);
+        } else {
+          console.log('Event:', log.event, ':', log.args);
+        }
+      }
     });
   });
 
-  afterEach(function(done) {
+  afterEach(function (done) {
     eventsWatcher.stopWatching();
     done();
   });
 
-  it('has name, symbol and decimals', async function() {
-    new BigNumber(50000000000000000000).
-      should.be.bignumber.equal(await token.MAX_LIF_FAUCET.call());
+  it('has name, symbol and decimals', async function () {
+    new BigNumber(50000000000000000000)
+      .should.be.bignumber.equal(await token.MAX_LIF_FAUCET.call());
   });
 
-  it('should return the correct balance amount after claiming tokens', async function() {
+  it('should return the correct balance amount after claiming tokens', async function () {
     await token.faucetLif();
-    new BigNumber(50000000000000000000).
-      should.be.bignumber.equal(await token.balanceOf(accounts[0]));
+    new BigNumber(50000000000000000000)
+      .should.be.bignumber.equal(await token.balanceOf(accounts[0]));
   });
-
 });

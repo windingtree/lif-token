@@ -9,8 +9,8 @@ const knownAccountGen = jsc.nat(web3.eth.accounts.length - 1);
 const zeroAddressAccountGen = jsc.constant('zero');
 const accountGen = jsc.oneof([zeroAddressAccountGen, knownAccountGen]);
 
-function getAccount(account) {
-  if (account == 'zero') {
+function getAccount (account) {
+  if (account === 'zero') {
     return help.zeroAddress;
   } else {
     return web3.eth.accounts[account];
@@ -28,65 +28,65 @@ module.exports = {
     rate2: jsc.nat,
     foundationWallet: knownAccountGen,
     foundersWallet: knownAccountGen,
-    setWeiLockSeconds: jsc.integer(600,3600),
-    owner: knownAccountGen
+    setWeiLockSeconds: jsc.integer(600, 3600),
+    owner: knownAccountGen,
   }),
 
   waitBlockCommandGen: jsc.record({
     type: jsc.constant('waitBlock'),
-    blocks: jsc.nat
+    blocks: jsc.nat,
   }),
 
   waitTimeCommandGen: jsc.record({
     type: jsc.constant('waitTime'),
-    seconds: jsc.nat
+    seconds: jsc.nat,
   }),
 
   checkRateCommandGen: jsc.record({
-    type: jsc.constant('checkRate')
+    type: jsc.constant('checkRate'),
   }),
 
   setWeiPerUSDinTGECommandGen: jsc.record({
     type: jsc.constant('setWeiPerUSDinTGE'),
-    wei: jsc.integer(0,10000000000000000), // between 0-0.01 ETH
-    fromAccount: accountGen
+    wei: jsc.integer(0, 10000000000000000), // between 0-0.01 ETH
+    fromAccount: accountGen,
   }),
 
   buyTokensCommandGen: jsc.record({
     type: jsc.constant('buyTokens'),
     account: accountGen,
     beneficiary: accountGen,
-    eth: jsc.nat
+    eth: jsc.nat,
   }),
 
   burnTokensCommandGen: jsc.record({
     type: jsc.constant('burnTokens'),
     account: accountGen,
-    tokens: jsc.nat
+    tokens: jsc.nat,
   }),
 
   sendTransactionCommandGen: jsc.record({
     type: jsc.constant('sendTransaction'),
     account: accountGen,
     beneficiary: accountGen,
-    eth: jsc.nat
+    eth: jsc.nat,
   }),
 
   pauseCrowdsaleCommandGen: jsc.record({
     type: jsc.constant('pauseCrowdsale'),
     pause: jsc.bool,
-    fromAccount: accountGen
+    fromAccount: accountGen,
   }),
 
   pauseTokenCommandGen: jsc.record({
     type: jsc.constant('pauseToken'),
     pause: jsc.bool,
-    fromAccount: accountGen
+    fromAccount: accountGen,
   }),
 
   finalizeCrowdsaleCommandGen: jsc.record({
     type: jsc.constant('finalizeCrowdsale'),
-    fromAccount: accountGen
+    fromAccount: accountGen,
   }),
 
   addPrivatePresalePaymentCommandGen: jsc.record({
@@ -94,34 +94,34 @@ module.exports = {
     beneficiaryAccount: accountGen,
     fromAccount: accountGen,
     eth: jsc.nat,
-    rate: jsc.integer(10, 200)
+    rate: jsc.integer(10, 200),
   }),
 
   claimEthCommandGen: jsc.record({
     type: jsc.constant('claimEth'),
     eth: jsc.nat,
-    fromAccount: accountGen
+    fromAccount: accountGen,
   }),
 
   returnPurchaseCommandGen: jsc.record({
     type: jsc.constant('returnPurchase'),
     eth: jsc.nat,
     fromAccount: accountGen,
-    contributor: accountGen
+    contributor: accountGen,
   }),
 
   transferCommandGen: jsc.record({
     type: jsc.constant('transfer'),
     lif: jsc.nat,
     fromAccount: accountGen,
-    toAccount: accountGen
+    toAccount: accountGen,
   }),
 
   approveCommandGen: jsc.record({
     type: jsc.constant('approve'),
     lif: jsc.nat,
     fromAccount: accountGen,
-    spenderAccount: accountGen
+    spenderAccount: accountGen,
   }),
 
   transferFromCommandGen: jsc.record({
@@ -129,49 +129,49 @@ module.exports = {
     lif: jsc.nat,
     senderAccount: accountGen,
     fromAccount: accountGen,
-    toAccount: accountGen
+    toAccount: accountGen,
   }),
 
   MVMSendTokensCommandGen: jsc.record({
     type: jsc.constant('MVMSendTokens'),
     tokens: jsc.nat,
-    from: accountGen
+    from: accountGen,
   }),
 
   MVMClaimWeiCommandGen: jsc.record({
     type: jsc.constant('MVMClaimWei'),
-    eth: jsc.nat
+    eth: jsc.nat,
   }),
 
   MVMWaitForMonthCommandGen: jsc.record({
     type: jsc.constant('MVMWaitForMonth'),
-    month: jsc.nat
+    month: jsc.nat,
   }),
 
   MVMPauseCommandGen: jsc.record({
     type: jsc.constant('MVMPause'),
     pause: jsc.bool,
-    fromAccount: knownAccountGen
+    fromAccount: knownAccountGen,
   }),
 
   fundCrowdsaleBelowMinCap: jsc.record({
     type: jsc.constant('fundCrowdsaleBelowSoftCap'),
     account: knownAccountGen, // we don't want this one to fail with 0x0 addresses
     fundingEth: jsc.nat,
-    finalize: jsc.bool
+    finalize: jsc.bool,
   }),
 
   fundCrowdsaleBelowSoftCap: jsc.record({
     type: jsc.constant('fundCrowdsaleBelowSoftCap'),
     account: knownAccountGen, // we don't want this one to fail with 0x0 addresses
-    finalize: jsc.bool
+    finalize: jsc.bool,
   }),
 
   fundCrowdsaleOverSoftCap: jsc.record({
     type: jsc.constant('fundCrowdsaleOverSoftCap'),
     account: knownAccountGen, // we don't want this one to fail with 0x0 addresses
     softCapExcessWei: jsc.nat,
-    finalize: jsc.bool
+    finalize: jsc.bool,
   }),
 
 };

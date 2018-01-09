@@ -11,7 +11,7 @@ require('chai')
   .should();
 
 var latestTime = require('./helpers/latestTime');
-var {duration,increaseTimeTestRPCTo} = require('./helpers/increaseTime');
+var { duration, increaseTimeTestRPCTo } = require('./helpers/increaseTime');
 
 const defaultTimeDelta = duration.days(1); // time delta used in time calculations (for start, end1 & end2)
 
@@ -20,31 +20,30 @@ const defaults = {
   rate2: 110,
   setWeiLockSeconds: duration.minutes(30),
   foundationWalletIndex: 0,
-  foundersWalletIndex: 1
+  foundersWalletIndex: 1,
 };
 
-contract('LifToken Crowdsale', function(accounts) {
-
-  async function createCrowdsale(params) {
+contract('LifToken Crowdsale', function (accounts) {
+  async function createCrowdsale (params) {
     const startTimestamp = params.start === undefined ? (latestTime() + defaultTimeDelta) : params.start,
       end1Timestamp = params.end1 === undefined ? (startTimestamp + defaultTimeDelta) : params.end1,
       end2Timestamp = params.end2 === undefined ? (end1Timestamp + defaultTimeDelta) : params.end2,
       rate1 = params.rate1 === undefined ? defaults.rate1 : params.rate1,
       rate2 = params.rate2 === undefined ? defaults.rate2 : params.rate2,
       setWeiLockSeconds = params.setWeiLockSeconds === undefined ? defaults.setWeiLockSeconds : params.setWeiLockSeconds,
-      foundationWallet = params.foundationWallet === undefined ?
-        accounts[defaults.foundationWalletIndex] : params.foundationWallet,
-      foundersWallet = params.foundersWallet === undefined ?
-        accounts[defaults.foundersWalletIndex] : params.foundersWallet;
+      foundationWallet = params.foundationWallet === undefined
+        ? accounts[defaults.foundationWalletIndex] : params.foundationWallet,
+      foundersWallet = params.foundersWallet === undefined
+        ? accounts[defaults.foundersWalletIndex] : params.foundersWallet;
 
-    return await LifCrowdsale.new(
+    const newCrowdsale = await LifCrowdsale.new(
       startTimestamp, end1Timestamp, end2Timestamp, rate1,
       rate2, setWeiLockSeconds, foundationWallet, foundersWallet
     );
-
+    return newCrowdsale;
   }
 
-  it('can create a Crowdsale', async function() {
+  it('can create a Crowdsale', async function () {
     const start = latestTime() + defaultTimeDelta,
       end1 = start + defaultTimeDelta,
       end2 = end1 + defaultTimeDelta;
@@ -52,7 +51,7 @@ contract('LifToken Crowdsale', function(accounts) {
     const crowdsale = await createCrowdsale({
       start: start,
       end1: end1,
-      end2: end2
+      end2: end2,
     });
 
     assert.equal(start, parseInt(await crowdsale.startTimestamp.call()));
@@ -64,90 +63,90 @@ contract('LifToken Crowdsale', function(accounts) {
     assert.equal(accounts[defaults.foundersWalletIndex], parseInt(await crowdsale.foundersWallet.call()));
   });
 
-  it('fails to create a Crowdsale with 0x0 as foundation wallet', async function() {
+  it('fails to create a Crowdsale with 0x0 as foundation wallet', async function () {
     try {
-      await createCrowdsale({foundationWallet: help.zeroAddress});
+      await createCrowdsale({ foundationWallet: help.zeroAddress });
       assert(false, 'create crowdsale should have thrown');
-    } catch(e) {
+    } catch (e) {
       if (!help.isInvalidOpcodeEx(e)) throw e;
     }
   });
 
-  it('fails to create a Crowdsale with 0x0 as founders wallet', async function() {
+  it('fails to create a Crowdsale with 0x0 as founders wallet', async function () {
     try {
-      await createCrowdsale({foundersWallet: help.zeroAddress});
+      await createCrowdsale({ foundersWallet: help.zeroAddress });
       assert(false, 'create crowdsale should have thrown');
-    } catch(e) {
+    } catch (e) {
       if (!help.isInvalidOpcodeEx(e)) throw e;
     }
   });
 
-  it('fails to create a Crowdsale with start timestamp in the past', async function() {
+  it('fails to create a Crowdsale with start timestamp in the past', async function () {
     try {
-      await createCrowdsale({start: latestTime() - 1});
+      await createCrowdsale({ start: latestTime() - 1 });
       assert(false, 'create crowdsale should have thrown');
-    } catch(e) {
+    } catch (e) {
       if (!help.isInvalidOpcodeEx(e)) throw e;
     }
   });
 
-  it('fails to create a Crowdsale with end timestamp not after start timestamp', async function() {
+  it('fails to create a Crowdsale with end timestamp not after start timestamp', async function () {
     try {
       const start = latestTime() + defaultTimeDelta;
-      await createCrowdsale({start: start, end1: start});
+      await createCrowdsale({ start: start, end1: start });
       assert(false, 'create crowdsale should have thrown');
-    } catch(e) {
+    } catch (e) {
       if (!help.isInvalidOpcodeEx(e)) throw e;
     }
   });
 
-  it('fails to create a Crowdsale with end2 timestamp not after end1 timestamp', async function() {
+  it('fails to create a Crowdsale with end2 timestamp not after end1 timestamp', async function () {
     const start = latestTime() + defaultTimeDelta,
       end1 = start + defaultTimeDelta;
 
     try {
-      await createCrowdsale({start: start, end1: end1, end2: end1});
+      await createCrowdsale({ start: start, end1: end1, end2: end1 });
       assert(false, 'create crowdsale should have thrown');
-    } catch(e) {
+    } catch (e) {
       if (!help.isInvalidOpcodeEx(e)) throw e;
     }
   });
 
-  it('fails to create a Crowdsale with rate1 == 0', async function() {
+  it('fails to create a Crowdsale with rate1 === 0', async function () {
     try {
-      await createCrowdsale({rate1: 0});
+      await createCrowdsale({ rate1: 0 });
       assert(false, 'create crowdsale should have thrown');
-    } catch(e) {
+    } catch (e) {
       if (!help.isInvalidOpcodeEx(e)) throw e;
     }
   });
 
-  it('fails to create a Crowdsale with rate2 == 0', async function() {
+  it('fails to create a Crowdsale with rate2 === 0', async function () {
     try {
-      await createCrowdsale({rate2: 0});
+      await createCrowdsale({ rate2: 0 });
       assert(false, 'create crowdsale should have thrown');
-    } catch(e) {
+    } catch (e) {
       if (!help.isInvalidOpcodeEx(e)) throw e;
     }
   });
 
-  it('fails to create a Crowdsale with setWeiLockSeconds == 0', async function() {
+  it('fails to create a Crowdsale with setWeiLockSeconds === 0', async function () {
     try {
-      await createCrowdsale({setWeiLockSeconds: 0});
+      await createCrowdsale({ setWeiLockSeconds: 0 });
       assert(false, 'create crowdsale should have thrown');
-    } catch(e) {
+    } catch (e) {
       if (!help.isInvalidOpcodeEx(e)) throw e;
     }
   });
 
-  it('returns the current rate at different points in time', async function() {
+  it('returns the current rate at different points in time', async function () {
     const start = latestTime() + defaultTimeDelta,
       end1 = start + defaultTimeDelta,
       end2 = end1 + defaultTimeDelta,
       crowdsale = await createCrowdsale({
         start: start,
         end1: end1,
-        end2: end2
+        end2: end2,
       });
 
     assert.equal(0, parseInt(await crowdsale.getRate()));
@@ -175,96 +174,96 @@ contract('LifToken Crowdsale', function(accounts) {
 
   /// buyTokens
 
-  it('handles a buyTokens tx fine', async function() {
+  it('handles a buyTokens tx fine', async function () {
     const crowdsale = await createCrowdsale({});
     await crowdsale.setWeiPerUSDinTGE(10000);
     await increaseTimeTestRPCTo(latestTime() + defaultTimeDelta + 2);
-    await crowdsale.buyTokens(accounts[6], {value: 1000, from: accounts[5]});
+    await crowdsale.buyTokens(accounts[6], { value: 1000, from: accounts[5] });
 
     assert.equal(1000, await crowdsale.purchases(accounts[6]));
   });
 
-  it('fails on buyTokens from address(0)', async function() {
+  it('fails on buyTokens from address(0)', async function () {
     const crowdsale = await createCrowdsale({});
     await crowdsale.setWeiPerUSDinTGE(10000);
     await increaseTimeTestRPCTo(latestTime() + defaultTimeDelta + 2);
     try {
-      await crowdsale.buyTokens(help.zeroAddress, {value: 1000, from: accounts[5]});
+      await crowdsale.buyTokens(help.zeroAddress, { value: 1000, from: accounts[5] });
       assert(false, 'should have thrown');
-    } catch(e) {
+    } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
     }
   });
 
-  it('fails on buyTokens with rate==0 (before startTimestamp)', async function() {
+  it('fails on buyTokens with rate==0 (before startTimestamp)', async function () {
     const crowdsale = await createCrowdsale({});
     await crowdsale.setWeiPerUSDinTGE(10000);
     try {
-      await crowdsale.buyTokens(accounts[5], {value: 1000, from: accounts[5]});
+      await crowdsale.buyTokens(accounts[5], { value: 1000, from: accounts[5] });
       assert(false, 'should have thrown');
-    } catch(e) {
+    } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
     }
   });
 
   /// addPrivatePresaleTokens
-  it('handles an addPrivatePresaleTokens tx fine', async function() {
+  it('handles an addPrivatePresaleTokens tx fine', async function () {
     const crowdsale = await createCrowdsale({}),
       rate = defaults.rate1 + 10,
       token = LifToken.at(await crowdsale.token());
 
     await crowdsale.setWeiPerUSDinTGE(10000);
     await crowdsale.addPrivatePresaleTokens(accounts[3], 1000, rate,
-      {from: accounts[0]});
+      { from: accounts[0] });
 
     assert.equal(1000 * rate, parseInt(await token.balanceOf(accounts[3])),
       'should mint the tokens to beneficiary on addPrivatePresaleTokens');
   });
 
-  it('fails on a addPrivatePresaleTokens tx with address(0) as benef.', async function() {
+  it('fails on a addPrivatePresaleTokens tx with address(0) as benef.', async function () {
     const crowdsale = await createCrowdsale({}),
       rate = defaults.rate1 + 10;
 
     await crowdsale.setWeiPerUSDinTGE(10000);
     try {
       await crowdsale.addPrivatePresaleTokens(help.zeroAddress, 1000, rate,
-        {from: accounts[0]});
+        { from: accounts[0] });
       assert(false);
-    } catch(e) {
+    } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
     }
   });
 
-  it('fails on a addPrivatePresaleTokens tx with low rate', async function() {
+  it('fails on a addPrivatePresaleTokens tx with low rate', async function () {
     const crowdsale = await createCrowdsale({}),
       rate = defaults.rate1 - 10;
 
     await crowdsale.setWeiPerUSDinTGE(10000);
     try {
       await crowdsale.addPrivatePresaleTokens(accounts[3], 1000, rate,
-        {from: accounts[0]});
+        { from: accounts[0] });
       assert(false);
-    } catch(e) {
+    } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
     }
   });
 
-  it('fails on a addPrivatePresaleTokens tx with weiSent == 0', async function() {
+  it('fails on a addPrivatePresaleTokens tx with weiSent === 0', async function () {
     const crowdsale = await createCrowdsale({}),
       rate = defaults.rate1 + 10;
 
     await crowdsale.setWeiPerUSDinTGE(10000);
     try {
       await crowdsale.addPrivatePresaleTokens(accounts[3], 0, rate,
-        {from: accounts[0]});
+        { from: accounts[0] });
       assert(false);
-    } catch(e) {
+    } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
     }
   });
 
   /// claimEth
-  it('claimEth succeeds after an underfunded finalized crowdsale', async function() {
+  it('claimEth succeeds after an underfunded finalized crowdsale', async function () {
     const start = latestTime() + defaultTimeDelta,
       end1 = start + defaultTimeDelta,
       end2 = end1 + defaultTimeDelta,
@@ -272,14 +271,14 @@ contract('LifToken Crowdsale', function(accounts) {
       crowdsale = await createCrowdsale({
         start: start,
         end1: end1,
-        end2: end2
+        end2: end2,
       }),
       weiPerUsd = 10000,
       weiAmount = 5000000 * weiPerUsd - 1; // exactly USD 1 less than the funding limit
 
     await crowdsale.setWeiPerUSDinTGE(weiPerUsd);
     await increaseTimeTestRPCTo(start + 2);
-    await crowdsale.buyTokens(beneficiary, {value: weiAmount, from: accounts[5]});
+    await crowdsale.buyTokens(beneficiary, { value: weiAmount, from: accounts[5] });
 
     await increaseTimeTestRPCTo(end2 + 2);
     await crowdsale.finalize();
@@ -292,33 +291,33 @@ contract('LifToken Crowdsale', function(accounts) {
     //   should.be.bignumber.equal(web3.eth.getBalance(beneficiary));
   });
 
-  it('claimEth fails after a funded finalized crowdsale', async function() {
+  it('claimEth fails after a funded finalized crowdsale', async function () {
     const start = latestTime() + defaultTimeDelta,
       end1 = start + defaultTimeDelta,
       end2 = end1 + defaultTimeDelta,
       crowdsale = await createCrowdsale({
         start: start,
         end1: end1,
-        end2: end2
+        end2: end2,
       }),
       weiPerUsd = 10000,
       weiAmount = 5000000 * weiPerUsd;
     await crowdsale.setWeiPerUSDinTGE(weiPerUsd);
     await increaseTimeTestRPCTo(start + 2);
-    await crowdsale.buyTokens(accounts[6], {value: weiAmount, from: accounts[5]});
+    await crowdsale.buyTokens(accounts[6], { value: weiAmount, from: accounts[5] });
 
     await increaseTimeTestRPCTo(end2 + 2);
     await crowdsale.finalize();
 
     try {
-      await crowdsale.claimEth({from: accounts[6]});
+      await crowdsale.claimEth({ from: accounts[6] });
       assert(false, 'should have thrown');
-    } catch(e) {
+    } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
     }
   });
 
-  it('claimEth fails after an underfunded non-finalized (but ended) crowdsale ', async function() {
+  it('claimEth fails after an underfunded non-finalized (but ended) crowdsale ', async function () {
     const start = latestTime() + defaultTimeDelta,
       end1 = start + defaultTimeDelta,
       end2 = end1 + defaultTimeDelta,
@@ -326,25 +325,25 @@ contract('LifToken Crowdsale', function(accounts) {
       crowdsale = await createCrowdsale({
         start: start,
         end1: end1,
-        end2: end2
+        end2: end2,
       }),
       weiPerUsd = 10000,
       weiAmount = 5000000 * weiPerUsd - 1;
     await crowdsale.setWeiPerUSDinTGE(weiPerUsd);
     await increaseTimeTestRPCTo(start + 2);
-    await crowdsale.buyTokens(beneficiary, {value: weiAmount, from: accounts[5]});
+    await crowdsale.buyTokens(beneficiary, { value: weiAmount, from: accounts[5] });
 
     await increaseTimeTestRPCTo(end2 + 2);
 
     try {
-      await crowdsale.claimEth({from: beneficiary});
+      await crowdsale.claimEth({ from: beneficiary });
       assert(false, 'should have thrown');
-    } catch(e) {
+    } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
     }
   });
 
-  it('claimEth fails after an underfunded finalized crowdsale for an address with no purchases', async function() {
+  it('claimEth fails after an underfunded finalized crowdsale for an address with no purchases', async function () {
     const start = latestTime() + defaultTimeDelta,
       end1 = start + defaultTimeDelta,
       end2 = end1 + defaultTimeDelta,
@@ -352,28 +351,28 @@ contract('LifToken Crowdsale', function(accounts) {
       crowdsale = await createCrowdsale({
         start: start,
         end1: end1,
-        end2: end2
+        end2: end2,
       }),
       weiPerUsd = 10000,
       weiAmount = 5000000 * weiPerUsd - 1; // exactly USD 1 less than the funding limit
 
     await crowdsale.setWeiPerUSDinTGE(weiPerUsd);
     await increaseTimeTestRPCTo(start + 2);
-    await crowdsale.buyTokens(beneficiary, {value: weiAmount, from: accounts[5]});
+    await crowdsale.buyTokens(beneficiary, { value: weiAmount, from: accounts[5] });
 
     await increaseTimeTestRPCTo(end2 + 2);
     await crowdsale.finalize();
 
     try {
-      await crowdsale.claimEth({from: accounts[8]});
+      await crowdsale.claimEth({ from: accounts[8] });
       assert(false, 'should have thrown');
-    } catch(e) {
+    } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
     }
   });
 
   /// finalize
-  it('finalize fails when called for the second time', async function() {
+  it('finalize fails when called for the second time', async function () {
     const start = latestTime() + defaultTimeDelta,
       end1 = start + defaultTimeDelta,
       end2 = end1 + defaultTimeDelta,
@@ -381,14 +380,14 @@ contract('LifToken Crowdsale', function(accounts) {
       crowdsale = await createCrowdsale({
         start: start,
         end1: end1,
-        end2: end2
+        end2: end2,
       }),
       weiPerUsd = 10000,
       weiAmount = 5000000 * weiPerUsd - 1; // exactly USD 1 less than the funding limit
 
     await crowdsale.setWeiPerUSDinTGE(weiPerUsd);
     await increaseTimeTestRPCTo(start + 2);
-    await crowdsale.buyTokens(beneficiary, {value: weiAmount, from: accounts[5]});
+    await crowdsale.buyTokens(beneficiary, { value: weiAmount, from: accounts[5] });
 
     await increaseTimeTestRPCTo(end2 + 2);
     await crowdsale.finalize();
@@ -396,13 +395,13 @@ contract('LifToken Crowdsale', function(accounts) {
     try {
       await crowdsale.finalize();
       assert(false, 'should have thrown');
-    } catch(e) {
+    } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
     }
   });
 
   /// finalize
-  it('finalize creates the MVM', async function() {
+  it('finalize creates the MVM', async function () {
     const start = latestTime() + defaultTimeDelta,
       end1 = start + defaultTimeDelta,
       end2 = end1 + defaultTimeDelta,
@@ -410,14 +409,14 @@ contract('LifToken Crowdsale', function(accounts) {
       crowdsale = await createCrowdsale({
         start: start,
         end1: end1,
-        end2: end2
+        end2: end2,
       }),
       weiPerUsd = 10000,
       weiAmount = 10000001 * weiPerUsd; // exactly USD 1 more than the minimum for the MVM
 
     await crowdsale.setWeiPerUSDinTGE(weiPerUsd);
     await increaseTimeTestRPCTo(start + 2);
-    await crowdsale.buyTokens(beneficiary, {value: weiAmount, from: accounts[5]});
+    await crowdsale.buyTokens(beneficiary, { value: weiAmount, from: accounts[5] });
 
     await increaseTimeTestRPCTo(end2 + 2);
     await crowdsale.finalize();
@@ -430,7 +429,7 @@ contract('LifToken Crowdsale', function(accounts) {
     MVMInitialWei.should.be.bignumber.equal(1 * weiPerUsd);
   });
 
-  it('finalize not over soft cap does not create the MVM', async function() {
+  it('finalize not over soft cap does not create the MVM', async function () {
     const start = latestTime() + defaultTimeDelta,
       end1 = start + defaultTimeDelta,
       end2 = end1 + defaultTimeDelta,
@@ -438,14 +437,14 @@ contract('LifToken Crowdsale', function(accounts) {
       crowdsale = await createCrowdsale({
         start: start,
         end1: end1,
-        end2: end2
+        end2: end2,
       }),
       weiPerUsd = 10000,
       weiAmount = 10000000 * weiPerUsd; // exactly the soft cap
 
     await crowdsale.setWeiPerUSDinTGE(weiPerUsd);
     await increaseTimeTestRPCTo(start + 2);
-    await crowdsale.buyTokens(beneficiary, {value: weiAmount, from: accounts[5]});
+    await crowdsale.buyTokens(beneficiary, { value: weiAmount, from: accounts[5] });
 
     await increaseTimeTestRPCTo(end2 + 2);
     await crowdsale.finalize();

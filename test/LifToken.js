@@ -12,80 +12,84 @@ var Message = artifacts.require('./Message.sol');
 
 const LOG_EVENTS = true;
 
-contract('LifToken', function(accounts) {
-
+contract('LifToken', function (accounts) {
   var token;
   var eventsWatcher;
 
-  beforeEach(async function() {
+  beforeEach(async function () {
     const rate = 100000000000;
-    const crowdsale = await help.simulateCrowdsale(rate, [40,30,20,10,0], accounts, 1);
+    const crowdsale = await help.simulateCrowdsale(rate, [40, 30, 20, 10, 0], accounts, 1);
     token = LifToken.at(await crowdsale.token.call());
     eventsWatcher = token.allEvents();
-    eventsWatcher.watch(function(error, log){
-      if (LOG_EVENTS)
-        console.log('Event:', log.event, ':',log.args);
+    eventsWatcher.watch(function (error, log) {
+      if (LOG_EVENTS) {
+        if (error) {
+          console.log('Error in event:', error);
+        } else {
+          console.log('Event:', log.event, ':', log.args);
+        }
+      }
     });
   });
 
-  afterEach(function(done) {
+  afterEach(function (done) {
     eventsWatcher.stopWatching();
     done();
   });
 
-  it('has name, symbol and decimals', async function() {
+  it('has name, symbol and decimals', async function () {
     assert.equal('Líf', await token.NAME.call());
     assert.equal('LIF', await token.SYMBOL.call());
     assert.equal(18, await token.DECIMALS.call());
   });
 
-  it('should return the correct allowance amount after approval', async function() {
-    await token.approve(accounts[2], help.lif2LifWei(10),{ from: accounts[1] });
-    let allowance = await token.allowance(accounts[1], accounts[2],{ from: accounts[1]});
+  it('should return the correct allowance amount after approval', async function () {
+    await token.approve(accounts[2], help.lif2LifWei(10), { from: accounts[1] });
+    let allowance = await token.allowance(accounts[1], accounts[2], { from: accounts[1] });
     assert.equal(help.lifWei2Lif(allowance), 10);
-    await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
+    await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it('should return correct balances after transfer', async function() {
+  it('should return correct balances after transfer', async function () {
     await token.transfer(accounts[4], help.lif2LifWei(3.55), { from: accounts[1] });
-    await help.checkToken(token, accounts, 125, [36.45,30,20,13.55,0]);
+    await help.checkToken(token, accounts, 125, [36.45, 30, 20, 13.55, 0]);
   });
 
-  it('should throw an error when trying to transfer more than balance', async function() {
+  it('should throw an error when trying to transfer more than balance', async function () {
     try {
       await token.transfer(accounts[2], help.lif2LifWei(21));
       assert(false, 'transfer should have thrown');
     } catch (error) {
       if (!help.isInvalidOpcodeEx(error)) throw error;
     }
-    await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
+    await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it('should return correct balances after transfering from another account', async function() {
-    await token.approve(accounts[3], help.lif2LifWei(5), {from: accounts[1]});
-    await token.transferFrom(accounts[1], accounts[2], help.lif2LifWei(5), {from: accounts[3]});
-    await help.checkToken(token, accounts, 125, [35,35,20,10,0]);
+  it('should return correct balances after transfering from another account', async function () {
+    await token.approve(accounts[3], help.lif2LifWei(5), { from: accounts[1] });
+    await token.transferFrom(accounts[1], accounts[2], help.lif2LifWei(5), { from: accounts[3] });
+    await help.checkToken(token, accounts, 125, [35, 35, 20, 10, 0]);
   });
 
-  it('should throw an error when trying to transfer more than allowed', async function() {
-    await token.approve(accounts[3], help.lif2LifWei(10), {from: accounts[1]});
+  it('should throw an error when trying to transfer more than allowed', async function () {
+    await token.approve(accounts[3], help.lif2LifWei(10), { from: accounts[1] });
     try {
-      await token.transferFrom(accounts[1], accounts[3], help.lif2LifWei(11), {from: accounts[3]});
+      await token.transferFrom(accounts[1], accounts[3], help.lif2LifWei(11), { from: accounts[3] });
       assert(false, 'transferFrom should have thrown');
     } catch (error) {
       if (!help.isInvalidOpcodeEx(error)) throw error;
     }
-    await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
+    await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  _.forEach([0, 1], function(tokens) {
-    it('should return correct balances after transferData with ' + tokens + ' tokens and show the event on receiver contract', async function() {
+  _.forEach([0, 1], function (tokens) {
+    it('should return correct balances after transferData with ' + tokens + ' tokens and show the event on receiver contract', async function () {
       let message = await Message.new();
       help.abiDecoder.addABI(Message._json.abi);
 
       let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
 
-      let transaction = await token.transferData(message.contract.address, help.lif2LifWei(tokens), data, {from: accounts[1]});
+      let transaction = await token.transferData(message.contract.address, help.lif2LifWei(tokens), data, { from: accounts[1] });
       let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
       assert.deepEqual(['Show', 'Transfer'], _.map(decodedEvents, (e) => e.name),
@@ -99,12 +103,12 @@ contract('LifToken', function(accounts) {
 
       assert.equal(help.lif2LifWei(tokens), await token.balanceOf(message.contract.address));
 
-      await help.checkToken(token, accounts, 125, [40 - tokens,30,20,10,0]);
+      await help.checkToken(token, accounts, 125, [40 - tokens, 30, 20, 10, 0]);
     });
   });
 
-  _.forEach([0, 1], function(tokens) {
-    it('should return correct balances after transferDataFrom with ' + tokens + ' tokens and show the event on receiver contract', async function() {
+  _.forEach([0, 1], function (tokens) {
+    it('should return correct balances after transferDataFrom with ' + tokens + ' tokens and show the event on receiver contract', async function () {
       let message = await Message.new();
       help.abiDecoder.addABI(Message._json.abi);
 
@@ -112,46 +116,46 @@ contract('LifToken', function(accounts) {
 
       const lifWei = help.lif2LifWei(tokens);
 
-      await token.approve(accounts[2], lifWei, {from: accounts[1]});
+      await token.approve(accounts[2], lifWei, { from: accounts[1] });
 
-      let transaction = await token.transferDataFrom(accounts[1], message.contract.address, lifWei, data, {from: accounts[2]});
+      let transaction = await token.transferDataFrom(accounts[1], message.contract.address, lifWei, data, { from: accounts[2] });
       let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
       assert.deepEqual(['Show', 'Transfer'], _.map(decodedEvents, (e) => e.name));
       assert.equal(lifWei, await token.balanceOf(message.contract.address));
 
-      await help.checkToken(token, accounts, 125, [40 - tokens,30,20,10,0]);
+      await help.checkToken(token, accounts, 125, [40 - tokens, 30, 20, 10, 0]);
     });
   });
 
-  it('should return correct balances after approve and show the event on receiver contract', async function() {
+  it('should return correct balances after approve and show the event on receiver contract', async function () {
     let message = await Message.new();
     help.abiDecoder.addABI(Message._json.abi);
 
     let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
 
-    let transaction = await token.approveData(message.contract.address, help.lif2LifWei(1000), data, {from: accounts[1]});
+    let transaction = await token.approveData(message.contract.address, help.lif2LifWei(1000), data, { from: accounts[1] });
     let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
     assert.equal(2, decodedEvents.length);
 
     new BigNumber(help.lif2LifWei(1000)).should.be.bignumber.equal(await token.allowance(accounts[1], message.contract.address));
 
-    await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
+    await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it('should fail on approveData when spender is the same LifToken contract', async function() {
+  it('should fail on approveData when spender is the same LifToken contract', async function () {
     let data = token.contract.approve.getData(accounts[5], help.lif2LifWei(666));
 
     try {
-      await token.approveData(token.contract.address, help.lif2LifWei(1000), data, {from: accounts[1]});
+      await token.approveData(token.contract.address, help.lif2LifWei(1000), data, { from: accounts[1] });
       assert(false, 'approveData should have thrown because the spender should not be the LifToken itself');
-    } catch(e) {
+    } catch (e) {
       if (!help.isInvalidOpcodeEx(e)) throw e;
     }
   });
 
-  it('should fail inside approveData', async function() {
+  it('should fail inside approveData', async function () {
     let message = await Message.new();
     help.abiDecoder.addABI(Message._json.abi);
 
@@ -160,10 +164,10 @@ contract('LifToken', function(accounts) {
     try {
       await token.approveData(
         message.contract.address, help.lif2LifWei(10), data,
-        {from: accounts[1]}
+        { from: accounts[1] }
       );
       assert(false, 'approveData should have raised');
-    } catch(e) {
+    } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
     }
 
@@ -171,10 +175,10 @@ contract('LifToken', function(accounts) {
     new BigNumber(0).should.be.bignumber
       .equal(await token.allowance(accounts[1], message.contract.address));
 
-    await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
+    await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it('should fail inside transferData', async function() {
+  it('should fail inside transferData', async function () {
     let message = await Message.new();
     help.abiDecoder.addABI(Message._json.abi);
 
@@ -183,10 +187,10 @@ contract('LifToken', function(accounts) {
     try {
       await token.transferData(
         message.contract.address, help.lif2LifWei(10), data,
-        {from: accounts[1]}
+        { from: accounts[1] }
       );
       assert(false, 'transferData should have failed');
-    } catch(e) {
+    } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
     }
 
@@ -194,24 +198,24 @@ contract('LifToken', function(accounts) {
     new BigNumber(0).should.be.bignumber
       .equal(await token.balanceOf(message.contract.address));
 
-    await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
+    await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it('should fail inside transferDataFrom', async function() {
+  it('should fail inside transferDataFrom', async function () {
     let message = await Message.new();
     help.abiDecoder.addABI(Message._json.abi);
 
     let data = message.contract.fail.getData();
 
-    await token.approve(accounts[1], help.lif2LifWei(10), {from: accounts[2]});
+    await token.approve(accounts[1], help.lif2LifWei(10), { from: accounts[2] });
 
     try {
       await token.transferDataFrom(
         accounts[2], message.contract.address, help.lif2LifWei(10), data,
-        {from: accounts[1]}
+        { from: accounts[1] }
       );
       assert(false, 'transferDataFrom should have thrown');
-    } catch(e) {
+    } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
     }
 
@@ -221,36 +225,34 @@ contract('LifToken', function(accounts) {
     new BigNumber(0).should.be.bignumber
       .equal(await token.balanceOf(message.contract.address));
 
-    await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
+    await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it('should fail transferData when using LifToken contract address as receiver', async function() {
-
+  it('should fail transferData when using LifToken contract address as receiver', async function () {
     try {
-      await token.transferData(token.contract.address, help.lif2LifWei(1000), web3.toHex(0), {from: accounts[1]});
+      await token.transferData(token.contract.address, help.lif2LifWei(1000), web3.toHex(0), { from: accounts[1] });
       assert(false, 'transferData should have thrown');
     } catch (error) {
       if (!help.isInvalidOpcodeEx(error)) throw error;
     }
 
-    await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
+    await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it('should fail transferDataFrom when using LifToken contract address as receiver', async function() {
-
-    await token.approve(accounts[1], help.lif2LifWei(1), {from: accounts[3]});
+  it('should fail transferDataFrom when using LifToken contract address as receiver', async function () {
+    await token.approve(accounts[1], help.lif2LifWei(1), { from: accounts[3] });
 
     try {
-      await token.transferDataFrom(accounts[3], token.contract.address, help.lif2LifWei(1), web3.toHex(0), {from: accounts[1]});
+      await token.transferDataFrom(accounts[3], token.contract.address, help.lif2LifWei(1), web3.toHex(0), { from: accounts[1] });
       assert(false, 'transferDataFrom should have thrown');
     } catch (error) {
       if (!help.isInvalidOpcodeEx(error)) throw error;
     }
 
-    await help.checkToken(token, accounts, 125, [40,30,20,10,0]);
+    await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it('can burn tokens', async function() {
+  it('can burn tokens', async function () {
     let totalSupply = await token.totalSupply.call();
     new BigNumber(0).should.be.bignumber.equal(await token.balanceOf(accounts[5]));
 
@@ -263,22 +265,21 @@ contract('LifToken', function(accounts) {
     assert.equal(accounts[0], await token.owner());
 
     // pause the token
-    await token.pause({from: accounts[0]});
+    await token.pause({ from: accounts[0] });
 
     try {
-      await token.burn(burned, {from: accounts[5]});
+      await token.burn(burned, { from: accounts[5] });
       assert(false, 'burn should have thrown');
     } catch (error) {
       if (!help.isInvalidOpcodeEx(error)) throw error;
     }
-    await token.unpause({from: accounts[0]});
+    await token.unpause({ from: accounts[0] });
 
     // now burn should work
-    await token.burn(burned, {from: accounts[5]});
+    await token.burn(burned, { from: accounts[5] });
 
-    new BigNumber(initialBalance).minus(burned).
-      should.be.bignumber.equal(await token.balanceOf(accounts[5]));
+    new BigNumber(initialBalance).minus(burned)
+      .should.be.bignumber.equal(await token.balanceOf(accounts[5]));
     totalSupply.minus(burned).should.be.bignumber.equal(await token.totalSupply.call());
   });
-
 });
