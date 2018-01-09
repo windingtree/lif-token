@@ -1,38 +1,51 @@
 module.exports = {
-    "env": {
-        "es6": true,
-        "node": true
-    },
-    "extends": "eslint:recommended",
-    "parserOptions": {
-        "ecmaVersion": 8
-    },
-    "globals": {
-      "afterEach": true,
-      "artifacts": true,
-      "assert": true,
-      "beforeEach": true,
-      "contract": true,
-      "it": true,
-      "web3": true
-    },
-    "rules": {
-        "no-console": "off",
-        "indent": [
-            "error",
-            2
-        ],
-        "linebreak-style": [
-            "error",
-            "unix"
-        ],
-        "quotes": [
-            "error",
-            "single"
-        ],
-        "semi": [
-            "error",
-            "always"
-        ]
-    }
+  "extends" : [
+    "standard",
+    "plugin:promise/recommended"
+  ],
+  "plugins": [
+    "promise"
+  ],
+  "env": {
+    "browser" : true,
+    "node"    : true,
+    "mocha"   : true,
+    "jest"    : true
+  },
+  "globals" : {
+    "artifacts": false,
+    "contract": false,
+    "assert": false,
+    "web3": false
+  },
+  "rules": {
+
+    // Strict mode
+    "strict": [2, "global"],
+
+    // Code style
+    "indent": [2, 2],
+    "quotes": [2, "single"],
+    "semi": ["error", "always"],
+    "space-before-function-paren": ["error", "always"],
+    "no-use-before-define": 0,
+    "eqeqeq": [2, "smart"],
+    "dot-notation": [2, {"allowKeywords": true, "allowPattern": ""}],
+    "no-redeclare": [2, {"builtinGlobals": true}],
+    "no-trailing-spaces": [2, { "skipBlankLines": true }],
+    "eol-last": 1,
+    "comma-spacing": [2, {"before": false, "after": true}],
+    "camelcase": [2, {"properties": "always"}],
+    "no-mixed-spaces-and-tabs": [2, "smart-tabs"],
+    "comma-dangle": [1, "always-multiline"],
+    "no-dupe-args": 2,
+    "no-dupe-keys": 2,
+    "no-debugger": 0,
+    "no-undef": 2,
+    "one-var": [0],
+    "object-curly-spacing": [2, "always"],
+    "generator-star-spacing": ["error", "before"],
+    "promise/avoid-new": 0,
+    "promise/always-return": 0
+  }
 };

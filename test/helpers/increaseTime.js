@@ -2,7 +2,7 @@ var latestTime = require('./latestTime');
 
 // Increases testrpc time by the passed duration in seconds
 
-function increaseTimeTestRPC(duration) {
+function increaseTimeTestRPC (duration) {
   const id = Date.now();
 
   return new Promise((resolve, reject) => {
@@ -17,7 +17,7 @@ function increaseTimeTestRPC(duration) {
       web3.currentProvider.sendAsync({
         jsonrpc: '2.0',
         method: 'evm_mine',
-        id: id+1,
+        id: id + 1,
       }, (err2, res) => {
         return err2 ? reject(err2) : resolve(res);
       });
@@ -25,7 +25,7 @@ function increaseTimeTestRPC(duration) {
   });
 }
 
-function increaseTimeTestRPCTo(target) {
+function increaseTimeTestRPCTo (target) {
   let now = latestTime();
   if (target < now) throw Error(`Cannot increase current time(${now}) to a moment in the past(${target})`);
   let diff = target - now;
@@ -44,12 +44,12 @@ module.exports = {
   increaseTimeTestRPC: increaseTimeTestRPC,
   increaseTimeTestRPCTo: increaseTimeTestRPCTo,
   duration: {
-    seconds: function(val) { return val; },
-    minutes: function(val) { return val * this.seconds(60); },
-    hours:   function(val) { return val * this.minutes(60); },
-    days:    function(val) { return val * this.hours(24); },
-    weeks:   function(val) { return val * this.days(7); },
-    years:   function(val) { return val * this.days(365); }
-  }
+    seconds: function (val) { return val; },
+    minutes: function (val) { return val * this.seconds(60); },
+    hours: function (val) { return val * this.minutes(60); },
+    days: function (val) { return val * this.hours(24); },
+    weeks: function (val) { return val * this.days(7); },
+    years: function (val) { return val * this.days(365); },
+  },
 
 };
