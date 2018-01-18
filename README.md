@@ -2,7 +2,7 @@
 
 Líf is the token of the Winding Tree platform.
 
-Líf is a SmartToken, based in the ERC20 standard with extra methods to send value and data on transfers and approvals, allowing the execution of calls in those methdos too.
+Líf is a ERC827 token, based in the ERC20 standard with extra methods to send value and data on transfers and approvals, allowing the execution of calls in those methods too.
 
 This repository also has all the contracts related with the Token Generation Event (TGE), an strategy that combines a crowdsale, a market validation mechanism and vested payments.
 
@@ -21,7 +21,7 @@ npm install
 
 ## Contracts
 
-- [SmartToken](blob/master/contracts/SmartToken.sol): Token based in the ERC20 standard with extra methods to transfer value and data and execute a call on transfer. Uses OpenZeppelin StandardToken.
+- [ERC827Token](blob/master/contracts/ERC827Token.sol): Token based in the ERC20 standard with extra methods to transfer value and data and execute a call on transfer. Uses OpenZeppelin StandardToken.
 - [LifToken](blob/master/contracts/LifToken.sol): Smart token for the Winding Tree platform.
  Uses SmartToken and OpenZeppelin MintableToken and Pausable contracts.
  - [LifChannels](blob/master/contracts/LifChannels.sol): Implementation of simple state channels for Lif token holders.

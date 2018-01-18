@@ -1,6 +1,6 @@
-var LifCrowdsale = artifacts.require('./LifCrowdsale.sol'),
-  LifToken = artifacts.require('./LifToken.sol'),
-  LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
+var LifCrowdsale = artifacts.require('LifCrowdsale.sol'),
+  LifToken = artifacts.require('LifToken.sol'),
+  LifMarketValidationMechanism = artifacts.require('LifMarketValidationMechanism.sol');
 
 let help = require('./helpers');
 

@@ -8,8 +8,8 @@ require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-var LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
-var LifToken = artifacts.require('./LifToken.sol');
+var LifMarketValidationMechanism = artifacts.require('LifMarketValidationMechanism.sol');
+var LifToken = artifacts.require('LifToken.sol');
 
 var latestTime = require('./helpers/latestTime');
 var { increaseTimeTestRPC, increaseTimeTestRPCTo, duration } = require('./helpers/increaseTime');

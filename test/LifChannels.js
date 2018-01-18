@@ -7,9 +7,9 @@ require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-var LifTokenTest = artifacts.require('./LifTokenTest.sol');
-var LifChannels = artifacts.require('./LifChannels.sol');
-var ECRecovery = artifacts.require('./ECRecovery.sol');
+var LifTokenTest = artifacts.require('LifTokenTest.sol');
+var LifChannels = artifacts.require('LifChannels.sol');
+var ECRecovery = artifacts.require('ECRecovery.sol');
 
 var { increaseTimeTestRPC } = require('./helpers/increaseTime');
 
