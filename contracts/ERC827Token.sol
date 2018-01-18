@@ -5,16 +5,17 @@ import "zeppelin-solidity/contracts/token/StandardToken.sol";
 /**
    @title ERC827, an extension of ERC20 token standard
 
-   Implementation the ERC827, following the ERC20 standard with extra
-   methods to transfer value and data and execute calls in transfers and
-   approvals.
-   Uses OpenZeppelin StandardToken.
+   Implementation of ERC827, extending the ERC20 standard with methods to
+   execute arbitrary calls within transfers and approvals.
+
+   Inherits OpenZeppelin's StandardToken.
  */
 contract ERC827Token is StandardToken {
 
   /**
-     @dev Addition to ERC20 token methods. It allows to
-     approve the transfer of value and execute a call with the sent data.
+     @dev Addition to ERC20 token methods. Approves an address to use some of
+     the caller's token balance, and executes a call on the same address with
+     the data passed in params.
 
      Beware that changing an allowance with this method brings the risk that
      someone may use both the old and the new allowance by unfortunate
@@ -23,9 +24,9 @@ contract ERC827Token is StandardToken {
      afterwards:
      https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
 
-     @param _spender The address that will spend the funds.
-     @param _value The amount of tokens to be spent.
-     @param _data ABI-encoded contract call to call `_to` address.
+     @param _spender The address of the approved spender.
+     @param _value The amount of tokens the spender can use.
+     @param _data ABI-encoded contract call to call `_spender` address.
 
      @return true if the call function was executed successfully
    */
@@ -41,9 +42,10 @@ contract ERC827Token is StandardToken {
 
   /**
      @dev Addition to ERC20 token methods. Transfer tokens to a specified
-     address and execute a call with the sent data on the same transaction
+     address and executes a call on the same address with the data passed
+     in params.
 
-     @param _to address The address which you want to transfer to
+     @param _to address The address which will receive the tokens
      @param _value uint256 the amout of tokens to be transfered
      @param _data ABI-encoded contract call to call `_to` address.
 
@@ -59,11 +61,12 @@ contract ERC827Token is StandardToken {
   }
 
   /**
-     @dev Addition to ERC20 token methods. Transfer tokens from one address to
-     another and make a contract call on the same transaction
+     @dev Addition to ERC20 token methods. Transfers tokens from an address that
+     the sender is approved to transfer from, and executes a call on the same
+     address that's receiving the tokens.
 
-     @param _from The address which you want to send tokens from
-     @param _to The address which you want to transfer to
+     @param _from The address to transfer tokens from
+     @param _to The address that will receive the tokens
      @param _value The amout of tokens to be transferred
      @param _data ABI-encoded contract call to call `_to` address.
 
@@ -79,16 +82,19 @@ contract ERC827Token is StandardToken {
   }
 
   /**
-   * @dev Addition to StandardToken methods. Increase the amount of tokens that
-   * an owner allowed to a spender and execute a call with the sent data.
-   *
-   * approve should be called when allowed[_spender] == 0. To increment
-   * allowed value is better to use this function to avoid 2 calls (and wait until
-   * the first transaction is mined)
-   * From MonolithDAO Token.sol
-   * @param _spender The address which will spend the funds.
-   * @param _addedValue The amount of tokens to increase the allowance by.
-   * @param _data ABI-encoded contract call to call `_spender` address.
+     @dev Addition to StandardToken methods. Increases the amount of the caller's
+     tokens that another address can spend, and executes a call on that address
+     with the data passed in params.
+
+     approve should be called when allowed[_spender] == 0. To increment
+     allowed value is better to use this function to avoid 2 calls (and wait until
+     the first transaction is mined)
+     From MonolithDAO Token.sol
+     @param _spender The address of the approved spender.
+     @param _addedValue The amount of tokens to increase the allowance by.
+     @param _data ABI-encoded contract call to call `_spender` address.
+
+     @return true if the call function was executed successfully
    */
   function increaseApproval(address _spender, uint _addedValue, bytes _data) public returns (bool) {
     require(_spender != address(this));
@@ -101,16 +107,19 @@ contract ERC827Token is StandardToken {
   }
 
   /**
-   * @dev Addition to StandardToken methods. Decrease the amount of tokens that
-   * an owner allowed to a spender and execute a call with the sent data.
-   *
-   * approve should be called when allowed[_spender] == 0. To decrement
-   * allowed value is better to use this function to avoid 2 calls (and wait until
-   * the first transaction is mined)
-   * From MonolithDAO Token.sol
-   * @param _spender The address which will spend the funds.
-   * @param _subtractedValue The amount of tokens to decrease the allowance by.
-   * @param _data ABI-encoded contract call to call `_spender` address.
+     @dev Addition to StandardToken methods. Decreases the amount of the caller's
+     tokens that another address can spend, and executes a call on that address
+     with the data passed in params.
+
+     approve should be called when allowed[_spender] == 0. To decrement
+     allowed value is better to use this function to avoid 2 calls (and wait until
+     the first transaction is mined)
+     From MonolithDAO Token.sol
+     @param _spender The address of the approved spender.
+     @param _subtractedValue The amount of tokens to decrease the allowance by.
+     @param _data ABI-encoded contract call to call `_spender` address.
+
+     @return true if the call function was executed successfully
    */
   function decreaseApproval(address _spender, uint _subtractedValue, bytes _data) public returns (bool) {
     require(_spender != address(this));
