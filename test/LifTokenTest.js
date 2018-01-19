@@ -5,7 +5,7 @@ require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-var LifTokenTest = artifacts.require('./LifTokenTest.sol');
+var LifTokenTest = artifacts.require('LifTokenTest.sol');
 
 const LOG_EVENTS = true;
 

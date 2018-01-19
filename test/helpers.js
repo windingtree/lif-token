@@ -2,9 +2,9 @@ var BigNumber = web3.BigNumber;
 
 var _ = require('lodash');
 
-var LifToken = artifacts.require('./LifToken.sol');
-var LifCrowdsale = artifacts.require('./LifCrowdsale.sol');
-var LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
+var LifToken = artifacts.require('LifToken.sol');
+var LifCrowdsale = artifacts.require('LifCrowdsale.sol');
+var LifMarketValidationMechanism = artifacts.require('LifMarketValidationMechanism.sol');
 var abiDecoder = require('abi-decoder');
 abiDecoder.addABI(LifToken._json.abi);
 abiDecoder.addABI(LifCrowdsale._json.abi);

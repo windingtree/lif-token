@@ -2,19 +2,29 @@ var help = require('./helpers');
 var _ = require('lodash');
 
 var BigNumber = web3.BigNumber;
+var ethjsABI = require('ethjs-abi');
 
 require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-var LifToken = artifacts.require('./LifToken.sol');
-var Message = artifacts.require('./Message.sol');
+var LifToken = artifacts.require('LifToken.sol');
+var Message = artifacts.require('Message.sol');
 
 const LOG_EVENTS = true;
 
 contract('LifToken', function (accounts) {
   var token;
   var eventsWatcher;
+
+  function findMethod (abi, name, args) {
+    for (var i = 0; i < abi.length; i++) {
+      const methodArgs = _.map(abi[i].inputs, 'type').join(',');
+      if ((abi[i].name === name) && (methodArgs === args)) {
+        return abi[i];
+      }
+    }
+  }
 
   beforeEach(async function () {
     const rate = 100000000000;
@@ -83,155 +93,172 @@ contract('LifToken', function (accounts) {
   });
 
   _.forEach([0, 1], function (tokens) {
-    it('should return correct balances after transferData with ' + tokens + ' tokens and show the event on receiver contract', async function () {
-      let message = await Message.new();
+    it('should return correct balances after transfer with ' + tokens + ' tokens and show the event on receiver contract', async function () {
+      let messageContract = (await Message.new()).contract;
       help.abiDecoder.addABI(Message._json.abi);
 
-      let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
+      let data = messageContract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
+      const abiMethod = findMethod(token.abi, 'transfer', 'address,uint256,bytes');
+      const transferData = ethjsABI.encodeMethod(abiMethod,
+        [messageContract.address, help.lif2LifWei(tokens), data]
+      );
+      let transaction = await token.sendTransaction(
+        { from: accounts[1], data: transferData }
+      );
 
-      let transaction = await token.transferData(message.contract.address, help.lif2LifWei(tokens), data, { from: accounts[1] });
       let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-      assert.deepEqual(['Show', 'Transfer'], _.map(decodedEvents, (e) => e.name),
+      assert.deepEqual(['Transfer', 'Show'], _.map(decodedEvents, (e) => e.name),
         'triggered a Show event in Message and Transfer in the token');
 
       assert.deepEqual(
-        [accounts[1], message.contract.address, help.lif2LifWei(tokens)],
-        _.map(decodedEvents[1].events, (e) => e.value),
+        [accounts[1], messageContract.address, help.lif2LifWei(tokens)],
+        _.map(decodedEvents[0].events, (e) => e.value),
         'triggered the correct Transfer event'
       );
 
-      assert.equal(help.lif2LifWei(tokens), await token.balanceOf(message.contract.address));
+      assert.equal(help.lif2LifWei(tokens), await token.balanceOf(messageContract.address));
 
       await help.checkToken(token, accounts, 125, [40 - tokens, 30, 20, 10, 0]);
     });
   });
 
   _.forEach([0, 1], function (tokens) {
-    it('should return correct balances after transferDataFrom with ' + tokens + ' tokens and show the event on receiver contract', async function () {
-      let message = await Message.new();
+    it('should return correct balances after transferFrom with ' + tokens + ' tokens and show the event on receiver contract', async function () {
+      let messageContract = (await Message.new()).contract;
       help.abiDecoder.addABI(Message._json.abi);
-
-      let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
 
       const lifWei = help.lif2LifWei(tokens);
 
       await token.approve(accounts[2], lifWei, { from: accounts[1] });
 
-      let transaction = await token.transferDataFrom(accounts[1], message.contract.address, lifWei, data, { from: accounts[2] });
+      let data = messageContract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
+      const abiMethod = findMethod(token.abi, 'transferFrom', 'address,address,uint256,bytes');
+      const transferFromData = ethjsABI.encodeMethod(abiMethod,
+        [accounts[1], messageContract.address, lifWei, data]
+      );
+      let transaction = await token.sendTransaction(
+        { from: accounts[2], data: transferFromData }
+      );
+
       let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
-      assert.deepEqual(['Show', 'Transfer'], _.map(decodedEvents, (e) => e.name));
-      assert.equal(lifWei, await token.balanceOf(message.contract.address));
+      assert.deepEqual(['Transfer', 'Show'], _.map(decodedEvents, (e) => e.name));
+      assert.equal(lifWei, await token.balanceOf(messageContract.address));
 
       await help.checkToken(token, accounts, 125, [40 - tokens, 30, 20, 10, 0]);
     });
   });
 
   it('should return correct balances after approve and show the event on receiver contract', async function () {
-    let message = await Message.new();
+    let messageContract = (await Message.new()).contract;
     help.abiDecoder.addABI(Message._json.abi);
 
-    let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
+    let data = messageContract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
+    const abiMethod = findMethod(token.abi, 'approve', 'address,uint256,bytes');
+    const approveData = ethjsABI.encodeMethod(abiMethod,
+      [messageContract.address, help.lif2LifWei(1000), data]
+    );
+    let transaction = await token.sendTransaction(
+      { from: accounts[1], data: approveData }
+    );
 
-    let transaction = await token.approveData(message.contract.address, help.lif2LifWei(1000), data, { from: accounts[1] });
     let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
     assert.equal(2, decodedEvents.length);
 
-    new BigNumber(help.lif2LifWei(1000)).should.be.bignumber.equal(await token.allowance(accounts[1], message.contract.address));
+    new BigNumber(help.lif2LifWei(1000)).should.be.bignumber.equal(await token.allowance(accounts[1], messageContract.address));
 
     await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it('should fail on approveData when spender is the same LifToken contract', async function () {
-    let data = token.contract.approve.getData(accounts[5], help.lif2LifWei(666));
-
-    try {
-      await token.approveData(token.contract.address, help.lif2LifWei(1000), data, { from: accounts[1] });
-      assert(false, 'approveData should have thrown because the spender should not be the LifToken itself');
-    } catch (e) {
-      if (!help.isInvalidOpcodeEx(e)) throw e;
-    }
-  });
-
-  it('should fail inside approveData', async function () {
-    let message = await Message.new();
+  it('should fail inside approve', async function () {
+    let messageContract = (await Message.new()).contract;
     help.abiDecoder.addABI(Message._json.abi);
 
-    let data = message.contract.fail.getData();
+    let data = messageContract.fail.getData();
+    const abiMethod = findMethod(token.abi, 'approve', 'address,uint256,bytes');
+    const approveData = ethjsABI.encodeMethod(abiMethod,
+      [messageContract.address, help.lif2LifWei(10), data]
+    );
 
     try {
-      await token.approveData(
-        message.contract.address, help.lif2LifWei(10), data,
-        { from: accounts[1] }
+      await token.sendTransaction(
+        { from: accounts[1], data: approveData }
       );
-      assert(false, 'approveData should have raised');
+      assert(false, 'approve should have raised');
     } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
     }
 
     // approval should not have gone through so allowance is still 0
     new BigNumber(0).should.be.bignumber
-      .equal(await token.allowance(accounts[1], message.contract.address));
+      .equal(await token.allowance(accounts[1], messageContract.address));
 
     await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it('should fail inside transferData', async function () {
-    let message = await Message.new();
+  it('should fail inside transfer', async function () {
+    let messageContract = (await Message.new()).contract;
     help.abiDecoder.addABI(Message._json.abi);
 
-    let data = message.contract.fail.getData();
-
+    let data = messageContract.fail.getData();
+    const abiMethod = findMethod(token.abi, 'transfer', 'address,uint256,bytes');
+    const transferData = ethjsABI.encodeMethod(abiMethod,
+      [messageContract.address, help.lif2LifWei(10), data]
+    );
     try {
-      await token.transferData(
-        message.contract.address, help.lif2LifWei(10), data,
-        { from: accounts[1] }
-      );
-      assert(false, 'transferData should have failed');
+      await token.sendTransaction({ from: accounts[1], data: transferData });
+      assert(false, 'transfer should have failed');
     } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
     }
 
     // transfer should not have gone through, so balance is still 0
     new BigNumber(0).should.be.bignumber
-      .equal(await token.balanceOf(message.contract.address));
+      .equal(await token.balanceOf(messageContract.address));
 
     await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it('should fail inside transferDataFrom', async function () {
-    let message = await Message.new();
+  it('should fail inside transferFrom', async function () {
+    let messageContract = (await Message.new()).contract;
     help.abiDecoder.addABI(Message._json.abi);
-
-    let data = message.contract.fail.getData();
 
     await token.approve(accounts[1], help.lif2LifWei(10), { from: accounts[2] });
 
+    let data = messageContract.fail.getData();
+    const abiMethod = findMethod(token.abi, 'transferFrom', 'address,address,uint256,bytes');
+    const transferFromData = ethjsABI.encodeMethod(abiMethod,
+      [accounts[2], messageContract.address, help.lif2LifWei(10), data]
+    );
     try {
-      await token.transferDataFrom(
-        accounts[2], message.contract.address, help.lif2LifWei(10), data,
-        { from: accounts[1] }
-      );
-      assert(false, 'transferDataFrom should have thrown');
+      await token.sendTransaction({ from: accounts[1], data: transferFromData });
+      assert(false, 'transferFrom should have thrown');
     } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
     }
 
-    // transferDataFrom should have failed so balance is still 0 but allowance is 10
+    // transferFrom should have failed so balance is still 0 but allowance is 10
     new BigNumber(help.lif2LifWei(10)).should.be.bignumber
       .equal(await token.allowance(accounts[2], accounts[1]));
     new BigNumber(0).should.be.bignumber
-      .equal(await token.balanceOf(message.contract.address));
+      .equal(await token.balanceOf(messageContract.address));
 
     await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it('should fail transferData when using LifToken contract address as receiver', async function () {
+  it('should fail transfer when using LifToken contract address as receiver', async function () {
+    let messageContract = (await Message.new()).contract;
+    let data = messageContract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
+    const abiMethod = findMethod(token.abi, 'transfer', 'address,uint256,bytes');
+    const transferData = ethjsABI.encodeMethod(abiMethod,
+      [token.contract.address, help.lif2LifWei(1000), data]
+    );
+
     try {
-      await token.transferData(token.contract.address, help.lif2LifWei(1000), web3.toHex(0), { from: accounts[1] });
-      assert(false, 'transferData should have thrown');
+      await token.sendTransaction({ from: accounts[1], getData: transferData });
+      assert(false, 'transfer should have thrown');
     } catch (error) {
       if (!help.isInvalidOpcodeEx(error)) throw error;
     }
@@ -239,12 +266,35 @@ contract('LifToken', function (accounts) {
     await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it('should fail transferDataFrom when using LifToken contract address as receiver', async function () {
-    await token.approve(accounts[1], help.lif2LifWei(1), { from: accounts[3] });
+  it('should fail approve when using LifToken contract address as spender', async function () {
+    let messageContract = (await Message.new()).contract;
+    let data = messageContract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
+    const abiMethod = findMethod(token.abi, 'approve', 'address,uint256,bytes');
+    const approveData = ethjsABI.encodeMethod(abiMethod,
+      [token.contract.address, help.lif2LifWei(1), data]
+    );
 
     try {
-      await token.transferDataFrom(accounts[3], token.contract.address, help.lif2LifWei(1), web3.toHex(0), { from: accounts[1] });
-      assert(false, 'transferDataFrom should have thrown');
+      await token.sendTransaction({ from: accounts[1], getData: approveData });
+      assert(false, 'approve should have thrown');
+    } catch (error) {
+      if (!help.isInvalidOpcodeEx(error)) throw error;
+    }
+
+    await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
+  });
+
+  it('should fail transferFrom when using LifToken contract address as receiver', async function () {
+    let messageContract = (await Message.new()).contract;
+    await token.approve(accounts[1], help.lif2LifWei(1), { from: accounts[3] });
+    let data = messageContract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
+    const abiMethod = findMethod(token.abi, 'transferFrom', 'address,address,uint256,bytes');
+    const transferFromData = ethjsABI.encodeMethod(abiMethod,
+      [accounts[3], token.contract.address, help.lif2LifWei(1), data]
+    );
+    try {
+      await token.sendTransaction({ from: accounts[1], getData: transferFromData });
+      assert(false, 'transferFrom should have thrown');
     } catch (error) {
       if (!help.isInvalidOpcodeEx(error)) throw error;
     }

@@ -1,6 +1,6 @@
 pragma solidity ^0.4.18;
 
-import "./SmartToken.sol";
+import "./ERC827Token.sol";
 import "zeppelin-solidity/contracts/token/BurnableToken.sol";
 import "zeppelin-solidity/contracts/token/PausableToken.sol";
 
@@ -13,7 +13,7 @@ import "zeppelin-solidity/contracts/token/PausableToken.sol";
    tokens.
    Uses OpenZeppelin Pausable.
  */
-contract LifTokenTest is SmartToken, BurnableToken, PausableToken {
+contract LifTokenTest is ERC827Token, BurnableToken, PausableToken {
   // Token Name
   string public constant NAME = "Líf";
 
@@ -25,18 +25,6 @@ contract LifTokenTest is SmartToken, BurnableToken, PausableToken {
 
   // Max Lif faucet (50 tokens)
   uint256 public constant MAX_LIF_FAUCET = 50000000000000000000;
-
-  function approveData(address spender, uint256 value, bytes data) public whenNotPaused returns (bool) {
-    return super.approveData(spender, value, data);
-  }
-
-  function transferData(address to, uint256 value, bytes data) public whenNotPaused returns (bool) {
-    return super.transferData(to, value, data);
-  }
-
-  function transferDataFrom(address from, address to, uint256 value, bytes data) public whenNotPaused returns (bool) {
-    return super.transferDataFrom(from, to, value, data);
-  }
 
   /**
      @dev Burns a specific amount of tokens.

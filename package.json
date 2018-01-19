@@ -24,6 +24,7 @@
   "dependencies": {
     "abi-decoder": "^1.0.8",
     "ethereumjs-abi": "^0.6.4",
+    "ethjs-abi": "^0.2.1",
     "jsverify": "^0.8.2",
     "lodash": "^4.17.4",
     "truffle-hdwallet-provider": "0.0.3",

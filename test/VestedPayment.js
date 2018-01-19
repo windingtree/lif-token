@@ -8,8 +8,8 @@ require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-var VestedPayment = artifacts.require('./VestedPayment.sol');
-var LifToken = artifacts.require('./LifToken.sol');
+var VestedPayment = artifacts.require('VestedPayment.sol');
+var LifToken = artifacts.require('LifToken.sol');
 
 const LOG_EVENTS = true;
 

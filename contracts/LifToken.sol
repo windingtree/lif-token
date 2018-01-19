@@ -1,6 +1,6 @@
 pragma solidity ^0.4.18;
 
-import "./SmartToken.sol";
+import "./ERC827Token.sol";
 import "zeppelin-solidity/contracts/token/MintableToken.sol";
 import "zeppelin-solidity/contracts/token/BurnableToken.sol";
 import "zeppelin-solidity/contracts/token/PausableToken.sol";
@@ -12,7 +12,7 @@ import "zeppelin-solidity/contracts/token/PausableToken.sol";
    to transfer value and data to execute a call on transfer.
    Uses OpenZeppelin MintableToken and Pausable.
  */
-contract LifToken is SmartToken, BurnableToken, MintableToken, PausableToken {
+contract LifToken is ERC827Token, BurnableToken, MintableToken, PausableToken {
   // Token Name
   string public constant NAME = "Líf";
 
@@ -21,18 +21,6 @@ contract LifToken is SmartToken, BurnableToken, MintableToken, PausableToken {
 
   // Token decimals
   uint public constant DECIMALS = 18;
-
-  function approveData(address spender, uint256 value, bytes data) public whenNotPaused returns (bool) {
-    return super.approveData(spender, value, data);
-  }
-
-  function transferData(address to, uint256 value, bytes data) public whenNotPaused returns (bool) {
-    return super.transferData(to, value, data);
-  }
-
-  function transferDataFrom(address from, address to, uint256 value, bytes data) public whenNotPaused returns (bool) {
-    return super.transferDataFrom(from, to, value, data);
-  }
 
   /**
      @dev Burns a specific amount of tokens.
