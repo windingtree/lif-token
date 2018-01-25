@@ -21,9 +21,8 @@ npm install
 
 ## Contracts
 
-- [SmartToken](blob/master/contracts/SmartToken.sol): Token based in the ERC20 standard with extra methods to transfer value and data and execute a call on transfer. Uses OpenZeppelin StandardToken.
-- [LifToken](blob/master/contracts/LifToken.sol): Smart token for the Winding Tree platform.
- Uses SmartToken and OpenZeppelin MintableToken and Pausable contracts.
+- [LifToken](blob/master/contracts/LifToken.sol): ERC827 token for the Winding Tree platform.
+ Uses OpenZeppelin ERC827Token, StandardToken, BurnableToken, MintableToken and PausableToken contracts.
  - [LifChannels](blob/master/contracts/LifChannels.sol): Implementation of simple state channels for Lif token holders.
 - [LifCrowdsale](blob/master/contracts/LifCrowdsale.sol): Implementation of the Lif Token Generation Event (TGE)
   Crowdsale: A 2 week fixed price, uncapped token sale, with a discounted rate for contributions during the private
