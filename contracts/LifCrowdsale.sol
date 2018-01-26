@@ -229,7 +229,7 @@ contract LifCrowdsale is Ownable, Pausable {
 
     // store wei amount in case of TGE min cap not reached
     weiRaised = weiRaised.add(weiAmount);
-    purchases[beneficiary] = weiAmount;
+    purchases[beneficiary] = purchases[beneficiary].add(weiAmount);
     tokensSold = tokensSold.add(tokens);
 
     token.mint(beneficiary, tokens);
@@ -273,8 +273,11 @@ contract LifCrowdsale is Ownable, Pausable {
     // calculate the max amount of wei for the foundation
     uint256 foundationBalanceCapWei = maxFoundationCapUSD.mul(weiPerUSDinTGE);
 
-    // if the minimiun cap for the MVM is not reached transfer all funds to foundation
-    // else if the min cap for the MVM is reached, create it and send the remaining funds
+    // If the minimiun cap for the MVM is not reached transfer all funds to foundation
+    // else if the min cap for the MVM is reached, create it and send the remaining funds.
+    // We use weiRaised to compare becuase that is the total amount of wei raised in all TGE
+    // but we have to distribute the balance using `this.balance` because thats the amount
+    // raised by the crowdsale
     if (weiRaised <= foundationBalanceCapWei) {
 
       foundationWallet.transfer(this.balance);
@@ -398,6 +401,12 @@ contract LifCrowdsale is Ownable, Pausable {
     uint256 toReturn = purchases[contributor];
     assert(toReturn > 0);
 
+    uint256 tokenBalance = token.balanceOf(contributor);
+
+    // Substract weiRaised and tokens sold
+    weiRaised = weiRaised.sub(toReturn);
+    tokensSold = tokensSold.sub(tokenBalance);
+    token.burn(contributor, tokenBalance);
     purchases[contributor] = 0;
 
     contributor.transfer(toReturn);
@@ -409,7 +418,7 @@ contract LifCrowdsale is Ownable, Pausable {
      Mechanism in case the soft cap was exceeded. It also unpauses the token to
      enable transfers. It can be called only once, after `end2Timestamp`
    */
-  function finalize() public whenNotPaused hasEnded {
+  function finalize() public onlyOwner hasEnded {
     require(!isFinalized);
 
     // foward founds and unpause token only if minCap is reached
