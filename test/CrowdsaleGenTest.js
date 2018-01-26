@@ -346,7 +346,33 @@ contract('LifCrowdsale Property-based test', function (accounts) {
         { 'type': 'waitTime', 'seconds': duration.days(1) },
         { 'type': 'buyTokens', beneficiary: 3, account: 4, eth: 23000 },
         { 'type': 'waitTime', 'seconds': duration.days(1) },
-        { 'type': 'finalizeCrowdsale', fromAccount: 5 },
+        { 'type': 'finalizeCrowdsale', fromAccount: 3 },
+      ],
+      crowdsale: {
+        rate1: 10,
+        rate2: 9,
+        setWeiLockSeconds: 3600,
+        foundationWallet: 2,
+        foundersWallet: 2,
+        owner: 3,
+      },
+    };
+
+    await runGeneratedCrowdsaleAndCommands(crowdsaleAndCommands);
+  });
+
+  it('Execute a normal TGE and ends with 0 funds', async function () {
+    let crowdsaleAndCommands = {
+      commands: [
+        { 'type': 'checkRate' },
+        { 'type': 'setWeiPerUSDinTGE', wei: 1500000000000000, fromAccount: 3 },
+        { 'type': 'waitTime', 'seconds': duration.days(1) },
+        { 'type': 'buyTokens', beneficiary: 3, account: 4, eth: 40000 },
+        { 'type': 'waitTime', 'seconds': duration.days(1) },
+        { 'type': 'buyTokens', beneficiary: 3, account: 4, eth: 23000 },
+        { 'type': 'waitTime', 'seconds': duration.days(1) },
+        { 'type': 'returnPurchase', fromAccount: 3, contributor: 3 },
+        { 'type': 'finalizeCrowdsale', fromAccount: 3 },
       ],
       crowdsale: {
         rate1: 10,
@@ -372,7 +398,7 @@ contract('LifCrowdsale Property-based test', function (accounts) {
         { 'type': 'waitTime', 'seconds': duration.days(1.1) },
         { 'type': 'buyTokens', beneficiary: 3, account: 4, eth: 60000 },
         { 'type': 'waitTime', 'seconds': duration.days(2) },
-        { 'type': 'finalizeCrowdsale', fromAccount: 5 },
+        { 'type': 'finalizeCrowdsale', fromAccount: 3 },
         { 'type': 'pauseToken', 'pause': false, 'fromAccount': 3 },
       ],
       crowdsale: {
@@ -625,7 +651,7 @@ contract('LifCrowdsale Property-based test', function (accounts) {
     await runGeneratedCrowdsaleAndCommands({
       'commands': [
         { 'type': 'fundCrowdsaleOverSoftCap', 'account': 8, 'softCapExcessWei': 15, 'finalize': true },
-        { 'type': 'returnPurchase', 'eth': 1, 'fromAccount': 0, 'contributor': 8 },
+        { 'type': 'returnPurchase', 'fromAccount': 0, 'contributor': 8 },
         { 'type': 'pauseToken', 'pause': false, 'fromAccount': 2 },
         { 'type': 'transfer', 'lif': 10, 'fromAccount': 8, 'toAccount': 2 },
       ],
@@ -644,7 +670,7 @@ contract('LifCrowdsale Property-based test', function (accounts) {
     await runGeneratedCrowdsaleAndCommands({
       'commands': [
         { 'type': 'fundCrowdsaleOverSoftCap', 'account': 8, 'softCapExcessWei': 15, 'finalize': true },
-        { 'type': 'returnPurchase', 'eth': 33, 'fromAccount': 0, 'contributor': 8 },
+        { 'type': 'returnPurchase', 'fromAccount': 0, 'contributor': 8 },
       ],
       'crowdsale': {
         'rate1': 23,

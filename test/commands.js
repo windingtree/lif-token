@@ -275,6 +275,7 @@ async function runFinalizeCrowdsaleCommand (command, state) {
 
   let shouldThrow = state.crowdsaleFinalized ||
     state.crowdsalePaused || (state.weiPerUSDinTGE === 0) ||
+    (account !== gen.getAccount(state.owner)) ||
     hasZeroAddress ||
     (nextTimestamp <= state.crowdsaleData.end2Timestamp);
 
@@ -442,7 +443,7 @@ async function runClaimEthCommand (command, state) {
 async function runReturnPurchaseCommand (command, state) {
   let account = gen.getAccount(command.fromAccount),
     contributor = gen.getAccount(command.contributor),
-    purchases = _.filter(state.purchases, (p) => p.account === command.contributor),
+    purchases = _.filter(state.purchases, (p) => p.beneficiary === command.contributor),
     hasZeroAddress = (isZeroAddress(contributor) || isZeroAddress(account)),
     nextTimestamp = latestTime();
 
@@ -462,6 +463,15 @@ async function runReturnPurchaseCommand (command, state) {
       _.map(purchases, (p) => p.wei),
       (accum, wei) => accum.plus(wei)
     );
+
+    state.purchases = _.remove(state.purchases, function (p) {
+      return p.beneficiary !== command.contributor;
+    });
+
+    state.weiRaised = state.weiRaised.sub(returnedAmount);
+    state.totalSupply = state.totalSupply.sub(state.balances[command.contributor]);
+    state.balances[command.contributor] = 0;
+
     state = increaseEthBalance(state, command.contributor, returnedAmount);
     state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
   } catch (e) {
@@ -614,7 +624,7 @@ async function runFundCrowdsaleBelowMinCap (command, state) {
         await increaseTimeTestRPCTo(state.crowdsaleData.end2Timestamp + 1);
       }
 
-      state = await runFinalizeCrowdsaleCommand({ fromAccount: command.account }, state);
+      state = await runFinalizeCrowdsaleCommand({ fromAccount: state.owner }, state);
 
       // verify that the crowdsale is finalized and funded
       assert.equal(true, state.crowdsaleFinalized);
@@ -650,7 +660,7 @@ async function runFundCrowdsaleBelowSoftCap (command, state) {
         await increaseTimeTestRPCTo(state.crowdsaleData.end2Timestamp + 1);
       }
 
-      state = await runFinalizeCrowdsaleCommand({ fromAccount: command.account }, state);
+      state = await runFinalizeCrowdsaleCommand({ fromAccount: state.owner }, state);
 
       // verify that the crowdsale is finalized and funded
       assert.equal(true, state.crowdsaleFinalized);
@@ -699,7 +709,7 @@ async function runFundCrowdsaleOverSoftCap (command, state) {
         await increaseTimeTestRPCTo(state.crowdsaleData.end2Timestamp + 1);
       }
 
-      state = await runFinalizeCrowdsaleCommand({ fromAccount: command.account }, state);
+      state = await runFinalizeCrowdsaleCommand({ fromAccount: state.owner }, state);
 
       // verify that the crowdsale is finalized and funded, but there's no MVM
       assert.equal(true, state.crowdsaleFinalized);
