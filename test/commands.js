@@ -283,8 +283,7 @@ async function runFinalizeCrowdsaleCommand (command, state) {
     let crowdsaleFunded = (state.weiRaised >= state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
 
     help.debug('finishing crowdsale on block', nextTimestamp, ', from address:', gen.getAccount(command.fromAccount), ', funded:', crowdsaleFunded);
-
-    let tx = await state.crowdsaleContract.finalize({ from: account });
+    let tx = await state.crowdsaleContract.finalize(true, { from: account });
     help.debug('gas used in finalize:', tx.receipt.gasUsed);
 
     if (!help.inCoverage()) { // gas cannot be measured correctly when running coverage

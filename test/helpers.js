@@ -91,7 +91,7 @@ module.exports = {
       if (balances[i] > 0) { await crowdsale.sendTransaction({ value: web3.toWei(balances[i] / rate, 'ether'), from: accounts[i + 1] }); }
     }
     await increaseTimeTestRPCTo(endTime + 1);
-    await crowdsale.finalize();
+    await crowdsale.finalize(true);
     let token = LifToken.at(await crowdsale.token());
     await token.unpause();
     return crowdsale;

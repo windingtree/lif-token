@@ -265,17 +265,18 @@ contract LifCrowdsale is Ownable, Pausable {
      @dev Internal. Forwards funds to the foundation wallet and in case the soft
      cap was exceeded it also creates and funds the Market Validation Mechanism.
    */
-  function forwardFunds() internal {
+  function forwardFunds(bool deployMVM) internal {
 
     // calculate the max amount of wei for the foundation
     uint256 foundationBalanceCapWei = maxFoundationCapUSD.mul(weiPerUSDinTGE);
 
-    // If the minimiun cap for the MVM is not reached transfer all funds to foundation
-    // else if the min cap for the MVM is reached, create it and send the remaining funds.
+    // If the minimiun cap for the MVM is not reached or the MVM cant be deployed
+    // transfer all funds to foundation else if the min cap for the MVM is reached,
+    // create it and send the remaining funds.
     // We use weiRaised to compare becuase that is the total amount of wei raised in all TGE
     // but we have to distribute the balance using `this.balance` because thats the amount
     // raised by the crowdsale
-    if (weiRaised <= foundationBalanceCapWei) {
+    if ((weiRaised <= foundationBalanceCapWei) || !deployMVM) {
 
       foundationWallet.transfer(this.balance);
 
@@ -415,13 +416,13 @@ contract LifCrowdsale is Ownable, Pausable {
      Mechanism in case the soft cap was exceeded. It also unpauses the token to
      enable transfers. It can be called only once, after `end2Timestamp`
    */
-  function finalize() public onlyOwner hasEnded {
+  function finalize(bool deployMVM) public onlyOwner hasEnded {
     require(!isFinalized);
 
     // foward founds and unpause token only if minCap is reached
     if (funded()) {
 
-      forwardFunds();
+      forwardFunds(deployMVM);
 
       // finish the minting of the token
       token.finishMinting();

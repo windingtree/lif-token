@@ -16,13 +16,13 @@ const _ = require('lodash');
 const TGEDistribution = require('./TGEDistribution');
 
 contract('TGE Deployer', function ([deployAddress, foundationWallet, foundersWallet]) {
-  it('Deploy a TGE correctly', async function () {
-    const startTimestamp = new Date('Sun, 28 Jan 2018 8:0:00 GMT').getTime() / 1000;
-    const end1Timestamp = new Date('Sun, 28 Jan 2018 9:0:00 GMT').getTime() / 1000;
-    const end2Timestamp = new Date('Sun, 28 Jan 2018 10:0:00 GMT').getTime() / 1000;
+  it.only('Deploy a TGE correctly', async function () {
+    const startTimestamp = new Date('Sun, 28 Jan 2018 15:00:00 GMT-3').getTime() / 1000;
+    const end1Timestamp = new Date('Sun, 28 Jan 2018 24:00:00 GMT-3').getTime() / 1000;
+    const end2Timestamp = new Date('Mon, 29 Jan 2018 12:00:00 GMT-3').getTime() / 1000;
     const rate1 = 1000;
     const rate2 = 900;
-    const setWeiLockSeconds = duration.hours(1);
+    const setWeiLockSeconds = duration.minutes(30);
     var totalSupply = new BigNumber(0);
     const weiPerUSDinTGE = web3.toWei(1 / 1000);
 
