@@ -16,15 +16,17 @@ const _ = require('lodash');
 const TGEDistribution = require('./TGEDistribution');
 
 contract('TGE Deployer', function ([deployAddress, foundationWallet, foundersWallet]) {
-  it.only('Deploy a TGE correctly', async function () {
-    const startTimestamp = new Date('Sun, 28 Jan 2018 15:00:00 GMT-3').getTime() / 1000;
-    const end1Timestamp = new Date('Sun, 28 Jan 2018 24:00:00 GMT-3').getTime() / 1000;
-    const end2Timestamp = new Date('Mon, 29 Jan 2018 12:00:00 GMT-3').getTime() / 1000;
+  it.skip('Deploy a TGE correctly', async function () {
+    const startTimestamp = new Date('28 Jan 2019 15:00:00 GMT-3').getTime() / 1000;
+    const end1Timestamp = new Date('28 Jan 2019 24:00:00 GMT-3').getTime() / 1000;
+    const end2Timestamp = new Date('29 Jan 2019 12:00:00 GMT-3').getTime() / 1000;
     const rate1 = 1000;
     const rate2 = 900;
     const setWeiLockSeconds = duration.minutes(30);
     var totalSupply = new BigNumber(0);
-    const weiPerUSDinTGE = web3.toWei(1 / 1000);
+    var ETHRaised = new BigNumber(0);
+    const USDperETH = 100000000;
+    const weiPerUSDinTGE = web3.toWei(1 / USDperETH);
 
     const deployer = await TGEDeployer.new(
       startTimestamp, end1Timestamp, end2Timestamp, rate1,
@@ -36,7 +38,7 @@ contract('TGE Deployer', function ([deployAddress, foundationWallet, foundersWal
     const token = LifToken.at(await crowdsale.token());
 
     help.debug('Data to create Deployer contract:');
-    help.debug(deployer.deployedBytecode);
+    help.debug(web3.eth.getTransaction(deployer.contract.transactionHash).input);
     help.debug('--------------------------------------------------');
 
     // Check values
@@ -55,6 +57,8 @@ contract('TGE Deployer', function ([deployAddress, foundationWallet, foundersWal
 
       // Parse ETH to wei
       stage.values.map(function (value, i) {
+        stage.values[i] = new BigNumber(stage.values[i]);
+        ETHRaised = ETHRaised.add(stage.values[i]);
         stageETH = stageETH.add(stage.values[i]);
         stage.values[i] = web3.toWei(stage.values[i]);
       });
@@ -100,6 +104,18 @@ contract('TGE Deployer', function ([deployAddress, foundationWallet, foundersWal
 
     assert.equal(foundationWallet, parseInt(await crowdsale.owner.call()));
     assert.equal(weiPerUSDinTGE, parseInt(await crowdsale.weiPerUSDinTGE.call()));
+
+    const USDRaised = ETHRaised * USDperETH;
+    console.log('USD raised', USDRaised);
+    console.log('Funded', await crowdsale.funded());
+
+    // Check USD raised
+    new BigNumber(USDRaised).should.be.bignumber
+      .equal((await crowdsale.weiRaised()).div(weiPerUSDinTGE), 2);
+
+    // Check ETH raised
+    ETHRaised.should.be.bignumber
+      .equal(web3.fromWei(await crowdsale.weiRaised()), 2);
 
     // Check final total supply
     totalSupply.should.be.bignumber
