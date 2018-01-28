@@ -82,9 +82,6 @@ contract LifCrowdsale is Ownable, Pausable {
   // Amount of lif minted and transferred during the TGE
   uint256 public tokensSold;
 
-  // Amount of wei received as private presale payments
-  uint256 public totalPresaleWei;
-
   // Address of the vesting schedule for the foundation created at the
   // end of the crowdsale
   VestedPayment public foundationVestedPayment;
@@ -257,7 +254,7 @@ contract LifCrowdsale is Ownable, Pausable {
 
     uint256 tokens = weiSent.mul(rate);
 
-    totalPresaleWei = totalPresaleWei.add(weiSent);
+    weiRaised = weiRaised.add(weiSent);
 
     token.mint(beneficiary, tokens);
 
