@@ -122,6 +122,13 @@ contract LifMarketValidationMechanism is Ownable {
   }
 
   /**
+     @dev Change the LifToken address
+    */
+  function changeToken(address newToken) public onlyOwner {
+    lifToken = LifToken(newToken);
+  }
+
+  /**
      @dev calculates the exponential distribution curve. It determines how much
      wei can be distributed back to the foundation every month. It starts with
      very low amounts ending with higher chunks at the end of the MVM lifetime
