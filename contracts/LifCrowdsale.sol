@@ -330,7 +330,8 @@ contract LifCrowdsale is Ownable, Pausable {
     foundersVestedPayment.transferOwnership(foundersWallet);
 
     // create the vested payment schedule for the foundation
-    uint256 foundationPaymentStart = foundationMonthsStart.mul(30 days);
+    uint256 foundationPaymentStart = foundationMonthsStart.mul(30 days)
+      .add(30 days);
     foundationVestedPayment = new VestedPayment(
       block.timestamp.add(foundationPaymentStart), 30 days,
       foundationMonthsStart, 0, foundationTokens, token
