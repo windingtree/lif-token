@@ -281,7 +281,7 @@ contract('LifToken Crowdsale', function (accounts) {
     await crowdsale.buyTokens(beneficiary, { value: weiAmount, from: accounts[5] });
 
     await increaseTimeTestRPCTo(end2 + 2);
-    await crowdsale.finalize();
+    await crowdsale.finalize(true);
 
     // TO DO: Find out why the balance difference in this assert
     // const balanceBeforeClaim = web3.eth.getBalance(beneficiary);
@@ -307,7 +307,7 @@ contract('LifToken Crowdsale', function (accounts) {
     await crowdsale.buyTokens(accounts[6], { value: weiAmount, from: accounts[5] });
 
     await increaseTimeTestRPCTo(end2 + 2);
-    await crowdsale.finalize();
+    await crowdsale.finalize(true);
 
     try {
       await crowdsale.claimEth({ from: accounts[6] });
@@ -361,7 +361,7 @@ contract('LifToken Crowdsale', function (accounts) {
     await crowdsale.buyTokens(beneficiary, { value: weiAmount, from: accounts[5] });
 
     await increaseTimeTestRPCTo(end2 + 2);
-    await crowdsale.finalize();
+    await crowdsale.finalize(true);
 
     try {
       await crowdsale.claimEth({ from: accounts[8] });
@@ -390,10 +390,10 @@ contract('LifToken Crowdsale', function (accounts) {
     await crowdsale.buyTokens(beneficiary, { value: weiAmount, from: accounts[5] });
 
     await increaseTimeTestRPCTo(end2 + 2);
-    await crowdsale.finalize();
+    await crowdsale.finalize(true);
 
     try {
-      await crowdsale.finalize();
+      await crowdsale.finalize(true);
       assert(false, 'should have thrown');
     } catch (e) {
       assert(help.isInvalidOpcodeEx(e));
@@ -419,7 +419,7 @@ contract('LifToken Crowdsale', function (accounts) {
     await crowdsale.buyTokens(beneficiary, { value: weiAmount, from: accounts[5] });
 
     await increaseTimeTestRPCTo(end2 + 2);
-    await crowdsale.finalize();
+    await crowdsale.finalize(true);
 
     const MVMAddress = await crowdsale.MVM.call();
     assert(MVMAddress !== help.zeroAddress);
@@ -447,7 +447,7 @@ contract('LifToken Crowdsale', function (accounts) {
     await crowdsale.buyTokens(beneficiary, { value: weiAmount, from: accounts[5] });
 
     await increaseTimeTestRPCTo(end2 + 2);
-    await crowdsale.finalize();
+    await crowdsale.finalize(true);
 
     const MVMAddress = await crowdsale.MVM.call();
     assert(MVMAddress === help.zeroAddress, 'no MVM should have been created: ' + MVMAddress);

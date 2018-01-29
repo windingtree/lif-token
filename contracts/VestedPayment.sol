@@ -70,6 +70,13 @@ contract VestedPayment is Ownable {
   }
 
   /**
+     @dev Change the LifToken address
+    */
+  function changeToken(address newToken) public onlyOwner {
+    token = LifToken(newToken);
+  }
+
+  /**
      @dev Get how many tokens are available to be claimed
    */
   function getAvailableTokens() public view returns (uint256) {

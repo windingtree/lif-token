@@ -283,8 +283,7 @@ async function runFinalizeCrowdsaleCommand (command, state) {
     let crowdsaleFunded = (state.weiRaised >= state.crowdsaleData.minCapUSD * state.weiPerUSDinTGE);
 
     help.debug('finishing crowdsale on block', nextTimestamp, ', from address:', gen.getAccount(command.fromAccount), ', funded:', crowdsaleFunded);
-
-    let tx = await state.crowdsaleContract.finalize({ from: account });
+    let tx = await state.crowdsaleContract.finalize(true, { from: account });
     help.debug('gas used in finalize:', tx.receipt.gasUsed);
 
     if (!help.inCoverage()) { // gas cannot be measured correctly when running coverage
@@ -375,7 +374,7 @@ async function runFinalizeCrowdsaleCommand (command, state) {
 async function runAddPrivatePresalePaymentCommand (command, state) {
   let { startTimestamp } = state.crowdsaleData,
     nextTimestamp = latestTime(),
-    weiToSend = web3.toWei(command.eth, 'ether'),
+    weiSent = web3.toWei(command.eth, 'ether'),
     account = gen.getAccount(command.fromAccount),
     beneficiary = gen.getAccount(command.beneficiaryAccount),
     hasZeroAddress = _.some([account, beneficiary], isZeroAddress);
@@ -385,20 +384,20 @@ async function runAddPrivatePresalePaymentCommand (command, state) {
     (account !== gen.getAccount(state.owner)) ||
     (state.crowdsaleFinalized) ||
     hasZeroAddress ||
-    (weiToSend === 0) ||
+    (weiSent === 0) ||
     (command.rate <= state.crowdsaleData.rate1);
 
   try {
     help.debug('Adding presale private tokens for account:', command.beneficiaryAccount, 'eth:', command.eth, 'fromAccount:', command.fromAccount, 'blockTimestamp:', nextTimestamp);
 
-    const tx = await state.crowdsaleContract.addPrivatePresaleTokens(beneficiary, weiToSend, command.rate, { from: account });
+    const tx = await state.crowdsaleContract.addPrivatePresaleTokens(beneficiary, weiSent, command.rate, { from: account });
 
     assert.equal(false, shouldThrow, 'buyTokens should have thrown but it did not');
 
-    state.totalSupply = state.totalSupply.plus(weiToSend * command.rate);
-    state.totalPresaleWei = state.totalPresaleWei.plus(weiToSend);
+    state.totalSupply = state.totalSupply.plus(weiSent * command.rate);
+    state.weiRaised = state.weiRaised.plus(weiSent);
     state.presalePurchases = _.concat(state.presalePurchases,
-      { rate: command.rate, wei: weiToSend, beneficiary: command.beneficiary, account: command.fromAccount }
+      { rate: command.rate, wei: weiSent, beneficiary: command.beneficiary, account: command.fromAccount }
     );
     state = decreaseEthBalance(state, command.fromAccount, help.txGasCost(tx));
   } catch (e) {

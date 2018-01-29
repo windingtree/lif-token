@@ -16,6 +16,8 @@ module.exports = {
       host: 'localhost',
       port: 8545,
       network_id: '*', // eslint-disable-line camelcase
+      gas: 8000000,
+      gasPrice: 41000000000,
     },
     coverage: {
       host: 'localhost',
@@ -23,16 +25,6 @@ module.exports = {
       port: 8555,
       gas: 0xfffffffffff,
       gasPrice: 0x01,
-    },
-    testrpc: {
-      host: 'localhost',
-      port: 8545,
-      network_id: '*', // eslint-disable-line camelcase
-    },
-    ganache: {
-      host: 'localhost',
-      port: 7545,
-      network_id: '*', // eslint-disable-line camelcase
     },
   },
   solc: {

@@ -37,16 +37,11 @@ contract('LifCrowdsale Property-based test', function (accounts) {
     let tokensInPurchases = sumBigNumbers(_.map(state.purchases, (p) => p.tokens));
     tokensInPurchases.should.be.bignumber.equal(help.lifWei2Lif(await crowdsale.tokensSold()));
 
-    let presaleWei = sumBigNumbers(_.map(state.presalePurchases, (p) => p.wei));
-
-    presaleWei.should.be.bignumber.equal(await crowdsale.totalPresaleWei.call());
-
     help.debug('checking purchases total wei, purchases:', JSON.stringify(state.purchases));
     let weiInPurchases = sumBigNumbers(_.map(state.purchases, (p) => p.wei));
-    weiInPurchases.should.be.bignumber.equal(await crowdsale.weiRaised());
+    if (state.crowdsaleFinalized) { new BigNumber(0).should.be.bignumber.equal(await web3.eth.getBalance(crowdsale.address)); } else { weiInPurchases.should.be.bignumber.equal(await web3.eth.getBalance(crowdsale.address)); }
 
     // Check presale tokens sold
-    state.totalPresaleWei.should.be.bignumber.equal(await crowdsale.totalPresaleWei.call());
     assert.equal(state.crowdsaleFinalized, await crowdsale.isFinalized.call());
     if (state.crowdsaleFinalized && state.weiPerUSDinTGE > 0) {
       assert.equal(state.crowdsaleFunded, await crowdsale.funded());
@@ -179,7 +174,6 @@ contract('LifCrowdsale Property-based test', function (accounts) {
         presalePurchases: [],
         claimedEth: {},
         weiRaised: zero,
-        totalPresaleWei: zero,
         crowdsalePaused: false,
         tokenPaused: true,
         crowdsaleFinalized: false,
