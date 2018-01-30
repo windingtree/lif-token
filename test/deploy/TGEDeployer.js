@@ -26,6 +26,9 @@ contract('TGE Deployer', function ([deployAddress, foundationWallet, foundersWal
     var totalSupply = new BigNumber(0);
     var ETHRaised = new BigNumber(0);
     const USDperETH = 1150;
+
+    // Use this rate factor to matxh the starting USD raised to 1.5M USD
+    const RATE_FACTOR = 4.05;
     const weiPerUSDinTGE = web3.toWei(1 / USDperETH);
 
     // Override foundation and founders wallet
@@ -60,10 +63,11 @@ contract('TGE Deployer', function ([deployAddress, foundationWallet, foundersWal
       // Check right amount of contributos and values
       assert.equal(stage.contributors.length, stage.values.length);
       var stageETH = new BigNumber(0);
+      stage.rate = new BigNumber(stage.rate).mul(RATE_FACTOR);
 
       // Parse ETH to wei
       stage.values.map(function (value, i) {
-        stage.values[i] = new BigNumber(stage.values[i]);
+        stage.values[i] = new BigNumber(stage.values[i]).div(RATE_FACTOR);
         ETHRaised = ETHRaised.add(stage.values[i]);
         stageETH = stageETH.add(stage.values[i]);
         stage.values[i] = web3.toWei(stage.values[i]);
