@@ -2,5 +2,5 @@ module.exports = {
   port: 8555,
   norpc: true,
   copyNodeModules: true,
-  skipFiles: ['test-helpers/Message.sol', 'deploy/TGEDeployer.sol']
+  skipFiles: ['test-helpers/Message.sol']
 }

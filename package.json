@@ -1,6 +1,6 @@
 {
   "name": "lif-token",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Winding Tree Platform Token",
   "main": "index.js",
   "scripts": {
@@ -19,8 +19,8 @@
     "token",
     "crowdsale"
   ],
-  "author": "Augusto Lemble <augusto@windingtree.com>",
-  "license": "GPL",
+  "author": "Augusto Lemble <me@augustolemble.com>",
+  "license": "ISC",
   "dependencies": {
     "abi-decoder": "^1.0.8",
     "ethereumjs-abi": "^0.6.4",
