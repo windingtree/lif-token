@@ -11,7 +11,7 @@ This repository also has all the contracts related with the Token Generation Eve
 
 ## Requirements
 
-Node v7.6 or higher (versions before 7.6 do not support async/await that is used in the LifToken tests)
+LTS Node 8.9.4 is required for running the tests.
 
 ## Install
 
@@ -23,8 +23,8 @@ npm install
 
 - [LifToken](contracts/LifToken.sol): ERC827 token for the Winding Tree platform.
  Uses OpenZeppelin ERC827Token, StandardToken, BurnableToken, MintableToken and PausableToken contracts.
-- [LifChannels](blob/master/contracts/LifChannels.sol): Implementation of simple state channels for Lif token holders.
-- [LifCrowdsale](blob/master/contracts/LifCrowdsale.sol): Implementation of the Lif Token Generation Event (TGE)
+- [LifChannels](contracts/LifChannels.sol): Implementation of simple state channels for Lif token holders.
+- [LifCrowdsale](contracts/LifCrowdsale.sol): Implementation of the Lif Token Generation Event (TGE)
   Crowdsale: A 2 week fixed price, uncapped token sale, with a discounted rate for contributions during the private
   presale and a Market Validation Mechanism that will receive the funds over the USD 10M soft cap.
 - [LifMarketValidationMechanism](contracts/LifMarketValidationMechanism.sol) (MVM): holds the ETH received during
