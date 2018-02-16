@@ -11,6 +11,9 @@
     "clean": "rimraf build",
     "buildfornpm": "npm run clean && truffle compile"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/windingtree/LifToken"
