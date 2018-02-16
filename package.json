@@ -1,5 +1,5 @@
 {
-  "name": "lif-token",
+  "name": "@windingtree/lif-token",
   "version": "0.1.0",
   "description": "Winding Tree Platform Token",
   "main": "index.js",
