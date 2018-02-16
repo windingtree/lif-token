@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+.node-xmlhttprequest-sync-[0-9]*
+coverage
+coverage.json
+allFiredEvents
+scTopics
+package-lock.json
+contracts
+!build/contracts
+migrations
+scripts
+test
+.solcover.js
+.eslintrc.js
+.travis.yml
+truffle-config.js

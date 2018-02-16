@@ -7,7 +7,9 @@
     "test": "scripts/test.sh",
     "coverage": "scripts/coverage.sh",
     "coveralls": "scripts/coveralls.sh",
-    "lint": "eslint test"
+    "lint": "eslint test",
+    "clean": "rimraf build",
+    "buildfornpm": "npm run clean && truffle compile"
   },
   "repository": {
     "type": "git",
@@ -26,6 +28,7 @@
     "ethereumjs-abi": "^0.6.4",
     "jsverify": "^0.8.2",
     "lodash": "^4.17.4",
+    "rimraf": "^2.6.2",
     "truffle-hdwallet-provider": "0.0.3",
     "zeppelin-solidity": "^1.6.0"
   },
