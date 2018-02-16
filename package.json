@@ -20,7 +20,7 @@
     "crowdsale"
   ],
   "author": "Augusto Lemble <augusto@windingtree.com>",
-  "license": "GPL",
+  "license": "GPLv3",
   "dependencies": {
     "abi-decoder": "^1.0.8",
     "ethereumjs-abi": "^0.6.4",
@@ -44,5 +44,8 @@
     "solidity-coverage": "^0.2.2",
     "truffle": "^4.0.5",
     "truffle-hdwallet-provider": "0.0.3"
+  },
+  "engines": {
+    "node": ">=8.9.4"
   }
 }
