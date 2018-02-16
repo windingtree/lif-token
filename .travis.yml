@@ -18,11 +18,9 @@ script:
 before_deploy: npm run buildfornpm
 deploy:
   provider: npm
-  email: chadima.jiri@gmail.com
+  email: augusto.lemble@gmail.com
   skip_cleanup: true
   api_key: $NPM_TOKEN
   on:
     branch: master
     tags: true
-
-
