@@ -22,5 +22,5 @@ deploy:
   skip_cleanup: true
   api_key: $NPM_TOKEN
   on:
-    branch: master
+    repo: windingtree/LifToken
     tags: true
