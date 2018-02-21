@@ -106,7 +106,7 @@ contract('LifToken', function (accounts) {
   });
 
   _.forEach([0, 1], function (tokens) {
-    it.skip('should return correct balances after transfer ERC827 with ' + tokens + ' tokens and show the event on receiver contract', async function () {
+    it('should return correct balances after transfer ERC827 with ' + tokens + ' tokens and show the event on receiver contract', async function () {
       let message = await Message.new();
       help.abiDecoder.addABI(Message._json.abi);
 
@@ -135,7 +135,7 @@ contract('LifToken', function (accounts) {
   });
 
   _.forEach([0, 1], function (tokens) {
-    it.skip('should return correct balances after transferFrom ERC827 with ' + tokens + ' tokens and show the event on receiver contract', async function () {
+    it('should return correct balances after transferFrom ERC827 with ' + tokens + ' tokens and show the event on receiver contract', async function () {
       let message = await Message.new();
       help.abiDecoder.addABI(Message._json.abi);
 
@@ -160,7 +160,7 @@ contract('LifToken', function (accounts) {
     });
   });
 
-  it.skip('should return correct balances after approve and show the event on receiver contract', async function () {
+  it('should return correct balances after approve and show the event on receiver contract', async function () {
     let message = await Message.new();
     help.abiDecoder.addABI(Message._json.abi);
 
@@ -180,7 +180,7 @@ contract('LifToken', function (accounts) {
     await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it.skip('should fail on approve ERC827 when spender is the same LifToken contract', async function () {
+  it('should fail on approve ERC827 when spender is the same LifToken contract', async function () {
     let message = await Message.new();
     let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
 
@@ -196,7 +196,7 @@ contract('LifToken', function (accounts) {
     }
   });
 
-  it.skip('should fail inside approve ERC827', async function () {
+  it('should fail inside approve ERC827', async function () {
     let message = await Message.new();
     help.abiDecoder.addABI(Message._json.abi);
 
@@ -220,7 +220,7 @@ contract('LifToken', function (accounts) {
     await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it.skip('should fail inside transfer ERC827', async function () {
+  it('should fail inside transfer ERC827', async function () {
     let message = await Message.new();
     help.abiDecoder.addABI(Message._json.abi);
 
@@ -244,7 +244,7 @@ contract('LifToken', function (accounts) {
     await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it.skip('should fail inside transferFrom ERC827', async function () {
+  it('should fail inside transferFrom ERC827', async function () {
     let message = await Message.new();
     help.abiDecoder.addABI(Message._json.abi);
 
@@ -272,7 +272,7 @@ contract('LifToken', function (accounts) {
     await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it.skip('should fail transfer ERC827 when using LifToken contract address as receiver', async function () {
+  it('should fail transfer ERC827 when using LifToken contract address as receiver', async function () {
     let message = await Message.new();
     let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
 
@@ -290,7 +290,7 @@ contract('LifToken', function (accounts) {
     await help.checkToken(token, accounts, 125, [40, 30, 20, 10, 0]);
   });
 
-  it.skip('should fail transferFrom ERC827 when using LifToken contract address as receiver', async function () {
+  it('should fail transferFrom ERC827 when using LifToken contract address as receiver', async function () {
     let message = await Message.new();
     await token.approve(accounts[1], help.lif2LifWei(1), { from: accounts[3] });
     let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');

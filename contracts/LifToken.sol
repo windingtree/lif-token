@@ -1,5 +1,6 @@
 pragma solidity ^0.4.18;
 
+import "zeppelin-solidity/contracts/token/ERC827/ERC827Token.sol";
 import "zeppelin-solidity/contracts/token/ERC20/StandardToken.sol";
 import "zeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "zeppelin-solidity/contracts/token/ERC20/PausableToken.sol";
@@ -12,7 +13,7 @@ import "zeppelin-solidity/contracts/token/ERC20/PausableToken.sol";
    on transfer.
    Uses OpenZeppelin StandardToken, ERC827Token, MintableToken and PausableToken.
  */
-contract LifToken is StandardToken, MintableToken, PausableToken {
+contract LifToken is StandardToken, ERC827Token, MintableToken, PausableToken {
   // Token Name
   string public constant NAME = "Líf";
 
