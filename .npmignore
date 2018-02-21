@@ -6,8 +6,6 @@ coverage.json
 allFiredEvents
 scTopics
 package-lock.json
-contracts
-!build/contracts
 migrations
 scripts
 test
