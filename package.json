@@ -7,6 +7,7 @@
     "test": "scripts/test.sh",
     "coverage": "scripts/coverage.sh",
     "coveralls": "scripts/coveralls.sh",
+    "soldoc": "scripts/soldoc.sh",
     "lint": "eslint test",
     "clean": "rimraf build",
     "buildfornpm": "npm run clean && truffle compile"
@@ -33,6 +34,8 @@
     "jsverify": "^0.8.2",
     "lodash": "^4.17.10",
     "rimraf": "^2.6.2",
+    "solmd": "^0.1.6",
+    "truffle-flattener": "^1.2.5",
     "truffle-hdwallet-provider": "0.0.3",
     "upgrade": "^1.1.0",
     "zeppelin-solidity": "^1.9.0",
