@@ -3,9 +3,9 @@ var jsc = require('jsverify');
 
 var BigNumber = web3.BigNumber;
 
-var help = require('./helpers');
-var latestTime = require('./helpers/latestTime');
-var { increaseTimeTestRPC, duration } = require('./helpers/increaseTime');
+var help = require('../helpers');
+var latestTime = require('../helpers/latestTime');
+var { increaseTimeTestRPC, duration } = require('../helpers/increaseTime');
 
 var LifToken = artifacts.require('./token/LifToken.sol');
 var LifCrowdsale = artifacts.require('./distribution/LifCrowdsale.sol');

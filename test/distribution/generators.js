@@ -1,6 +1,6 @@
 var jsc = require('jsverify');
 
-var help = require('./helpers');
+var help = require('../helpers');
 
 // this is just to have web3 available and correctly initialized
 artifacts.require('./token/LifToken.sol');

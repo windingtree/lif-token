@@ -1,6 +1,6 @@
-var help = require('./helpers');
-var latestTime = require('./helpers/latestTime');
-var { increaseTimeTestRPC, increaseTimeTestRPCTo, duration } = require('./helpers/increaseTime');
+var help = require('../helpers');
+var latestTime = require('../helpers/latestTime');
+var { increaseTimeTestRPC, increaseTimeTestRPCTo, duration } = require('../helpers/increaseTime');
 
 var BigNumber = web3.BigNumber;
 

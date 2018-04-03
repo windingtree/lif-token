@@ -9,10 +9,10 @@ require('chai')
 
 var _ = require('lodash');
 var jsc = require('jsverify');
-var help = require('./helpers');
+var help = require('../helpers');
 var gen = require('./generators');
-var latestTime = require('./helpers/latestTime');
-var { increaseTimeTestRPC, increaseTimeTestRPCTo, duration } = require('./helpers/increaseTime');
+var latestTime = require('../helpers/latestTime');
+var { increaseTimeTestRPC, increaseTimeTestRPCTo, duration } = require('../helpers/increaseTime');
 
 const priceFactor = 100000;
 

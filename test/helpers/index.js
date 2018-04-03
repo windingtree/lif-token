@@ -10,8 +10,8 @@ abiDecoder.addABI(LifToken._json.abi);
 abiDecoder.addABI(LifCrowdsale._json.abi);
 abiDecoder.addABI(LifMarketValidationMechanism._json.abi);
 
-var latestTime = require('./helpers/latestTime');
-var { increaseTimeTestRPC, increaseTimeTestRPCTo } = require('./helpers/increaseTime');
+var latestTime = require('./latestTime');
+var { increaseTimeTestRPC, increaseTimeTestRPCTo } = require('./increaseTime');
 
 const DEBUG_MODE = (process.env.WT_DEBUG === 'true') || false;
 

@@ -1,4 +1,4 @@
-var help = require('./helpers');
+var help = require('../helpers');
 var ethUtils = require('ethereumjs-util');
 
 var BigNumber = web3.BigNumber;
@@ -11,7 +11,7 @@ var LifTokenTest = artifacts.require('./token/LifTokenTest.sol');
 var LifChannels = artifacts.require('./LifChannels.sol');
 var ECRecovery = artifacts.require('./ECRecovery.sol');
 
-var { increaseTimeTestRPC } = require('./helpers/increaseTime');
+var { increaseTimeTestRPC } = require('../helpers/increaseTime');
 
 const LOG_EVENTS = true;
 

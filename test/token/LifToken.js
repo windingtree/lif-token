@@ -1,4 +1,4 @@
-var help = require('./helpers');
+var help = require('../helpers');
 var _ = require('lodash');
 var ethjsABI = require('ethjs-abi');
 
@@ -31,6 +31,19 @@ contract('LifToken', function (accounts) {
       token.abi, params.method,
       (params.method === 'transferFrom')
         ? 'address,address,uint256,bytes' : 'address,uint256,bytes'
+    );
+    const methodData = ethjsABI.encodeMethod(abiMethod, params.args);
+    const tx = await token.sendTransaction(
+      { from: params.from, data: methodData }
+    );
+    return tx;
+  }
+
+  async function executeERC20Method (params) {
+    const abiMethod = findMethod(
+      token.abi, params.method,
+      (params.method === 'transferFrom')
+        ? 'address,address,uint256' : 'address,uint256'
     );
     const methodData = ethjsABI.encodeMethod(abiMethod, params.args);
     const tx = await token.sendTransaction(
@@ -74,13 +87,21 @@ contract('LifToken', function (accounts) {
   });
 
   it('should return correct balances after transfer', async function () {
-    await token.transfer(accounts[4], help.lif2LifWei(3.55), { from: accounts[1] });
+    await executeERC20Method({
+      method: 'transfer',
+      args: [accounts[4], help.lif2LifWei(3.55)],
+      from: accounts[1],
+    });
     await help.checkToken(token, accounts, 125, [36.45, 30, 20, 13.55, 0]);
   });
 
   it('should throw an error when trying to transfer more than balance', async function () {
     try {
-      await token.transfer(accounts[2], help.lif2LifWei(21));
+      await executeERC20Method({
+        method: 'transfer',
+        args: [accounts[2], help.lif2LifWei(21)],
+        from: accounts[0],
+      });
       assert(false, 'transfer should have thrown');
     } catch (error) {
       if (!help.isInvalidOpcodeEx(error)) throw error;
@@ -314,7 +335,11 @@ contract('LifToken', function (accounts) {
     new BigNumber(0).should.be.bignumber.equal(await token.balanceOf(accounts[5]));
 
     let initialBalance = web3.toWei(1);
-    await token.transfer(accounts[5], initialBalance, { from: accounts[1] });
+    await executeERC20Method({
+      method: 'transfer',
+      args: [accounts[5], initialBalance],
+      from: accounts[1],
+    });
     initialBalance.should.be.bignumber.equal(await token.balanceOf(accounts[5]));
 
     let burned = web3.toWei(0.3);

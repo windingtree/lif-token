@@ -1,4 +1,4 @@
-var help = require('./helpers');
+var help = require('../helpers');
 var commands = require('./commands');
 require('lodash');
 
@@ -11,8 +11,8 @@ require('chai')
 var LifMarketValidationMechanism = artifacts.require('./distribution/LifMarketValidationMechanism.sol');
 var LifToken = artifacts.require('./token/LifToken.sol');
 
-var latestTime = require('./helpers/latestTime');
-var { increaseTimeTestRPC, increaseTimeTestRPCTo, duration } = require('./helpers/increaseTime');
+var latestTime = require('../helpers/latestTime');
+var { increaseTimeTestRPC, increaseTimeTestRPCTo, duration } = require('../helpers/increaseTime');
 
 contract('Market validation Mechanism', function (accounts) {
   it('can be created', async function () {
