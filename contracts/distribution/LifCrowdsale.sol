@@ -3,7 +3,7 @@ pragma solidity ^0.4.18;
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
-import "./LifToken.sol";
+import "../token/LifToken.sol";
 import "./VestedPayment.sol";
 import "./LifMarketValidationMechanism.sol";
 

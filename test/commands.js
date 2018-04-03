@@ -1,5 +1,5 @@
-var LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
-var VestedPayment = artifacts.require('./VestedPayment.sol');
+var LifMarketValidationMechanism = artifacts.require('./distribution/LifMarketValidationMechanism.sol');
+var VestedPayment = artifacts.require('./distribution/VestedPayment.sol');
 
 var BigNumber = web3.BigNumber;
 

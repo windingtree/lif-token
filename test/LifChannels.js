@@ -7,7 +7,7 @@ require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-var LifTokenTest = artifacts.require('./LifTokenTest.sol');
+var LifTokenTest = artifacts.require('./token/LifTokenTest.sol');
 var LifChannels = artifacts.require('./LifChannels.sol');
 var ECRecovery = artifacts.require('./ECRecovery.sol');
 

@@ -7,8 +7,8 @@ var help = require('./helpers');
 var latestTime = require('./helpers/latestTime');
 var { increaseTimeTestRPC, duration } = require('./helpers/increaseTime');
 
-var LifToken = artifacts.require('./LifToken.sol');
-var LifCrowdsale = artifacts.require('./LifCrowdsale.sol');
+var LifToken = artifacts.require('./token/LifToken.sol');
+var LifCrowdsale = artifacts.require('./distribution/LifCrowdsale.sol');
 
 let gen = require('./generators');
 let commands = require('./commands');

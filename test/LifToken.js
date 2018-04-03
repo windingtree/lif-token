@@ -8,7 +8,7 @@ require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-var LifToken = artifacts.require('./LifToken.sol');
+var LifToken = artifacts.require('./token/LifToken.sol');
 var Message = artifacts.require('./Message.sol');
 
 function findMethod (abi, methodName, args) {

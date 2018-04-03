@@ -3,7 +3,7 @@ var jsc = require('jsverify');
 var help = require('./helpers');
 
 // this is just to have web3 available and correctly initialized
-artifacts.require('./LifToken.sol');
+artifacts.require('./token/LifToken.sol');
 
 const knownAccountGen = jsc.nat(web3.eth.accounts.length - 1);
 const zeroAddressAccountGen = jsc.constant('zero');
