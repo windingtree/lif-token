@@ -1,3 +1,4 @@
+mkdir docs .flattened
 rm docs/*.md
 for f in contracts/*.sol
   do if [ `basename $f` != "Migrations.sol" ]; then
@@ -7,4 +8,4 @@ for f in contracts/*.sol
     node_modules/.bin/solmd .flattened/"$file" --dest docs/"$filename".md
   fi
 done
-rm .flattened/*
+rm -r .flattened
