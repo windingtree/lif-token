@@ -1,6 +1,5 @@
 var help = require('../helpers');
 var _ = require('lodash');
-var ethjsABI = require('ethjs-abi');
 
 var BigNumber = web3.BigNumber;
 
@@ -8,15 +7,11 @@ require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-
 var LifToken = artifacts.require('./token/mocks/LifTokenMock.sol');
 var Message = artifacts.require('./Message.sol');
 
-const LOG_EVENTS = true;
-
-contract("LifToken", function (accounts) {
+contract('LifToken', function (accounts) {
   var token;
-  var eventsWatcher;
 
   beforeEach(async function () {
     token = await LifToken.new(
@@ -43,13 +38,13 @@ contract("LifToken", function (accounts) {
   });
 
   it('should return correct balances after transfer', async function () {
-    await token.transfer(accounts[4], help.lif2LifWei(3.55), {from: accounts[1]});
+    await token.transfer(accounts[4], help.lif2LifWei(3.55), { from: accounts[1] });
     await help.checkToken(token, accounts, 100, [36.45, 30, 20, 13.55, 0]);
   });
 
   it('should throw an error when trying to transfer more than balance', async function () {
     try {
-      await token.transfer(accounts[2], help.lif2LifWei(21), {from: accounts[0]});
+      await token.transfer(accounts[2], help.lif2LifWei(21), { from: accounts[0] });
       assert(false, 'transfer should have thrown');
     } catch (error) {
       if (!help.isInvalidOpcodeEx(error)) throw error;
@@ -82,7 +77,7 @@ contract("LifToken", function (accounts) {
       let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
 
       let transaction = await token.transferAndCall(
-        message.contract.address, help.lif2LifWei(tokens), data, {from: accounts[1]}
+        message.contract.address, help.lif2LifWei(tokens), data, { from: accounts[1] }
       );
       let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
@@ -112,11 +107,10 @@ contract("LifToken", function (accounts) {
 
       await token.approve(accounts[2], lifWei, { from: accounts[1] });
 
-      let transaction = await executeERC827Method({
-        method: 'transferFrom',
-        args: [accounts[1], message.contract.address, lifWei, data],
-        from: accounts[2],
-      });
+      let transaction = await token.transferFromAndCall(
+        accounts[1], message.contract.address, lifWei, data,
+        { from: accounts[2] }
+      );
 
       let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
@@ -134,7 +128,7 @@ contract("LifToken", function (accounts) {
     let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
 
     let transaction = await token.transferAndCall(
-      message.contract.address, help.lif2LifWei(1000), data, {from: accounts[1]}
+      message.contract.address, help.lif2LifWei(1000), data, { from: accounts[1] }
     );
     let decodedEvents = help.abiDecoder.decodeLogs(transaction.receipt.logs);
 
@@ -151,7 +145,7 @@ contract("LifToken", function (accounts) {
 
     try {
       await token.approveAndCall(
-        message.contract.address, help.lif2LifWei(1000), data, {from: accounts[1]}
+        message.contract.address, help.lif2LifWei(1000), data, { from: accounts[1] }
       );
       assert(false, 'approve ERC827 should have thrown because the spender should not be the token itself');
     } catch (e) {
@@ -167,7 +161,7 @@ contract("LifToken", function (accounts) {
 
     try {
       await token.approveAndCall(
-        message.contract.address, help.lif2LifWei(10), data, {from: accounts[1]}
+        message.contract.address, help.lif2LifWei(10), data, { from: accounts[1] }
       );
       assert(false, 'approve ERC827 should have raised');
     } catch (e) {
@@ -189,7 +183,7 @@ contract("LifToken", function (accounts) {
 
     try {
       await token.transferAndCall(
-        message.contract.address, help.lif2LifWei(10), data, {from: accounts[1]}
+        message.contract.address, help.lif2LifWei(10), data, { from: accounts[1] }
       );
       assert(false, 'transfer ERC827 should have failed');
     } catch (e) {
@@ -213,7 +207,7 @@ contract("LifToken", function (accounts) {
 
     try {
       await token.transferFromAndCall(
-        message.contract.address, help.lif2LifWei(1000), accounts[2], data, {from: accounts[1]}
+        message.contract.address, help.lif2LifWei(1000), accounts[2], data, { from: accounts[1] }
       );
       assert(false, 'transferFrom ERC827 should have thrown');
     } catch (e) {
@@ -235,7 +229,7 @@ contract("LifToken", function (accounts) {
 
     try {
       await token.transferAndCall(
-        message.contract.address, help.lif2LifWei(1000), data, {from: accounts[1]}
+        message.contract.address, help.lif2LifWei(1000), data, { from: accounts[1] }
       );
       assert(false, 'transfer ERC827 should have thrown');
     } catch (error) {
@@ -251,8 +245,8 @@ contract("LifToken", function (accounts) {
     let data = message.contract.showMessage.getData(web3.toHex(123456), 666, 'Transfer Done');
 
     try {
-      let transaction = await token.transferFromAndCall(
-        accounts[3], token.contract.address, help.lif2LifWei(1), data, {from: accounts[1]}
+      await token.transferFromAndCall(
+        accounts[3], token.contract.address, help.lif2LifWei(1), data, { from: accounts[1] }
       );
       assert(false, 'transferFrom ERC827 should have thrown');
     } catch (error) {
@@ -267,7 +261,7 @@ contract("LifToken", function (accounts) {
     new BigNumber(0).should.be.bignumber.equal(await token.balanceOf(accounts[5]));
 
     let initialBalance = web3.toWei(1);
-    await token.transfer(accounts[5], initialBalance, {from: accounts[1]});
+    await token.transfer(accounts[5], initialBalance, { from: accounts[1] });
     initialBalance.should.be.bignumber.equal(await token.balanceOf(accounts[5]));
 
     let burned = web3.toWei(0.3);

@@ -71,6 +71,10 @@ module.exports = {
       (e.message.search('revert') >= 0));
   },
 
+  isNotFunction: function (e) {
+    return (e.message.search('is not a function') >= 0);
+  },
+
   waitBlocks: function (toWait, accounts) {
     return this.waitToBlock(parseInt(web3.eth.blockNumber) + toWait, accounts);
   },
