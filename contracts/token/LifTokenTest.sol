@@ -29,18 +29,6 @@ contract LifTokenTest is StandardToken, ERC827Token, BurnableToken, MintableToke
   // Max Lif faucet (50 tokens)
   uint256 public constant MAX_LIF_FAUCET = 50000000000000000000;
 
-  function approveData(address spender, uint256 value, bytes data) public whenNotPaused returns (bool) {
-    return super.approve(spender, value, data);
-  }
-
-  function transferData(address to, uint256 value, bytes data) public whenNotPaused returns (bool) {
-    return super.transfer(to, value, data);
-  }
-
-  function transferDataFrom(address from, address to, uint256 value, bytes data) public whenNotPaused returns (bool) {
-    return super.transferFrom(from, to, value, data);
-  }
-
   /**
    * @dev Function to create tokens, it will issue tokens to the tx sender
    */
