@@ -1,9 +1,17 @@
-node_modules
-build
-npm-debug.log
+# Logs
+logs
+*.log
+npm-debug.log*
 .node-xmlhttprequest-sync-[0-9]*
+
+# Compiled
+build
+
+# Dependency directories
+node_modules
+
+# Coverage artifacts
 coverage
 coverage.json
-allFiredEvents
 scTopics
-package-lock.json
+allFiredEvents
