@@ -32,7 +32,7 @@ VestedPayment.claimTokens(amount) `nonpayable` `46e04a2f`
 
 Inputs
 
-| | | |
+| **type** | **name** | **description** |
 |-|-|-|
 | *uint256* | amount | how many tokens to be claimed |
 
@@ -45,7 +45,7 @@ VestedPayment.changeToken(newToken) `nonpayable` `66829b16`
 
 Inputs
 
-| | | |
+| **type** | **name** | **description** |
 |-|-|-|
 | *address* | newToken | undefined |
 
@@ -107,7 +107,7 @@ VestedPayment.transferOwnership(newOwner) `nonpayable` `f2fde38b`
 
 Inputs
 
-| | | |
+| **type** | **name** | **description** |
 |-|-|-|
 | *address* | newOwner | The address to transfer ownership to. |
 
@@ -134,7 +134,7 @@ VestedPayment.OwnershipTransferred(previousOwner, newOwner) `8be0079c`
 
 Arguments
 
-| | | |
+| **type** | **name** | **description** |
 |-|-|-|
 | *address* | previousOwner | indexed |
 | *address* | newOwner | indexed |
