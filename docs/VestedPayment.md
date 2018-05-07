@@ -47,7 +47,7 @@ Inputs
 
 | **type** | **name** | **description** |
 |-|-|-|
-| *address* | newToken | undefined |
+| *address* | newToken | the new token address |
 
 
 ## *function* owner
@@ -82,6 +82,11 @@ VestedPayment.getAvailableTokens() `view` `e35568cb`
 
 
 
+Outputs
+
+| **type** | **name** | **description** |
+|-|-|-|
+| *uint256* |  | undefined |
 
 ## *function* startTimestamp
 

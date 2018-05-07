@@ -124,7 +124,7 @@ Outputs
 
 | **type** | **name** | **description** |
 |-|-|-|
-| *uint256* |  | undefined |
+| *uint256* |  | the current Lif per Eth rate or 0 when not in TGE |
 
 ## *function* foundationWallet
 
@@ -144,7 +144,7 @@ Inputs
 
 | **type** | **name** | **description** |
 |-|-|-|
-| *bool* | deployMVM | undefined |
+| *bool* | deployMVM | If the MVM should be deployed or not |
 
 
 ## *function* maxFoundationCapUSD
@@ -217,7 +217,7 @@ Inputs
 
 | **type** | **name** | **description** |
 |-|-|-|
-| *address* | contributor | undefined |
+| *address* | contributor | the address of the contributior to be refunded |
 
 
 ## *function* claimEth
@@ -323,7 +323,7 @@ Outputs
 
 | **type** | **name** | **description** |
 |-|-|-|
-| *bool* |  | undefined |
+| *bool* |  | true if minCapUSD has been reached by contributions during the TGE |
 
 ## *function* end2Timestamp
 

@@ -50,7 +50,7 @@ Outputs
 
 | **type** | **name** | **description** |
 |-|-|-|
-| *uint256* | price | undefined |
+| *uint256* | price | the current buy price (in eth/lif, multiplied by PRICE_FACTOR) |
 
 ## *function* totalPausedSeconds
 
@@ -80,7 +80,7 @@ Outputs
 
 | **type** | **name** | **description** |
 |-|-|-|
-| *uint256* |  | undefined |
+| *uint256* |  | the maximum wei claimable by the foundation as of now |
 
 ## *function* initialBuyPrice
 
@@ -141,7 +141,7 @@ Inputs
 
 | **type** | **name** | **description** |
 |-|-|-|
-| *address* | newToken | undefined |
+| *address* | newToken | the new token address |
 
 
 ## *function* getAccumulatedDistributionPercentage
@@ -156,7 +156,7 @@ Outputs
 
 | **type** | **name** | **description** |
 |-|-|-|
-| *uint256* | percentage | undefined |
+| *uint256* | percentage | the accumulated distribution percentage, used to calculate things like the maximum amount that can be claimed by the foundation |
 
 ## *function* isFinished
 
@@ -170,7 +170,7 @@ Outputs
 
 | **type** | **name** | **description** |
 |-|-|-|
-| *bool* | finished | undefined |
+| *bool* | finished | true if the MVM end-of-life has been reached |
 
 ## *function* pause
 
@@ -225,7 +225,7 @@ Outputs
 
 | **type** | **name** | **description** |
 |-|-|-|
-| *uint256* |  | undefined |
+| *uint256* |  | the current period as a number from 0 to totalPeriods |
 
 ## *function* fund
 
@@ -255,7 +255,7 @@ Inputs
 
 | **type** | **name** | **description** |
 |-|-|-|
-| *uint256* | weiAmount | undefined |
+| *uint256* | weiAmount | The amount of wei to be claimed |
 
 
 ## *function* originalTotalSupply
@@ -311,13 +311,13 @@ LifMarketValidationMechanism.funded() `view` `f3a504f2`
 
 LifMarketValidationMechanism.sendTokens(tokens) `nonpayable` `f5c6ca08`
 
-> allows to send tokens to the MVM in exchange of Eth at the price determined by getBuyPrice. The tokens are burned
+> allows to send tokens to the MVM in exchange of ETH at the price determined by getBuyPrice. The tokens are burned
 
 Inputs
 
 | **type** | **name** | **description** |
 |-|-|-|
-| *uint256* | tokens | undefined |
+| *uint256* | tokens | The amount of tokens to be sent to teh MVM |
 
 
 ## *function* totalPeriods

@@ -123,6 +123,8 @@ contract LifMarketValidationMechanism is Ownable {
 
   /**
      @dev Change the LifToken address
+
+     @param newToken the new token address
     */
   function changeToken(address newToken) public onlyOwner {
     lifToken = LifToken(newToken);
@@ -174,7 +176,7 @@ contract LifMarketValidationMechanism is Ownable {
   /**
      @dev Returns the current period as a number from 0 to totalPeriods
 
-     @return the current period as a number from 0 to totalPeriods
+     @return  { "": "the current period as a number from 0 to totalPeriods" }
     */
   function getCurrentPeriodIndex() public view returns(uint256) {
     assert(block.timestamp >= startTimestamp);
@@ -187,8 +189,8 @@ contract LifMarketValidationMechanism is Ownable {
      @dev calculates the accumulated distribution percentage as of now,
      following the exponential distribution curve
 
-     @return the accumulated distribution percentage, used to calculate things
-     like the maximum amount that can be claimed by the foundation
+     @return  { "percentage": "the accumulated distribution percentage, used to
+     calculate things like the maximum amount that can be claimed by the foundation" }
     */
   function getAccumulatedDistributionPercentage() public view returns(uint256 percentage) {
     uint256 period = getCurrentPeriodIndex();
@@ -202,7 +204,7 @@ contract LifMarketValidationMechanism is Ownable {
      @dev returns the current buy price at which the MVM offers to buy tokens to
      burn them
 
-     @return the current buy price (in eth/lif, multiplied by PRICE_FACTOR)
+     @return  { "price": "the current buy price (in eth/lif, multiplied by PRICE_FACTOR)" }
     */
   function getBuyPrice() public view returns (uint256 price) {
     uint256 accumulatedDistributionPercentage = getAccumulatedDistributionPercentage();
@@ -216,7 +218,7 @@ contract LifMarketValidationMechanism is Ownable {
      @dev Returns the maximum amount of wei that the foundation can claim. It's
      a portion of the ETH that was not claimed by token holders
 
-     @return the maximum wei claimable by the foundation as of now
+     @return  { "": "the maximum wei claimable by the foundation as of now" }
     */
   function getMaxClaimableWeiAmount() public view returns (uint256) {
     if (isFinished()) {
@@ -241,8 +243,10 @@ contract LifMarketValidationMechanism is Ownable {
   }
 
   /**
-     @dev allows to send tokens to the MVM in exchange of Eth at the price
+     @dev allows to send tokens to the MVM in exchange of ETH at the price
      determined by getBuyPrice. The tokens are burned
+
+     @param tokens The amount of tokens to be sent to teh MVM
     */
   function sendTokens(uint256 tokens) public whenNotPaused {
     require(tokens > 0);
@@ -265,7 +269,7 @@ contract LifMarketValidationMechanism is Ownable {
      happens no more tokens can be sent to the MVM and the foundation can claim
      100% of the remaining balance in the MVM
 
-     @return true if the MVM end-of-life has been reached
+     @return  { "finished": "true if the MVM end-of-life has been reached" }
     */
   function isFinished() public view returns (bool finished) {
     return getCurrentPeriodIndex() >= totalPeriods;
@@ -275,6 +279,8 @@ contract LifMarketValidationMechanism is Ownable {
      @dev Called from the foundation wallet to claim eth back from the MVM.
      Maximum amount that can be claimed is determined by
      getMaxClaimableWeiAmount
+
+     @param weiAmount The amount of wei to be claimed
     */
   function claimWei(uint256 weiAmount) public whenNotPaused {
     require(msg.sender == foundationAddr);
