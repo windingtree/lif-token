@@ -1,7 +1,7 @@
-mkdir docs .flattened
+mkdir -p docs .flattened
 rm docs/*.md
 for f in contracts/*.sol
-  do if [ `basename $f` != "Migrations.sol" ]; then
+  do if [ `basename $f` != "Migrations.sol" ] && [ `basename $f` != "LifTokenTest.sol" ]; then
     file=`basename $f`
     filename="${file%.*}"
     node_modules/.bin/truffle-flattener "$f" > .flattened/"$file"
