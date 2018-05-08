@@ -1,6 +1,6 @@
-var help = require('./helpers');
-var latestTime = require('./helpers/latestTime');
-var { increaseTimeTestRPC, increaseTimeTestRPCTo, duration } = require('./helpers/increaseTime');
+var help = require('../helpers');
+var latestTime = require('../helpers/latestTime');
+var { increaseTimeTestRPC, increaseTimeTestRPCTo, duration } = require('../helpers/increaseTime');
 
 var BigNumber = web3.BigNumber;
 
@@ -8,8 +8,8 @@ require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-var VestedPayment = artifacts.require('./VestedPayment.sol');
-var LifToken = artifacts.require('./LifToken.sol');
+var VestedPayment = artifacts.require('./distribution/VestedPayment.sol');
+var LifToken = artifacts.require('./token/LifToken.sol');
 
 const LOG_EVENTS = true;
 

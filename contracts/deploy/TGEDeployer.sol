@@ -1,6 +1,6 @@
 pragma solidity ^0.4.18;
 
-import "../LifCrowdsale.sol";
+import "../distribution/LifCrowdsale.sol";
 
 /**
    @title TGEDeployer, A deployer contract for the Winding Tree TGE
