@@ -22,9 +22,9 @@ contract LifToken is StandardToken, MintableToken, PausableToken {
   uint public constant DECIMALS = 18;
 
   /**
-   * @dev Burns a specific amount of tokens.
-   *
-   * @param _value The amount of tokens to be burned.
+     @dev Burns a specific amount of tokens.
+
+     @param _value The amount of tokens to be burned.
    */
   function burn(uint256 _value) public whenNotPaused {
 
@@ -39,10 +39,10 @@ contract LifToken is StandardToken, MintableToken, PausableToken {
   }
 
   /**
-   * @dev Burns a specific amount of tokens of an address
-   * This function can be called only by the owner in the minting process
-   *
-   * @param _value The amount of tokens to be burned.
+     @dev Burns a specific amount of tokens of an address
+    This function can be called only by the owner in the minting process
+
+     @param _value The amount of tokens to be burned.
    */
   function burn(address burner, uint256 _value) public onlyOwner {
 
