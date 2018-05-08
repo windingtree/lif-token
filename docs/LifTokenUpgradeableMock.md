@@ -1,15 +1,17 @@
-* [LifToken](#liftoken)
+* [LifTokenUpgradeableMock](#liftokenupgradeablemock)
   * [mintingFinished](#function-mintingfinished)
   * [approve](#function-approve)
   * [totalSupply](#function-totalsupply)
   * [transferFrom](#function-transferfrom)
   * [DECIMALS](#function-decimals)
+  * [isInitialized](#function-isinitialized)
   * [unpause](#function-unpause)
   * [mint](#function-mint)
   * [burn](#function-burn)
   * [paused](#function-paused)
   * [decreaseApproval](#function-decreaseapproval)
   * [balanceOf](#function-balanceof)
+  * [initialize](#function-initialize)
   * [finishMinting](#function-finishminting)
   * [pause](#function-pause)
   * [owner](#function-owner)
@@ -28,12 +30,12 @@
   * [Approval](#event-approval)
   * [Transfer](#event-transfer)
 
-# LifToken
+# LifTokenUpgradeableMock
 
 
 ## *function* mintingFinished
 
-LifToken.mintingFinished() `view` `05d2035b`
+LifTokenUpgradeableMock.mintingFinished() `view` `05d2035b`
 
 
 
@@ -41,7 +43,7 @@ LifToken.mintingFinished() `view` `05d2035b`
 
 ## *function* approve
 
-LifToken.approve(_spender, _value) `nonpayable` `095ea7b3`
+LifTokenUpgradeableMock.approve(_spender, _value) `nonpayable` `095ea7b3`
 
 
 Inputs
@@ -54,7 +56,7 @@ Inputs
 
 ## *function* totalSupply
 
-LifToken.totalSupply() `view` `18160ddd`
+LifTokenUpgradeableMock.totalSupply() `view` `18160ddd`
 
 > total number of tokens in existence
 
@@ -63,7 +65,7 @@ LifToken.totalSupply() `view` `18160ddd`
 
 ## *function* transferFrom
 
-LifToken.transferFrom(_from, _to, _value) `nonpayable` `23b872dd`
+LifTokenUpgradeableMock.transferFrom(_from, _to, _value) `nonpayable` `23b872dd`
 
 
 Inputs
@@ -77,7 +79,15 @@ Inputs
 
 ## *function* DECIMALS
 
-LifToken.DECIMALS() `view` `2e0f2625`
+LifTokenUpgradeableMock.DECIMALS() `view` `2e0f2625`
+
+
+
+
+
+## *function* isInitialized
+
+LifTokenUpgradeableMock.isInitialized() `view` `392e53cd`
 
 
 
@@ -85,7 +95,7 @@ LifToken.DECIMALS() `view` `2e0f2625`
 
 ## *function* unpause
 
-LifToken.unpause() `nonpayable` `3f4ba83a`
+LifTokenUpgradeableMock.unpause() `nonpayable` `3f4ba83a`
 
 > called by the owner to unpause, returns to normal state
 
@@ -94,7 +104,7 @@ LifToken.unpause() `nonpayable` `3f4ba83a`
 
 ## *function* mint
 
-LifToken.mint(_to, _amount) `nonpayable` `40c10f19`
+LifTokenUpgradeableMock.mint(_to, _amount) `nonpayable` `40c10f19`
 
 > Function to mint tokens
 
@@ -113,7 +123,7 @@ Outputs
 
 ## *function* burn
 
-LifToken.burn(_value) `nonpayable` `42966c68`
+LifTokenUpgradeableMock.burn(_value) `nonpayable` `42966c68`
 
 > Burns a specific amount of tokens.
 
@@ -126,7 +136,7 @@ Inputs
 
 ## *function* paused
 
-LifToken.paused() `view` `5c975abb`
+LifTokenUpgradeableMock.paused() `view` `5c975abb`
 
 
 
@@ -134,7 +144,7 @@ LifToken.paused() `view` `5c975abb`
 
 ## *function* decreaseApproval
 
-LifToken.decreaseApproval(_spender, _subtractedValue) `nonpayable` `66188463`
+LifTokenUpgradeableMock.decreaseApproval(_spender, _subtractedValue) `nonpayable` `66188463`
 
 
 Inputs
@@ -147,7 +157,7 @@ Inputs
 
 ## *function* balanceOf
 
-LifToken.balanceOf(_owner) `view` `70a08231`
+LifTokenUpgradeableMock.balanceOf(_owner) `view` `70a08231`
 
 > Gets the balance of the specified address.
 
@@ -163,9 +173,22 @@ Outputs
 |-|-|-|
 | *uint256* |  | undefined |
 
+## *function* initialize
+
+LifTokenUpgradeableMock.initialize(initialBalances, addrs) `nonpayable` `7ca510a4`
+
+
+Inputs
+
+| **type** | **name** | **description** |
+|-|-|-|
+| *uint256[]* | initialBalances | undefined |
+| *address[]* | addrs | undefined |
+
+
 ## *function* finishMinting
 
-LifToken.finishMinting() `nonpayable` `7d64bcb4`
+LifTokenUpgradeableMock.finishMinting() `nonpayable` `7d64bcb4`
 
 > Function to stop minting new tokens.
 
@@ -179,7 +202,7 @@ Outputs
 
 ## *function* pause
 
-LifToken.pause() `nonpayable` `8456cb59`
+LifTokenUpgradeableMock.pause() `nonpayable` `8456cb59`
 
 > called by the owner to pause, triggers stopped state
 
@@ -188,7 +211,7 @@ LifToken.pause() `nonpayable` `8456cb59`
 
 ## *function* owner
 
-LifToken.owner() `view` `8da5cb5b`
+LifTokenUpgradeableMock.owner() `view` `8da5cb5b`
 
 
 
@@ -196,7 +219,7 @@ LifToken.owner() `view` `8da5cb5b`
 
 ## *function* burn
 
-LifToken.burn(burner, _value) `nonpayable` `9dc29fac`
+LifTokenUpgradeableMock.burn(burner, _value) `nonpayable` `9dc29fac`
 
 > Burns a specific amount of tokens of an address This function can be called only by the owner in the minting process
 
@@ -210,7 +233,7 @@ Inputs
 
 ## *function* NAME
 
-LifToken.NAME() `view` `a3f4df7e`
+LifTokenUpgradeableMock.NAME() `view` `a3f4df7e`
 
 
 
@@ -218,7 +241,7 @@ LifToken.NAME() `view` `a3f4df7e`
 
 ## *function* transfer
 
-LifToken.transfer(_to, _value) `nonpayable` `a9059cbb`
+LifTokenUpgradeableMock.transfer(_to, _value) `nonpayable` `a9059cbb`
 
 
 Inputs
@@ -231,7 +254,7 @@ Inputs
 
 ## *function* increaseApproval
 
-LifToken.increaseApproval(_spender, _addedValue) `nonpayable` `d73dd623`
+LifTokenUpgradeableMock.increaseApproval(_spender, _addedValue) `nonpayable` `d73dd623`
 
 
 Inputs
@@ -244,7 +267,7 @@ Inputs
 
 ## *function* allowance
 
-LifToken.allowance(_owner, _spender) `view` `dd62ed3e`
+LifTokenUpgradeableMock.allowance(_owner, _spender) `view` `dd62ed3e`
 
 > Function to check the amount of tokens that an owner allowed to a spender.
 
@@ -263,7 +286,7 @@ Outputs
 
 ## *function* transferOwnership
 
-LifToken.transferOwnership(newOwner) `nonpayable` `f2fde38b`
+LifTokenUpgradeableMock.transferOwnership(newOwner) `nonpayable` `f2fde38b`
 
 > Allows the current owner to transfer control of the contract to a newOwner.
 
@@ -276,26 +299,26 @@ Inputs
 
 ## *function* SYMBOL
 
-LifToken.SYMBOL() `view` `f76f8d78`
+LifTokenUpgradeableMock.SYMBOL() `view` `f76f8d78`
 
 
 
 
 ## *event* Pause
 
-LifToken.Pause() `6985a022`
+LifTokenUpgradeableMock.Pause() `6985a022`
 
 
 
 ## *event* Unpause
 
-LifToken.Unpause() `7805862f`
+LifTokenUpgradeableMock.Unpause() `7805862f`
 
 
 
 ## *event* Mint
 
-LifToken.Mint(to, amount) `0f6798a5`
+LifTokenUpgradeableMock.Mint(to, amount) `0f6798a5`
 
 Arguments
 
@@ -306,13 +329,13 @@ Arguments
 
 ## *event* MintFinished
 
-LifToken.MintFinished() `ae5184fb`
+LifTokenUpgradeableMock.MintFinished() `ae5184fb`
 
 
 
 ## *event* OwnershipTransferred
 
-LifToken.OwnershipTransferred(previousOwner, newOwner) `8be0079c`
+LifTokenUpgradeableMock.OwnershipTransferred(previousOwner, newOwner) `8be0079c`
 
 Arguments
 
@@ -323,7 +346,7 @@ Arguments
 
 ## *event* Approval
 
-LifToken.Approval(owner, spender, value) `8c5be1e5`
+LifTokenUpgradeableMock.Approval(owner, spender, value) `8c5be1e5`
 
 Arguments
 
@@ -335,7 +358,7 @@ Arguments
 
 ## *event* Transfer
 
-LifToken.Transfer(from, to, value) `ddf252ad`
+LifTokenUpgradeableMock.Transfer(from, to, value) `ddf252ad`
 
 Arguments
 
