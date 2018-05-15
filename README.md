@@ -21,18 +21,20 @@ npm install
 
 ## Contracts
 
-- [LifToken](contracts/LifToken.sol): ERC827 token for the Winding Tree platform.
+- [LifToken](contracts/token/LifToken.sol): ERC20 token for the Winding Tree platform.
  Uses OpenZeppelin ERC827Token, StandardToken, BurnableToken, MintableToken and PausableToken contracts.
-- [LifChannels](contracts/LifChannels.sol): Implementation of simple state channels for Lif token holders.
-- [LifCrowdsale](contracts/LifCrowdsale.sol): Implementation of the Lif Token Generation Event (TGE)
+- [LifTokenV0](contracts/token/proxy/test/LifTokenV0.sol): Implementation of Líf, the ERC827 token for Winding Tree, an extension of the ERC20 token with extra methods to transfer value and data on transfer and approvals. Uses OpenZeppelin StandardToken, ERC827Token, MintableToken and PausableToken.
+The second version of the Lif token, it will use OwnedUpgradeabilityProxy from zeppelinos-lib for upgradeability.
+- [LifChannels](contracts/token/LifChannels.sol): Implementation of simple state channels for Lif token holders.
+- [LifCrowdsale](contracts/distribution/LifCrowdsale.sol): Implementation of the Lif Token Generation Event (TGE)
   Crowdsale: A 2 week fixed price, uncapped token sale, with a discounted rate for contributions during the private
   presale and a Market Validation Mechanism that will receive the funds over the USD 10M soft cap.
-- [LifMarketValidationMechanism](contracts/LifMarketValidationMechanism.sol) (MVM): holds the ETH received during
+- [LifMarketValidationMechanism](contracts/distribution/LifMarketValidationMechanism.sol) (MVM): holds the ETH received during
   the TGE in excess of $10M for a fixed period of time (24 or 48 months depending on the total amount received) releasing
   part of the funds to the foundation in a monthly basis with a distribution skewed towards the end (most of the funds are
   released by the end of the MVM lifetime). Token holders can send their tokens to the MVM in exchange of eth at a rate
   that complements the distribution curve (the rate is higher at the beginning of the MVM and goes towards 0 by the end of it).
-- [VestedPayment.sol](contracts/VestedPayment.sol): Handles two time-locked payments: The 5% extra tokens
+- [VestedPayment.sol](contracts/distribution/VestedPayment.sol): Handles two time-locked payments: The 5% extra tokens
   that the foundation receives for long-term funding (starts after the MVM finishes, with same duration as the MVM: 2 or 4 years)
   and the 12.8% extra tokens that the founders receive (1y cliff, 4y total). Both are created during the Crowdsale finalization.
 
