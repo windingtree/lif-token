@@ -2,7 +2,7 @@
 
 Líf is the token of the Winding Tree platform.
 
-Líf is a SmartToken, based in the ERC20 standard with extra methods to send value and data on transfers and approvals, allowing the execution of calls in those methdos too.
+Lif is a ERC20 token, using the [StandardToken](https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/token/ERC20/StandardToken.sol) implementation from zeppelin-solidity.
 
 This repository also has all the contracts related with the Token Generation Event (TGE), an strategy that combines a crowdsale, a market validation mechanism and vested payments.
 
@@ -23,8 +23,8 @@ npm install
 
 - [LifToken](contracts/token/LifToken.sol): ERC20 token for the Winding Tree platform.
  Uses OpenZeppelin ERC827Token, StandardToken, BurnableToken, MintableToken and PausableToken contracts.
-- [LifTokenV0](contracts/token/proxy/test/LifTokenV0.sol): Implementation of Líf, the ERC827 token for Winding Tree, an extension of the ERC20 token with extra methods to transfer value and data on transfer and approvals. Uses OpenZeppelin StandardToken, ERC827Token, MintableToken and PausableToken.
-The second version of the Lif token, it will use OwnedUpgradeabilityProxy from zeppelinos-lib for upgradeability.
+- [LifTokenV0](contracts/token/LifTokenV0.sol): First version of the Lif token, a LifToken ERC20 contract with an initialize function to work with the AdminUpgradeabilityProxy contract of zos-lib.
+- [LifTokenV1](contracts/token/LifTokenV1.sol): Second version of the Lif token, a LifTokenV0 and ERC827 token. It adds the ERC827 methods to the token allowing users to send value and data in trasfers and approvals.
 - [LifChannels](contracts/token/LifChannels.sol): Implementation of simple state channels for Lif token holders.
 - [LifCrowdsale](contracts/distribution/LifCrowdsale.sol): Implementation of the Lif Token Generation Event (TGE)
   Crowdsale: A 2 week fixed price, uncapped token sale, with a discounted rate for contributions during the private

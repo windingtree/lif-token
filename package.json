@@ -39,7 +39,7 @@
     "truffle-hdwallet-provider": "0.0.3",
     "upgrade": "^1.1.0",
     "zeppelin-solidity": "^1.9.0",
-    "zos-lib": "^0.1.5"
+    "zos-lib": "^0.1.28"
   },
   "devDependencies": {
     "chai-bignumber": "^2.0.1",
@@ -54,7 +54,7 @@
     "ethereumjs-util": "^5.2.0",
     "mocha-lcov-reporter": "^1.3.0",
     "solidity-coverage": "^0.2.2",
-    "truffle": "^4.1.7",
+    "truffle": "^4.1.11",
     "truffle-hdwallet-provider": "0.0.3"
   },
   "engines": {
