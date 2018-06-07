@@ -28,7 +28,6 @@
   "license": "GPLv3",
   "dependencies": {
     "abi-decoder": "^1.0.8",
-    "ethereumjs-abi": "^0.6.4",
     "jsverify": "^0.8.2",
     "lodash": "^4.17.4",
     "rimraf": "^2.6.2",
@@ -52,6 +51,6 @@
     "truffle-hdwallet-provider": "0.0.3"
   },
   "engines": {
-    "node": ">=8.9.4"
+    "node": ">=10.3.0"
   }
 }
