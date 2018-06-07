@@ -58,6 +58,6 @@
     "truffle-hdwallet-provider": "0.0.3"
   },
   "engines": {
-    "node": ">=8.9.4"
+    "node": ">=10.3.0"
   }
 }
