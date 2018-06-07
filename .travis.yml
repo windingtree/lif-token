@@ -4,8 +4,6 @@ group: beta
 language: node_js
 node_js:
   - "10.3.0"
-cache:
-  yarn: true
 env:
   -
   - SOLIDITY_COVERAGE=true
