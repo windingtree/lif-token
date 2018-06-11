@@ -5,7 +5,6 @@ set -e
 if [ "$SOLIDITY_COVERAGE" = true ]; then
   npm run coveralls
 else
-<<<<<<< HEAD
   npm run lint
   WT_DEBUG=true npm test \
     test/token/LifToken.js \
