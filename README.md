@@ -2,9 +2,9 @@
 
 Líf is the token of the Winding Tree platform.
 
-Líf is a SmartToken, based in the ERC20 standard with extra methods to send value and data on transfers and approvals, allowing the execution of calls in those methdos too.
+Líf is a SmartToken, based on the ERC20 standard with extra methods to send value and data on transfers and approvals, allowing the execution of calls in those methods too.
 
-This repository also has all the contracts related with the Token Generation Event (TGE), an strategy that combines a crowdsale, a market validation mechanism and vested payments.
+This repository, also has the contracts related to the Token Generation Event (TGE), and strategy that combines a crowdsale, a market validation mechanism and vested payments.
 
 [![Build Status](https://travis-ci.org/windingtree/LifToken.svg?branch=master)](https://travis-ci.org/windingtree/LifToken)
 [![Coverage Status](https://coveralls.io/repos/github/windingtree/LifToken/badge.svg?branch=master)](https://coveralls.io/github/windingtree/LifToken?branch=master&v=2.0)
@@ -30,7 +30,7 @@ npm install
 - [LifMarketValidationMechanism](contracts/LifMarketValidationMechanism.sol) (MVM): holds the ETH received during
   the TGE in excess of $10M for a fixed period of time (24 or 48 months depending on the total amount received) releasing
   part of the funds to the foundation in a monthly basis with a distribution skewed towards the end (most of the funds are
-  released by the end of the MVM lifetime). Token holders can send their tokens to the MVM in exchange of eth at a rate
+  released by the end of the MVM lifetime). Token holders can send their tokens to the MVM in exchange for ETH at a rate
   that complements the distribution curve (the rate is higher at the beginning of the MVM and goes towards 0 by the end of it).
 - [VestedPayment.sol](contracts/VestedPayment.sol): Handles two time-locked payments: The 5% extra tokens
   that the foundation receives for long-term funding (starts after the MVM finishes, with same duration as the MVM: 2 or 4 years)
@@ -53,4 +53,4 @@ Will make the property-based tests in `test/CrowdsaleGenTest.js` to run 50 examp
 
 ## License
 
-Líf Token is open source and distributed under the GPL v3 license.
+The Líf Token is open source and distributed under the GPL v3 license.
