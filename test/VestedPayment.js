@@ -55,8 +55,8 @@ contract('VestedPayment', function (accounts) {
   });
 
   it('can be created on the current timestamp', async function () {
-    // we adds 2 seconds from the last block timestamp, because we don't know the exact timestamp
-    // of the block this is going to be executeed on
+    // we add 2 seconds from the last block timestamp, because we don't know the exact timestamp
+    // of the block this is going to be executed on
     await VestedPayment.new(latestTime() + 2, oneMonth, 10, 4, 7, token.address);
   });
 
