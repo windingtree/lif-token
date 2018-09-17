@@ -2,7 +2,7 @@ pragma solidity ^0.4.18;
 
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
-import "./LifToken.sol";
+import "../token/LifToken.sol";
 
 /**
    @title Vested Payment Schedule for LifToken
@@ -71,6 +71,8 @@ contract VestedPayment is Ownable {
 
   /**
      @dev Change the LifToken address
+
+     @param newToken the new token address
     */
   function changeToken(address newToken) public onlyOwner {
     token = LifToken(newToken);
@@ -78,6 +80,8 @@ contract VestedPayment is Ownable {
 
   /**
      @dev Get how many tokens are available to be claimed
+
+     @return  { " ": "the amount of tokens ready to be claimed" }
    */
   function getAvailableTokens() public view returns (uint256) {
     uint256 period = block.timestamp.sub(startTimestamp)

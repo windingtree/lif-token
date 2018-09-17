@@ -3,9 +3,16 @@
 set -e
 
 if [ "$SOLIDITY_COVERAGE" = true ]; then
-  yarn run coveralls
+  npm run coveralls
 else
-  yarn lint
-  WT_DEBUG=true yarn test test/LifToken.js test/Crowdsale.js test/MarketValidationMechanism.js test/VestedPayment.js
-  WT_DEBUG=true GEN_TESTS_TIMEOUT=400 GEN_TESTS_QTY=40 yarn test test/CrowdsaleGenTest.js
+  npm run lint
+  WT_DEBUG=true npm test \
+    test/token/LifToken.js \
+    test/token/LifChannels.js \
+    test/token/LifTokenTest.js \
+    test/distribution/Crowdsale.js \
+    test/distribution/MarketValidationMechanism.js \
+    test/distribution/VestedPayment.js \
+    test/proxy/upgradeability.js
+  WT_DEBUG=true GEN_TESTS_TIMEOUT=400 GEN_TESTS_QTY=40 npm test test/distribution/CrowdsaleGenTest.js
 fi

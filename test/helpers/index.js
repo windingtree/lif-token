@@ -2,16 +2,16 @@ var BigNumber = web3.BigNumber;
 
 var _ = require('lodash');
 
-var LifToken = artifacts.require('./LifToken.sol');
-var LifCrowdsale = artifacts.require('./LifCrowdsale.sol');
-var LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
+var LifToken = artifacts.require('./token/LifToken.sol');
+var LifCrowdsale = artifacts.require('./distribution/LifCrowdsale.sol');
+var LifMarketValidationMechanism = artifacts.require('./distribution/LifMarketValidationMechanism.sol');
 var abiDecoder = require('abi-decoder');
 abiDecoder.addABI(LifToken._json.abi);
 abiDecoder.addABI(LifCrowdsale._json.abi);
 abiDecoder.addABI(LifMarketValidationMechanism._json.abi);
 
-var latestTime = require('./helpers/latestTime');
-var { increaseTimeTestRPC, increaseTimeTestRPCTo } = require('./helpers/increaseTime');
+var latestTime = require('./latestTime');
+var { increaseTimeTestRPC, increaseTimeTestRPCTo } = require('./increaseTime');
 
 const DEBUG_MODE = (process.env.WT_DEBUG === 'true') || false;
 
@@ -69,6 +69,10 @@ module.exports = {
   isInvalidOpcodeEx: function (e) {
     return ((e.message.search('invalid opcode') >= 0) ||
       (e.message.search('revert') >= 0));
+  },
+
+  isNotFunction: function (e) {
+    return (e.message.search('is not a function') >= 0);
   },
 
   waitBlocks: function (toWait, accounts) {

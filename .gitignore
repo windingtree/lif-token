@@ -15,3 +15,4 @@ coverage
 coverage.json
 scTopics
 allFiredEvents
+.flattened

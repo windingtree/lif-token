@@ -1,8 +1,8 @@
-var LifCrowdsale = artifacts.require('./LifCrowdsale.sol'),
-  LifToken = artifacts.require('./LifToken.sol'),
-  LifMarketValidationMechanism = artifacts.require('./LifMarketValidationMechanism.sol');
+var LifCrowdsale = artifacts.require('./distribution/LifCrowdsale.sol'),
+  LifToken = artifacts.require('./token/LifToken.sol'),
+  LifMarketValidationMechanism = artifacts.require('./distribution/LifMarketValidationMechanism.sol');
 
-let help = require('./helpers');
+let help = require('../helpers');
 
 var BigNumber = web3.BigNumber;
 
@@ -10,8 +10,8 @@ require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-var latestTime = require('./helpers/latestTime');
-var { duration, increaseTimeTestRPCTo } = require('./helpers/increaseTime');
+var latestTime = require('../helpers/latestTime');
+var { duration, increaseTimeTestRPCTo } = require('../helpers/increaseTime');
 
 const defaultTimeDelta = duration.days(1); // time delta used in time calculations (for start, end1 & end2)
 

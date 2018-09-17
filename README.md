@@ -2,7 +2,7 @@
 
 Líf is the token of the Winding Tree platform.
 
-Líf is a SmartToken, based on the ERC20 standard with extra methods to send value and data on transfers and approvals, allowing the execution of calls in those methods too.
+Lif is a ERC20 token, using the [StandardToken](https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/token/ERC20/StandardToken.sol) implementation from zeppelin-solidity.
 
 This repository, also has the contracts related to the Token Generation Event (TGE), and strategy that combines a crowdsale, a market validation mechanism and vested payments.
 
@@ -21,18 +21,20 @@ npm install
 
 ## Contracts
 
-- [LifToken](contracts/LifToken.sol): ERC827 token for the Winding Tree platform.
+- [LifToken](contracts/token/LifToken.sol): ERC20 token for the Winding Tree platform.
  Uses OpenZeppelin ERC827Token, StandardToken, BurnableToken, MintableToken and PausableToken contracts.
-- [LifChannels](contracts/LifChannels.sol): Implementation of simple state channels for Lif token holders.
-- [LifCrowdsale](contracts/LifCrowdsale.sol): Implementation of the Lif Token Generation Event (TGE)
+- [LifTokenV0](contracts/token/LifTokenV0.sol): First version of the Lif token, a LifToken ERC20 contract with an initialize function to work with the AdminUpgradeabilityProxy contract of zos-lib.
+- [LifTokenV1](contracts/token/LifTokenV1.sol): Second version of the Lif token, a LifTokenV0 and ERC827 token. It adds the ERC827 methods to the token allowing users to send value and data in trasfers and approvals.
+- [LifChannels](contracts/token/LifChannels.sol): Implementation of simple state channels for Lif token holders.
+- [LifCrowdsale](contracts/distribution/LifCrowdsale.sol): Implementation of the Lif Token Generation Event (TGE)
   Crowdsale: A 2 week fixed price, uncapped token sale, with a discounted rate for contributions during the private
   presale and a Market Validation Mechanism that will receive the funds over the USD 10M soft cap.
-- [LifMarketValidationMechanism](contracts/LifMarketValidationMechanism.sol) (MVM): holds the ETH received during
+- [LifMarketValidationMechanism](contracts/distribution/LifMarketValidationMechanism.sol) (MVM): holds the ETH received during
   the TGE in excess of $10M for a fixed period of time (24 or 48 months depending on the total amount received) releasing
   part of the funds to the foundation in a monthly basis with a distribution skewed towards the end (most of the funds are
   released by the end of the MVM lifetime). Token holders can send their tokens to the MVM in exchange for ETH at a rate
   that complements the distribution curve (the rate is higher at the beginning of the MVM and goes towards 0 by the end of it).
-- [VestedPayment.sol](contracts/VestedPayment.sol): Handles two time-locked payments: The 5% extra tokens
+- [VestedPayment.sol](contracts/distribution/VestedPayment.sol): Handles two time-locked payments: The 5% extra tokens
   that the foundation receives for long-term funding (starts after the MVM finishes, with same duration as the MVM: 2 or 4 years)
   and the 12.8% extra tokens that the founders receive (1y cliff, 4y total). Both are created during the Crowdsale finalization.
 

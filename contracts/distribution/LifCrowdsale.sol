@@ -3,7 +3,7 @@ pragma solidity ^0.4.18;
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
-import "./LifToken.sol";
+import "../token/LifToken.sol";
 import "./VestedPayment.sol";
 import "./LifMarketValidationMechanism.sol";
 
@@ -184,7 +184,7 @@ contract LifCrowdsale is Ownable, Pausable {
   /**
      @dev Returns the current Lif per Eth rate during the TGE
 
-     @return the current Lif per Eth rate or 0 when not in TGE
+     @return  { "": "the current Lif per Eth rate or 0 when not in TGE" }
    */
   function getRate() public view returns (uint256) {
     if (block.timestamp < startTimestamp)
@@ -366,7 +366,8 @@ contract LifCrowdsale is Ownable, Pausable {
 
   /**
      @dev Modifier
-     @return true if minCapUSD has been reached by contributions during the TGE
+     @return  { "": "true if minCapUSD has been reached by contributions
+      during the TGE" }
   */
   function funded() public view returns (bool) {
     assert(weiPerUSDinTGE > 0);
@@ -391,6 +392,8 @@ contract LifCrowdsale is Ownable, Pausable {
 
   /**
      @dev Allows the owner to return an purchase to a contributor
+
+     @param contributor the address of the contributior to be refunded
    */
   function returnPurchase(address contributor)
     public hasEnded onlyOwner
@@ -416,6 +419,8 @@ contract LifCrowdsale is Ownable, Pausable {
      Winding Tree Foundation and creation and funding of the Market Validation
      Mechanism in case the soft cap was exceeded. It also unpauses the token to
      enable transfers. It can be called only once, after `end2Timestamp`
+
+     @param deployMVM If the MVM should be deployed or not
    */
   function finalize(bool deployMVM) public onlyOwner hasEnded {
     require(!isFinalized);

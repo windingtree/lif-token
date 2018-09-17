@@ -1,6 +1,5 @@
 pragma solidity ^0.4.18;
 
-import "zeppelin-solidity/contracts/token/ERC827/ERC827Token.sol";
 import "zeppelin-solidity/contracts/token/ERC20/StandardToken.sol";
 import "zeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "zeppelin-solidity/contracts/token/ERC20/PausableToken.sol";
@@ -8,12 +7,11 @@ import "zeppelin-solidity/contracts/token/ERC20/PausableToken.sol";
 /**
    @title Líf, the Winding Tree token
 
-   Implementation of Líf, the ERC827 token for Winding Tree, an extension of the
-   ERC20 token with extra methods to transfer value and data to execute a call
-   on transfer.
-   Uses OpenZeppelin StandardToken, ERC827Token, MintableToken and PausableToken.
+   Implementation of Líf, the token for Winding Tree, ans standard
+   ERC20 token.
+   Uses OpenZeppelin StandardToken, MintableToken and PausableToken.
  */
-contract LifToken is StandardToken, ERC827Token, MintableToken, PausableToken {
+contract LifToken is StandardToken, MintableToken, PausableToken {
   // Token Name
   string public constant NAME = "Líf";
 
@@ -24,9 +22,9 @@ contract LifToken is StandardToken, ERC827Token, MintableToken, PausableToken {
   uint public constant DECIMALS = 18;
 
   /**
-   * @dev Burns a specific amount of tokens.
-   *
-   * @param _value The amount of tokens to be burned.
+     @dev Burns a specific amount of tokens.
+
+     @param _value The amount of tokens to be burned.
    */
   function burn(uint256 _value) public whenNotPaused {
 
@@ -41,10 +39,10 @@ contract LifToken is StandardToken, ERC827Token, MintableToken, PausableToken {
   }
 
   /**
-   * @dev Burns a specific amount of tokens of an address
-   * This function can be called only by the owner in the minting process
-   *
-   * @param _value The amount of tokens to be burned.
+     @dev Burns a specific amount of tokens of an address
+    This function can be called only by the owner in the minting process
+
+     @param _value The amount of tokens to be burned.
    */
   function burn(address burner, uint256 _value) public onlyOwner {
 
