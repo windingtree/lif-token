@@ -16,9 +16,9 @@ script:
 before_deploy: npm run buildfornpm
 deploy:
   provider: npm
-  email: augusto.lemble@gmail.com
+  email: devops@windingtree.com
   skip_cleanup: true
   api_key: $NPM_TOKEN
   on:
-    repo: windingtree/LifToken
+    repo: windingtree/lif-token
     tags: true
