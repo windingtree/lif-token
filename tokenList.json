@@ -1,9 +1,9 @@
 {
   "name": "Winding Tree",
-  "timestamp": "2020-08-27T13:47:56+00:00",
+  "timestamp": "2020-11-13T15:58:56+01:00",
   "version": {
     "major": 1,
-    "minor": 1,
+    "minor": 2,
     "patch": 0
   },
   "tags": {
@@ -83,6 +83,14 @@
         "symbol": "USDC",
         "decimals": 6,
         "chainId": 1,
+        "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png"
+      },
+      {
+        "name": "USDCoin",
+        "address": "0x07865c6e87b9f70255377e024ace6630c1eaa37f",
+        "symbol": "USDC",
+        "decimals": 6,
+        "chainId": 3,
         "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png"
       },
       {
