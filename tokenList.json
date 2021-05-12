@@ -1,9 +1,9 @@
 {
   "name": "Winding Tree",
-  "timestamp": "2020-11-13T15:58:56+01:00",
+  "timestamp": "2021-05-12T15:58:56+01:00",
   "version": {
-    "major": 1,
-    "minor": 2,
+    "major": 2,
+    "minor": 1,
     "patch": 0
   },
   "tags": {
@@ -27,6 +27,14 @@
       "symbol": "LIF",
       "decimals": 18,
       "chainId": 3,
+      "logoURI": "https://raw.githubusercontent.com/windingtree/branding/master/lif/png/lif-logo.png"
+    },
+    {
+      "name": "Lif",
+      "address": "0x5b3455590Ec7F5a25119885Ed62aFBA9bC2e5D65",
+      "symbol": "LIF",
+      "decimals": 18,
+      "chainId": 137,
       "logoURI": "https://raw.githubusercontent.com/windingtree/branding/master/lif/png/lif-logo.png"
     },
     {
@@ -70,11 +78,27 @@
         "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xd0A1E359811322d97991E03f863a0C30C2cF029C/logo.png"
       },
       {
+        "name": "Ether",
+        "address": "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+        "symbol": "ETH",
+        "decimals": 18,
+        "chainId": 137,
+        "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png"
+      },
+      {
         "name": "Dai Stablecoin",
         "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
         "symbol": "DAI",
         "decimals": 18,
         "chainId": 1,
+        "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png"
+      },
+      {
+        "name": "Dai Stablecoin",
+        "address": "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
+        "symbol": "DAI",
+        "decimals": 18,
+        "chainId": 137,
         "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png"
       },
       {
@@ -94,6 +118,14 @@
         "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png"
       },
       {
+        "name": "USCoin",
+        "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+        "symbol": "USDC",
+        "decimals": 6,
+        "chainId": 137,
+        "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png"
+      },
+      {
         "name": "Tether USD",
         "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
         "symbol": "USDT",
@@ -102,11 +134,27 @@
         "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png"
       },
       {
+        "name": "Tether USD",
+        "address": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+        "symbol": "USDT",
+        "decimals": 6,
+        "chainId": 137,
+        "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png"
+      },
+      {
         "name": "Wrapped BTC",
         "address": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
         "symbol": "WBTC",
         "decimals": 8,
         "chainId": 1,
+        "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png"
+      },
+      {
+        "name": "Wrapped BTC",
+        "address": "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6",
+        "symbol": "WBTC",
+        "decimals": 8,
+        "chainId": 137,
         "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png"
       }
   ]
